@@ -2,7 +2,10 @@
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
-const { run, validateProposal, validateSemanticRecord, createPredicateRegistry } = require("./ontology-harness");
+const { run, validateProposal, validateSemanticRecord, createPredicateRegistry, loadVersionedRegistry, PREDICATE_REGISTRY } = require("./ontology-harness");
+
+assert.deepEqual(loadVersionedRegistry(), PREDICATE_REGISTRY);
+assert.throws(() => loadVersionedRegistry(path.join(__dirname, "does-not-exist-registry.json")), { code: "REGISTRY_READ" });
 
 const fixtureRegistry = {
   version: "predicate-registry-v1", declarations: [
@@ -77,7 +80,7 @@ const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-
   ] }] };
   assert.doesNotThrow(() => validateProposal(generic, genericRegistry));
   assert.equal((await run(generic, { query: "derived", parameters: [] }, { registry: genericRegistry })).status, "ok");
-  assert.equal((await run(generic, { query: "derived", parameters: [] })).status, "rejected");
+  assert.equal((await run(generic, { query: "derived", parameters: [] })).status, "ok");
   const declared = { ...generic, registry: genericRegistrySpec };
   assert.equal((await run(declared, { query: "derived", parameters: [] })).status, "ok");
   const unregisteredDomain = { ...generic, facts: [{ predicate: "knows_technology", arguments: ["user", "java"] }], rules: [] };

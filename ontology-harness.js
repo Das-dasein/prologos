@@ -11,15 +11,6 @@ const ATOM = /^[a-z][a-z0-9_]*$/;
 const VARIABLE = /^[A-Z][A-Za-z0-9_]*$/;
 const CANDIDATE = /^cand-[a-z0-9][a-z0-9._-]{0,63}$/;
 const RULE_ID = /^r_[a-z0-9][a-z0-9_]{0,47}$/;
-// The default CDD registry is intentionally empty: domain vocabulary belongs
-// to an explicit, versioned registry supplied with each proposal. Trusted
-// runtime predicates are protected separately by RESERVED_PREDICATES.
-const PREDICATE_REGISTRY = Object.freeze({});
-const RELATIONS = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "base").map(([p]) => p));
-const ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "base").map(([p, x]) => [p, x.arity]));
-const DERIVED = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p]) => p));
-const DERIVED_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p, x]) => [p, x.arity]));
-const ALL_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).map(([p, x]) => [p, x.arity]));
 // Semantic records are sidecars: polarity, modality, time and provenance are
 // intentionally retained because ontology-proposal-v0 cannot represent them.
 // There is no bundled semantic vocabulary.  A record must carry its own
@@ -56,6 +47,15 @@ const RESERVED_PREDICATES = new Set([
   "true", "fail", "!", "is"
 ]);
 
+// The versioned registry is the executable baseline for the World of Ideas.
+// Domain proposals may still carry an explicit registry and remain isolated.
+const PREDICATE_REGISTRY = loadVersionedRegistry();
+const RELATIONS = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "base").map(([p]) => p));
+const ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "base").map(([p, x]) => [p, x.arity]));
+const DERIVED = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p]) => p));
+const DERIVED_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p, x]) => [p, x.arity]));
+const ALL_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).map(([p, x]) => [p, x.arity]));
+
 function assertRegistrySafe(registry) {
   if (!registry || typeof registry !== "object" || Array.isArray(registry))
     failure("REGISTRY", "registry must be an object");
@@ -80,6 +80,13 @@ function createPredicateRegistry(registry) {
     out[d.name] = { arity: d.arity, kind: d.kind };
   }
   return out;
+}
+
+function loadVersionedRegistry(file = path.join(__dirname, "ontology-registry-v1.json")) {
+  let registry;
+  try { registry = JSON.parse(fs.readFileSync(file, "utf8")); }
+  catch (error) { failure("REGISTRY_READ", `cannot read versioned registry: ${error.message}`); }
+  return Object.freeze(createPredicateRegistry(registry));
 }
 
 function failure(code, message) { const e = new Error(message); e.code = code; throw e; }
@@ -200,7 +207,7 @@ function run(p, request = { query: "derived" }, options = {}) {
     try { const x = JSON.parse(stdout); resolve(result(p, "ok", x.answers || [], null, x.supporting_rules || [])); } catch (_) { resolve(result(p, "swipl_error", [], { code: "INVALID_JSON", message: "SWI returned invalid JSON" })); }
   }));
 }
-module.exports = { validateProposal, validateSemanticRecord, compile, run, RELATIONS, ARITIES, DERIVED_ARITIES, PREDICATE_REGISTRY, createPredicateRegistry, createSemanticPredicateRegistry, RESERVED_PREDICATES };
+module.exports = { validateProposal, validateSemanticRecord, compile, run, RELATIONS, ARITIES, DERIVED_ARITIES, PREDICATE_REGISTRY, createPredicateRegistry, createSemanticPredicateRegistry, loadVersionedRegistry, RESERVED_PREDICATES };
 
 if (require.main === module) {
   const i = process.argv.indexOf("--proposal");

@@ -70,3 +70,9 @@ must not rewrite the trusted rules in `memory.pl`. The planned CDD extension
 allows bounded, JSON-encoded rule proposals; those rules are validated,
 compiled into an isolated candidate ontology and executed by SWI-Prolog. See
 `.cdd/ontology-mvp-v0.md`.
+
+The ontology harness loads `ontology-registry-v1.json` as the versioned,
+executable baseline for the shared World of Ideas. A proposal may carry an
+explicit registry for an isolated domain extension; it cannot shadow reserved
+runtime predicates. The registry is declarations only: it introduces no
+facts and is not a substitute for dialogue-derived memory.
