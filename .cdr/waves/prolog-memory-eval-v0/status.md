@@ -1,6 +1,6 @@
 # Wave status: prolog-memory-eval-v0
 
-- Last updated: 2026-09-03 by delta=gamma after CDS evidence refresh
+- Last updated: 2026-09-03 by independent CDR beta R2
 - State: `REVISE`
 - Gate verdict: not issued
 - Receipt: absent; no research claim is transmissible
@@ -10,7 +10,7 @@
 | Project binding | delta=gamma | complete | `.cdr/POLICY.md` |
 | Pre-registration | gamma | complete | `manifest.md`, open-claim ledger |
 | Research production | fresh alpha | revision required | `alpha-report.md`; CDS candidate evidence is available but not yet independently reviewed |
-| Independent audit | fresh beta, not alpha | complete: REVISE | `beta-review.md`, `beta-review-r1.md` |
+| Independent audit | fresh beta, not alpha | complete: REVISE | `beta-review.md`, `beta-review-r1.md`, `beta-review-r2.md` |
 | Receipt emission | gamma | blocked on alpha repair plus beta re-audit | `receipt.cue` or `receipt.yaml` |
 | Boundary decision | delta | blocked on receipt gates | not issued |
 
@@ -32,3 +32,13 @@ whether the remaining live-model-sentinel gap keeps the wave at `REVISE`.
 Receipt remains blocked until that review and every required gate are complete.
 
 Dispatch handoff: `beta-dispatch-r2.md`.
+
+R2 decision: the pinned B5 symbolic slice is reproducible and bounded, but the
+registered live-model leakage and cross-condition context-budget sentinels are
+not executable in the reviewed harness. No CDR receipt, GO, BOUNDED-GO, or
+primary PAM usefulness claim is authorized.
+
+Next priority after this review: extend the separately pinned CDS harness for
+the registered live conditions, or explicitly revise the CDR method scope. A
+future beta must review that new matter independently; this R2 verdict does
+not pre-approve it.
