@@ -3,6 +3,7 @@ const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
 const { MemoryStore, validateProposal } = require("./memory-store");
+const { run: runCdrGold } = require("./cdr-eval-harness");
 const codexProvider = require("./providers/codex");
 
 const output = execFileSync(process.execPath, ["cli.js", "demo.pl"], {
@@ -22,6 +23,12 @@ assert.throws(() => validateProposal({
 }), /not allowed/);
 
 (async () => {
+  const goldRun = await runCdrGold();
+  assert.equal(goldRun.status, "ok");
+  assert.equal(goldRun.case_count, 12);
+  assert.equal(goldRun.cases.filter(item => item.status === "ok").length, 12);
+  console.log("cdr gold harness ok");
+
   const testRoot = path.join(process.cwd(), "test-tmp");
   fs.mkdirSync(testRoot, { recursive: true });
   const dir = fs.mkdtempSync(path.join(testRoot, "prolog-memory-"));
