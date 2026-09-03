@@ -76,5 +76,18 @@ const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-
     { name: "socially_connected", arity: 1, kind: "derived" }
   ] };
   assert.equal((await run(declared, { query: "derived", parameters: [] })).status, "ok");
+  // The immutable/runtime boundary is independent of the caller-supplied
+  // registry.  These names cannot be admitted as declarations or terms.
+  for (const [name, arity] of [["consult", 1], ["ontology_derived", 1], ["assert", 1], ["retract", 1]]) {
+    assert.throws(() => createPredicateRegistry([{ name, arity, kind: "base" }]), { code: "IMMUTABLE_PREDICATE" }, name);
+    const unsafe = {
+      schema_version: "ontology-proposal-v0", candidate_version: `cand-${name}`,
+      registry: [{ name, arity, kind: "base" }], facts: [{ predicate: name, arguments: ["x"] }], rules: []
+    };
+    assert.equal((await run(unsafe, { query: "derived", parameters: [] })).error.code, "IMMUTABLE_PREDICATE", name);
+  }
+  const manuallyInjectedUnsafe = { ["consult"]: { arity: 1, kind: "base" } };
+  const safeShape = { schema_version: "ontology-proposal-v0", candidate_version: "cand-manual", facts: [], rules: [] };
+  assert.equal((await run(safeShape, { query: "derived", parameters: [] }, { registry: manuallyInjectedUnsafe })).error.code, "IMMUTABLE_PREDICATE");
   console.log("ontology-harness ok");
 })().catch(e => { console.error(e); process.exitCode = 1; });

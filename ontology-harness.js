@@ -34,6 +34,31 @@ const DERIVED = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.k
 const DERIVED_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p, x]) => [p, x.arity]));
 const ALL_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).map(([p, x]) => [p, x.arity]));
 const IMMUTABLE_CORE = new Set(["claim", "active_claim", "conflict", "supersedes", "ontology_support"]);
+// These names are owned by the trusted runner or by SWI-Prolog.  The check is
+// intentionally independent of the selected registry: a caller must not be
+// able to turn a system predicate into an ontology predicate by declaring it.
+const RESERVED_PREDICATES = new Set([
+  ...IMMUTABLE_CORE,
+  "ontology_derived", "main", "dispatch", "supporting_for",
+  "consult", "include", "use_module", "ensure_loaded", "load_files",
+  "module", "initialization", "assert", "asserta", "assertz", "retract",
+  "abolish", "clause", "recorda", "recordz", "erase", "call", "once",
+  "not", "catch", "throw", "setup_call_cleanup", "call_cleanup",
+  "current_predicate", "predicate_property", "current_prolog_flag",
+  "findall", "bagof", "setof", "sort", "keysort", "aggregate",
+  "atom_json_term", "json_write_dict", "open", "close", "read",
+  "write", "writeln", "format", "shell", "process_create", "halt",
+  "true", "fail", "!", "is"
+]);
+
+function assertRegistrySafe(registry) {
+  if (!registry || typeof registry !== "object" || Array.isArray(registry))
+    failure("REGISTRY", "registry must be an object");
+  for (const name of Object.keys(registry)) {
+    if (RESERVED_PREDICATES.has(name))
+      failure("IMMUTABLE_PREDICATE", `reserved predicate ${name}`);
+  }
+}
 
 // Callers may provide a versioned registry explicitly.  The bundled registry
 // is retained solely as the employment-shaped v0 fixture.
@@ -44,7 +69,7 @@ function createPredicateRegistry(declarations) {
     exact(d, ["name", "arity", "kind"], "registry declaration");
     if (typeof d.name !== "string" || !ATOM.test(d.name) || !Number.isInteger(d.arity) || d.arity < 1 || d.arity > 4 || !["base", "derived"].includes(d.kind)) failure("REGISTRY", "invalid registry declaration");
     if (out[d.name]) failure("REGISTRY", `duplicate registry predicate ${d.name}`);
-    if (IMMUTABLE_CORE.has(d.name)) failure("IMMUTABLE_PREDICATE", `reserved predicate ${d.name}`);
+    if (RESERVED_PREDICATES.has(d.name)) failure("IMMUTABLE_PREDICATE", `reserved predicate ${d.name}`);
     out[d.name] = { arity: d.arity, kind: d.kind };
   }
   return out;
@@ -64,6 +89,7 @@ function validateArg(a, where) {
 function validateTerm(t, where, registry = PREDICATE_REGISTRY) {
   exact(t, ["predicate", "arguments"], where);
   if (typeof t.predicate !== "string" || !ATOM.test(t.predicate)) failure("BAD_PREDICATE", `${where}.predicate`);
+  if (RESERVED_PREDICATES.has(t.predicate)) failure("IMMUTABLE_PREDICATE", `${where}: reserved predicate ${t.predicate}`);
   if (!Array.isArray(t.arguments) || t.arguments.length < 1 || t.arguments.length > 4)
     failure("BAD_ARITY", `${where}.arguments`);
   t.arguments.forEach((a, i) => validateArg(a, `${where}.arguments[${i}]`));
@@ -75,6 +101,7 @@ function validateProposal(proposal, registry = PREDICATE_REGISTRY) {
   if (typeof p === "string") { try { p = JSON.parse(p); } catch (_) { failure("JSON_PARSE", "proposal is not valid JSON"); } }
   exact(p, own(p, "registry") ? ["schema_version", "candidate_version", "facts", "rules", "registry"] : ["schema_version", "candidate_version", "facts", "rules"], "proposal");
   if (own(p, "registry") && registry === PREDICATE_REGISTRY) registry = createPredicateRegistry(p.registry);
+  assertRegistrySafe(registry);
   if (p.schema_version !== "ontology-proposal-v0") failure("SCHEMA_VERSION", "unsupported schema_version");
   if (typeof p.candidate_version !== "string" || !CANDIDATE.test(p.candidate_version)) failure("CANDIDATE_VERSION", "bad candidate_version");
   if (!Array.isArray(p.facts) || p.facts.length > 100 || !Array.isArray(p.rules) || p.rules.length > 50) failure("COLLECTION_LIMIT", "facts/rules exceed limits");
@@ -86,7 +113,7 @@ function validateProposal(proposal, registry = PREDICATE_REGISTRY) {
     if (typeof r.id !== "string" || !RULE_ID.test(r.id)) failure("RULE_ID", `rules[${i}].id`);
     if (ids.has(r.id)) failure("DUPLICATE_RULE_ID", r.id); ids.add(r.id);
     validateTerm(r.head, `rules[${i}].head`, registry);
-    if (IMMUTABLE_CORE.has(r.head.predicate) || !derived.has(r.head.predicate))
+    if (RESERVED_PREDICATES.has(r.head.predicate) || !derived.has(r.head.predicate))
       failure("IMMUTABLE_PREDICATE", `${r.id}: rule head must be a registered derived predicate`);
     if (!Array.isArray(r.body) || r.body.length < 1 || r.body.length > 4) failure("BODY_LIMIT", `${r.id} body`);
     const vars = new Set(), bound = new Set();
@@ -126,7 +153,7 @@ function run(p, request = { query: "derived" }, options = {}) {
     try { const x = JSON.parse(stdout); resolve(result(p, "ok", x.answers || [], null, x.supporting_rules || [])); } catch (_) { resolve(result(p, "swipl_error", [], { code: "INVALID_JSON", message: "SWI returned invalid JSON" })); }
   }));
 }
-module.exports = { validateProposal, compile, run, RELATIONS, ARITIES, DERIVED_ARITIES, PREDICATE_REGISTRY, createPredicateRegistry };
+module.exports = { validateProposal, compile, run, RELATIONS, ARITIES, DERIVED_ARITIES, PREDICATE_REGISTRY, createPredicateRegistry, RESERVED_PREDICATES };
 
 if (require.main === module) {
   const i = process.argv.indexOf("--proposal");
