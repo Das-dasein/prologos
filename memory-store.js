@@ -48,6 +48,7 @@ function toFact(proposal, messageId) {
     id,
     text: [
       `assertion(${id}, ${term}).`,
+      `assertion_status(${id}, accepted).`,
       `assertion_polarity(${id}, ${proposal.polarity}).`,
       `assertion_modality(${id}, asserted).`,
       `assertion_time(${id}, interval(${from}, ${to})).`,

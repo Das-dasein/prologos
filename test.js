@@ -70,6 +70,9 @@ assert.throws(() => validateProposal({
     "assertion(p1,knows_technology(user,python)). assertion_polarity(p1,positive). assertion_modality(p1,asserted). assertion_time(p1,unknown). assertion_source(p1,source). assertion_confidence(p1,1).",
   ].join("\n"));
   assert.deepEqual(await queryProlog(conflictingKnowledge, "knows_multiple_programming_languages(user)."), []);
+  assert.deepEqual(await queryProlog(conflictingKnowledge, "allowed_status_transition(extracted, accepted)."), ["true"]);
+  assert.deepEqual(await queryProlog(conflictingKnowledge, "allowed_status_transition(accepted, extracted)."), []);
+  assert.deepEqual(await queryProlog(conflictingKnowledge, "valid_assertion_status(conflicted)."), ["true"]);
   console.log("core/domain boundary ok");
 
   const dir = fs.mkdtempSync(path.join(testRoot, "prolog-memory-"));

@@ -6,7 +6,33 @@
 :- dynamic(assertion_time/2).
 :- dynamic(assertion_source/2).
 :- dynamic(assertion_confidence/2).
+:- dynamic(assertion_status/2).
 :- dynamic(assertion_revision/3).
+
+valid_assertion_status(observed).
+valid_assertion_status(extracted).
+valid_assertion_status(hypothesized).
+valid_assertion_status(accepted).
+valid_assertion_status(conflicted).
+valid_assertion_status(reviewed).
+valid_assertion_status(superseded).
+valid_assertion_status(rejected).
+
+allowed_status_transition(observed, extracted).
+allowed_status_transition(extracted, hypothesized).
+allowed_status_transition(extracted, accepted).
+allowed_status_transition(hypothesized, accepted).
+allowed_status_transition(hypothesized, rejected).
+allowed_status_transition(accepted, conflicted).
+allowed_status_transition(conflicted, reviewed).
+allowed_status_transition(reviewed, accepted).
+allowed_status_transition(reviewed, rejected).
+allowed_status_transition(accepted, superseded).
+allowed_status_transition(conflicted, superseded).
+
+effective_assertion_status(Id, Status) :- assertion_status(Id, Status), !.
+% Legacy assertions predate lifecycle-v1 and remain usable until reviewed.
+effective_assertion_status(Id, accepted) :- assertion(Id, _).
 
 active_assertion(Id, Proposition) :-
     assertion(Id, Proposition),
@@ -25,6 +51,7 @@ active_assertion_record(Id, Polarity, Proposition, Source, From, To, Confidence)
 % derived domain conclusions.
 safe_assertion(Id, Proposition) :-
     active_assertion(Id, Proposition),
+    effective_assertion_status(Id, accepted),
     \+ (conflict(_, Id, _, _)),
     \+ (conflict(_, _, Id, _)).
 
