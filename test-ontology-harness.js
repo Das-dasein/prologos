@@ -4,7 +4,14 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { run, validateProposal, validateSemanticRecord, createPredicateRegistry } = require("./ontology-harness");
 
-const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-20260903-001", facts: [
+const fixtureRegistry = {
+  version: "predicate-registry-v1", declarations: [
+    { name: "knows_technology", arity: 2, kind: "base" },
+    { name: "knows_multiple_programming_languages", arity: 1, kind: "derived" },
+    { name: "knows_frontend_framework", arity: 1, kind: "derived" }
+  ]
+};
+const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-20260903-001", registry: fixtureRegistry, facts: [
   { predicate: "knows_technology", arguments: ["user", "java"] },
   { predicate: "knows_technology", arguments: ["user", "python"] }
 ], rules: [{ id: "r_knows_two", head: { predicate: "knows_multiple_programming_languages", arguments: ["P"] }, body: [
@@ -57,11 +64,12 @@ const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-
   assert.equal(failed.error.code, "SWIPL_NOT_FOUND");
   assert(!failed.error.message.includes("/"));
   if (old === undefined) delete process.env.SWIPL_BIN; else process.env.SWIPL_BIN = old;
-  const genericRegistry = createPredicateRegistry([
+  const genericRegistrySpec = { version: "predicate-registry-v1", declarations: [
     { name: "entity", arity: 1, kind: "base" },
     { name: "connected_to", arity: 2, kind: "base" },
     { name: "socially_connected", arity: 1, kind: "derived" }
-  ]);
+  ] };
+  const genericRegistry = createPredicateRegistry(genericRegistrySpec);
   const generic = { schema_version: "ontology-proposal-v0", candidate_version: "cand-generic", facts: [
     { predicate: "connected_to", arguments: ["alice", "bob"] }
   ], rules: [{ id: "r_social", head: { predicate: "socially_connected", arguments: ["P"] }, body: [
@@ -70,19 +78,17 @@ const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-
   assert.doesNotThrow(() => validateProposal(generic, genericRegistry));
   assert.equal((await run(generic, { query: "derived", parameters: [] }, { registry: genericRegistry })).status, "ok");
   assert.equal((await run(generic, { query: "derived", parameters: [] })).status, "rejected");
-  const declared = { ...generic, registry: [
-    { name: "entity", arity: 1, kind: "base" },
-    { name: "connected_to", arity: 2, kind: "base" },
-    { name: "socially_connected", arity: 1, kind: "derived" }
-  ] };
+  const declared = { ...generic, registry: genericRegistrySpec };
   assert.equal((await run(declared, { query: "derived", parameters: [] })).status, "ok");
+  const unregisteredDomain = { ...generic, facts: [{ predicate: "knows_technology", arguments: ["user", "java"] }], rules: [] };
+  assert.equal((await run(unregisteredDomain, { query: "derived", parameters: [] })).error.code, "PREDICATE_ARITY");
   // The immutable/runtime boundary is independent of the caller-supplied
   // registry.  These names cannot be admitted as declarations or terms.
   for (const [name, arity] of [["consult", 1], ["ontology_derived", 1], ["assert", 1], ["retract", 1]]) {
-    assert.throws(() => createPredicateRegistry([{ name, arity, kind: "base" }]), { code: "IMMUTABLE_PREDICATE" }, name);
+    assert.throws(() => createPredicateRegistry({ version: "predicate-registry-v1", declarations: [{ name, arity, kind: "base" }] }), { code: "IMMUTABLE_PREDICATE" }, name);
     const unsafe = {
       schema_version: "ontology-proposal-v0", candidate_version: `cand-${name}`,
-      registry: [{ name, arity, kind: "base" }], facts: [{ predicate: name, arguments: ["x"] }], rules: []
+      registry: { version: "predicate-registry-v1", declarations: [{ name, arity, kind: "base" }] }, facts: [{ predicate: name, arguments: ["x"] }], rules: []
     };
     assert.equal((await run(unsafe, { query: "derived", parameters: [] })).error.code, "IMMUTABLE_PREDICATE", name);
   }

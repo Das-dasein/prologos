@@ -11,23 +11,10 @@ const ATOM = /^[a-z][a-z0-9_]*$/;
 const VARIABLE = /^[A-Z][A-Za-z0-9_]*$/;
 const CANDIDATE = /^cand-[a-z0-9][a-z0-9._-]{0,63}$/;
 const RULE_ID = /^r_[a-z0-9][a-z0-9_]{0,47}$/;
-// The ontology registry is the contract boundary.  It is deliberately kept
-// here, rather than inferred from the employment claim store: those names are
-// merely one set of fixtures accepted by this domain-neutral registry.
-const BASE_PREDICATES = [
-  "likes", "dislikes", "lives_in", "works_at", "studies_at", "role",
-  "birth_year", "email", "prefers", "owns", "uses", "interested_in",
-  "previous_project", "knows_technology", "worked_with_technology"
-].concat(["role_at_semester", "role_before_semester", "project_role_at"]);
-const PREDICATE_REGISTRY = Object.fromEntries([
-  ...BASE_PREDICATES.map(p => [p, { kind: "base", arity: p.endsWith("_semester") || p === "project_role_at" ? 4 : 2 }]),
-  ["current_project_at", { kind: "base", arity: 3 }],
-  ["worked_on", { kind: "derived", arity: 2 }],
-  ["has_frontend_experience", { kind: "derived", arity: 1 }],
-  ["current_project", { kind: "derived", arity: 3 }],
-  ["knows_frontend_framework", { kind: "derived", arity: 1 }],
-  ["knows_multiple_programming_languages", { kind: "derived", arity: 1 }]
-]);
+// The default CDD registry is intentionally empty: domain vocabulary belongs
+// to an explicit, versioned registry supplied with each proposal. Trusted
+// runtime predicates are protected separately by RESERVED_PREDICATES.
+const PREDICATE_REGISTRY = Object.freeze({});
 const RELATIONS = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "base").map(([p]) => p));
 const ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "base").map(([p, x]) => [p, x.arity]));
 const DERIVED = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p]) => p));
@@ -78,12 +65,14 @@ function assertRegistrySafe(registry) {
   }
 }
 
-// Callers may provide a versioned registry explicitly.  The bundled registry
-// is retained solely as the employment-shaped v0 fixture.
-function createPredicateRegistry(declarations) {
-  if (!Array.isArray(declarations) || declarations.length === 0) failure("REGISTRY", "registry must contain declarations");
+// Callers may provide a versioned registry explicitly. Domain fixtures are
+// intentionally kept outside this default core registry.
+function createPredicateRegistry(registry) {
+  exact(registry, ["version", "declarations"], "predicate registry");
+  if (registry.version !== "predicate-registry-v1" || !Array.isArray(registry.declarations) || registry.declarations.length === 0 || registry.declarations.length > 100)
+    failure("REGISTRY", "invalid registry version or declarations");
   const out = {};
-  for (const d of declarations) {
+  for (const d of registry.declarations) {
     exact(d, ["name", "arity", "kind"], "registry declaration");
     if (typeof d.name !== "string" || !ATOM.test(d.name) || !Number.isInteger(d.arity) || d.arity < 1 || d.arity > 4 || !["base", "derived"].includes(d.kind)) failure("REGISTRY", "invalid registry declaration");
     if (out[d.name]) failure("REGISTRY", `duplicate registry predicate ${d.name}`);
