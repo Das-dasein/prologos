@@ -15,18 +15,18 @@ const DEFAULT_CONFIG = path.join(ROOT, ".cdr/results/prolog-memory-eval-v0/eval-
 const ATOM = /^[a-z][a-z0-9_]*$/;
 const CLAIM_ID = /^c_[a-z0-9_]+$/;
 const PILOT_QUERY_REGISTRY = Object.freeze({
-  "stable-01": "active_claim(Id, positive, lives_in(user, City), _, From, To, _).",
-  "stable-02": "active_claim(Id, positive, knows_technology(user, Language), _, From, To, _).",
-  "correction-01": "active_claim(Id, positive, lives_in(user, City), _, From, To, _).",
+  "stable-01": "active_assertion_record(Id, positive, lives_in(user, City), _, From, To, _).",
+  "stable-02": "active_assertion_record(Id, positive, knows_technology(user, Language), _, From, To, _).",
+  "correction-01": "active_assertion_record(Id, positive, lives_in(user, City), _, From, To, _).",
   "correction-02": "current_project(user, acme, Project).",
-  "temporal-01": "active_claim(Id, positive, lives_in(user, City), _, From, To, _), overlaps(20210101, 20211231, From, To).",
-  "temporal-02": "active_claim(Id, positive, worked_with_technology(user, Technology), _, From, To, _), overlaps(20250101, 20251231, From, To).",
+  "temporal-01": "active_assertion_record(Id, positive, lives_in(user, City), _, From, To, _), overlaps(20210101, 20211231, From, To).",
+  "temporal-02": "active_assertion_record(Id, positive, worked_with_technology(user, Technology), _, From, To, _), overlaps(20250101, 20251231, From, To).",
   "conflict-01": "conflict(direct, Id1, Id2, likes(user,coffee)).",
   "conflict-02": "conflict(direct, Id1, Id2, lives_in(user,paris)).",
-  "nonmemory-01": "active_claim(_,_,_,_,_,_,_).",
-  "nonmemory-02": "active_claim(_,_,_,_,_,_,_).",
-  "ambiguity-01": "active_claim(_,_,_,_,_,_,_).",
-  "ambiguity-02": "active_claim(_,_,_,_,_,_,_).",
+  "nonmemory-01": "active_assertion_record(_,_,_,_,_,_,_).",
+  "nonmemory-02": "active_assertion_record(_,_,_,_,_,_,_).",
+  "ambiguity-01": "active_assertion_record(_,_,_,_,_,_,_).",
+  "ambiguity-02": "active_assertion_record(_,_,_,_,_,_,_).",
 });
 
 function fail(code, message) {
@@ -67,7 +67,14 @@ function claimFact(operation, claimId) {
   const from = p.valid_from === null ? 10000101 : p.valid_from;
   const to = p.valid_to === null ? "inf" : p.valid_to;
   const proposition = `${p.relation}(${p.arguments.join(",")})`;
-  return `claim(${claimId},${p.polarity},${proposition},user_turn_${operation.turn || 1},${from},${to},${p.confidence}).`;
+  return [
+    `assertion(${claimId},${proposition}).`,
+    `assertion_polarity(${claimId},${p.polarity}).`,
+    `assertion_modality(${claimId},asserted).`,
+    `assertion_time(${claimId},interval(${from},${to})).`,
+    `assertion_source(${claimId},user_turn_${operation.turn || 1}).`,
+    `assertion_confidence(${claimId},${p.confidence}).`,
+  ].join("\n");
 }
 
 function operationsFor(record) {
@@ -76,14 +83,14 @@ function operationsFor(record) {
     if (operation.kind === "write") operations.push(claimFact(operation, operation.claim_id));
     else if (operation.kind === "supersede") {
       if (!CLAIM_ID.test(operation.new_claim_id) || !CLAIM_ID.test(operation.old_claim_id)) fail("UNSAFE_CLAIM_ID", record.case_id);
-      operations.push(`supersedes(${operation.new_claim_id},${operation.old_claim_id}).`);
+      operations.push(`assertion_revision(${operation.new_claim_id},replaces,${operation.old_claim_id}).`);
     } else if (!["ignore", "clarify"].includes(operation.kind)) fail("DATA_SHAPE", `${record.case_id}: unknown operation ${operation.kind}`);
   }
   return operations;
 }
 
 function idsFromActive(answer) {
-  const match = /^active_claim\(([^,]+),/.exec(answer);
+  const match = /^active_assertion_record\(([^,]+),/.exec(answer);
   return match ? match[1] : null;
 }
 
@@ -229,7 +236,7 @@ async function runCase(record, oracleCase, queryText) {
   const session = consult(program);
   try {
     const [active, conflicts, answers] = await Promise.all([
-      query(session, "active_claim(Id, P, Proposition, Source, From, To, Confidence)."),
+      query(session, "active_assertion_record(Id, P, Proposition, Source, From, To, Confidence)."),
       query(session, "unresolved_conflict(Type, Id1, Id2, Subject)."),
       query(session, queryText),
     ]);

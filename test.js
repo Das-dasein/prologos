@@ -52,8 +52,8 @@ assert.throws(() => validateProposal({
   console.log("cdr gold harness ok");
 
   const boundaryClaims = [
-    "claim(a,positive,lives_in(user,samara),source,20260101,inf,1).",
-    "claim(b,positive,lives_in(user,berlin),source,20260101,inf,1).",
+    "assertion(a,lives_in(user,samara)). assertion_polarity(a,positive). assertion_modality(a,asserted). assertion_time(a,interval(20260101,inf)). assertion_source(a,source). assertion_confidence(a,1).",
+    "assertion(b,lives_in(user,berlin)). assertion_polarity(b,positive). assertion_modality(b,asserted). assertion_time(b,interval(20260101,inf)). assertion_source(b,source). assertion_confidence(b,1).",
   ].join("\n");
   const coreOnly = await consultProlog(`${fs.readFileSync("memory.pl", "utf8")}\n${boundaryClaims}`);
   assert.deepEqual(await queryProlog(coreOnly, "conflict(functional, A, B, R)."), []);

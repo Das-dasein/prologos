@@ -1,15 +1,30 @@
-% Agent memory: claims stay immutable; conclusions are computed.
-% claim(Id, Polarity, Proposition, Source, From, To, Confidence).
-% Time interval is inclusive. Use inf as an open end.
+% Universal assertion core. Meaning and qualifiers are stored separately.
 
-:- dynamic(claim/7).
-:- dynamic(supersedes/2).
+:- dynamic(assertion/2).
+:- dynamic(assertion_polarity/2).
+:- dynamic(assertion_modality/2).
+:- dynamic(assertion_time/2).
+:- dynamic(assertion_source/2).
+:- dynamic(assertion_confidence/2).
+:- dynamic(assertion_revision/3).
 
-superseded(Id) :- supersedes(_, Id).
+active_assertion(Id, Proposition) :-
+    assertion(Id, Proposition),
+    assertion_polarity(Id, positive),
+    \+ assertion_revision(_, replaces, Id).
 
-active_claim(Id, Polarity, Proposition, Source, From, To, Confidence) :-
-    claim(Id, Polarity, Proposition, Source, From, To, Confidence),
-    \+ superseded(Id).
+active_assertion_record(Id, Polarity, Proposition, Source, From, To, Confidence) :-
+    assertion(Id, Proposition),
+    assertion_polarity(Id, Polarity),
+    assertion_source(Id, Source),
+    assertion_time_interval(Id, From, To),
+    assertion_confidence(Id, Confidence),
+    \+ assertion_revision(_, replaces, Id).
+
+assertion_time_interval(Id, From, To) :-
+    assertion_time(Id, interval(From, To)), !.
+assertion_time_interval(Id, 10000101, inf) :-
+    assertion_time(Id, unknown).
 
 opposite(positive, negative).
 opposite(negative, positive).
@@ -22,20 +37,20 @@ overlaps(From1, To1, From2, To2) :-
     ends_after(To2, From1).
 
 conflict(direct, Id1, Id2, Proposition) :-
-    claim(Id1, Polarity1, Proposition, _, From1, To1, _),
-    claim(Id2, Polarity2, Proposition, _, From2, To2, _),
+    active_assertion_record(Id1, Polarity1, Proposition, _, From1, To1, _),
+    active_assertion_record(Id2, Polarity2, Proposition, _, From2, To2, _),
     opposite(Polarity1, Polarity2),
     Id1 @< Id2,
     overlaps(From1, To1, From2, To2).
 
-conflict_explanation(Type, Id1, Id2, explanation(Type, Claim1, Claim2)) :-
+conflict_explanation(Type, Id1, Id2, explanation(Type, Assertion1, Assertion2)) :-
     conflict(Type, Id1, Id2, _),
-    Claim1 = claim(Id1, P1, Prop1, Source1, From1, To1, C1),
-    Claim2 = claim(Id2, P2, Prop2, Source2, From2, To2, C2),
-    call(Claim1),
-    call(Claim2).
+    Assertion1 = assertion_record(Id1, P1, Prop1, Source1, From1, To1, C1),
+    Assertion2 = assertion_record(Id2, P2, Prop2, Source2, From2, To2, C2),
+    active_assertion_record(Id1, P1, Prop1, Source1, From1, To1, C1),
+    active_assertion_record(Id2, P2, Prop2, Source2, From2, To2, C2).
 
 unresolved_conflict(Type, Id1, Id2, Subject) :-
     conflict(Type, Id1, Id2, Subject),
-    \+ supersedes(Id1, Id2),
-    \+ supersedes(Id2, Id1).
+    \+ assertion_revision(_, replaces, Id1),
+    \+ assertion_revision(_, replaces, Id2).

@@ -46,7 +46,7 @@ Set `DEBUG_MEMORY=1` to display each generated Prolog fact and conflict. Use
 Each turn has two model calls: strict structured extraction first, then a
 natural-language response grounded in the updated memory and any conflicts.
 The model never writes raw Prolog. It proposes typed fields; `memory-store.js`
-validates an allowlist and serializes the final `claim/7` fact. This prevents
+validates an allowlist and serializes an assertion with separate qualifiers. This prevents
 arbitrary predicates or executable Prolog from entering the trusted program.
 
 Run an arbitrary query:
@@ -55,17 +55,22 @@ Run an arbitrary query:
 node cli.js demo.pl "conflict(Type, A, B, Subject)."
 ```
 
-Memory facts have one constrained form:
+Memory assertions have a constrained core plus separate qualifiers:
 
 ```prolog
-claim(Id, Polarity, Proposition, Source, ValidFrom, ValidTo, Confidence).
+assertion(Id, Proposition).
+assertion_polarity(Id, positive_or_negative).
+assertion_modality(Id, asserted_or_reported_or_questioned_or_uncertain).
+assertion_time(Id, interval(From, To)).
+assertion_source(Id, Source).
+assertion_confidence(Id, Confidence).
 ```
 
 `Polarity` is `positive` or `negative`; `ValidTo` may be `inf`. The system
 detects explicit positive/negative clashes and competing values of relations
 declared with `functional/1`.
 
-The current LLM boundary is narrow: a model may propose `claim/7` terms, but
+The current LLM boundary is narrow: a model may propose typed assertion fields, but
 must not rewrite the trusted rules in `memory.pl`. The planned CDD extension
 allows bounded, JSON-encoded rule proposals; those rules are validated,
 compiled into an isolated candidate ontology and executed by SWI-Prolog. See

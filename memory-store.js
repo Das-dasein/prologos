@@ -46,7 +46,14 @@ function toFact(proposal, messageId) {
   const to = proposal.valid_to ?? "inf";
   return {
     id,
-    text: `claim(${id}, ${proposal.polarity}, ${term}, user_message(${messageId}), ${from}, ${to}, ${proposal.confidence}).`,
+    text: [
+      `assertion(${id}, ${term}).`,
+      `assertion_polarity(${id}, ${proposal.polarity}).`,
+      `assertion_modality(${id}, asserted).`,
+      `assertion_time(${id}, interval(${from}, ${to})).`,
+      `assertion_source(${id}, user_message(${messageId})).`,
+      `assertion_confidence(${id}, ${proposal.confidence}).`,
+    ].join("\n"),
   };
 }
 
