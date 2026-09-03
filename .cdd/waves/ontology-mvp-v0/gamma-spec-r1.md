@@ -12,7 +12,7 @@ ontology rule is applied. The representation is domain-neutral: employment,
 education, projects, and technologies are examples of declared vocabulary,
 not special semantics built into the harness.
 
-The following meanings are intentionally independent:
+The following meanings are intentionally independent in the test fixtures:
 
 * `postgraduate_program_completed(Person, Program)` — the person is stated to
   have completed the program;
@@ -20,6 +20,10 @@ The following meanings are intentionally independent:
   written a note, draft, report, or other specified dissertation-related work;
 * `degree_awarded(Person, Degree)` — an awarding authority is stated to have
   conferred the degree.
+
+These names are not built-in product vocabulary; they are examples used to
+test semantic separation. The generic core accepts LLM-proposed predicate
+declarations through the versioned registry.
 
 Completion of a postgraduate program does **not** entail writing a
 dissertation note, and neither completion nor writing a note entails that a

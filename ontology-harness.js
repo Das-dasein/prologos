@@ -33,14 +33,24 @@ const ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([,
 const DERIVED = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p]) => p));
 const DERIVED_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p, x]) => [p, x.arity]));
 const ALL_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).map(([p, x]) => [p, x.arity]));
-// Extraction-side semantic vocabulary.  These records deliberately do not
-// enter the executable v0 fact set: they retain distinctions which v0 cannot
-// represent (polarity, modality, time and provenance).
-const SEMANTIC_PREDICATES = new Map([
-  ["postgraduate_program_completed", [new Set(["person"]), new Set(["postgraduate_program", "program"])]],
-  ["dissertation_note_written", [new Set(["person"]), new Set(["work", "dissertation", "dissertation_note"])]],
-  ["degree_awarded", [new Set(["person"]), new Set(["degree", "academic_degree", "phd"] )]]
-]);
+// Semantic records are sidecars: polarity, modality, time and provenance are
+// intentionally retained because ontology-proposal-v0 cannot represent them.
+// There is no bundled semantic vocabulary.  A record must carry its own
+// versioned predicate registry, including the expected entity type per slot.
+function createSemanticPredicateRegistry(registry) {
+  exact(registry, ["version", "declarations"], "semantic registry");
+  if (registry.version !== "semantic-predicate-registry-v1" || !Array.isArray(registry.declarations) || registry.declarations.length === 0 || registry.declarations.length > 100)
+    failure("SEMANTIC_REGISTRY", "invalid semantic registry version or declarations");
+  const out = new Map();
+  for (const d of registry.declarations) {
+    exact(d, ["name", "arity", "argument_types"], "semantic registry declaration");
+    if (typeof d.name !== "string" || !ATOM.test(d.name) || RESERVED_PREDICATES.has(d.name) || !Number.isInteger(d.arity) || d.arity < 1 || d.arity > 4 || !Array.isArray(d.argument_types) || d.argument_types.length !== d.arity || d.argument_types.some(t => typeof t !== "string" || !ATOM.test(t)))
+      failure("SEMANTIC_REGISTRY", "invalid semantic registry declaration");
+    if (out.has(d.name)) failure("SEMANTIC_REGISTRY", `duplicate semantic predicate ${d.name}`);
+    out.set(d.name, { arity: d.arity, argument_types: d.argument_types.map(t => new Set([t])) });
+  }
+  return out;
+}
 const IMMUTABLE_CORE = new Set(["claim", "active_claim", "conflict", "supersedes", "ontology_support"]);
 // These names are owned by the trusted runner or by SWI-Prolog.  The check is
 // intentionally independent of the selected registry: a caller must not be
@@ -107,8 +117,9 @@ function validateTerm(t, where, registry = PREDICATE_REGISTRY) {
 function validateSemanticRecord(record, where = "semantic_record") {
   let s = record;
   if (typeof s === "string") { try { s = JSON.parse(s); } catch (_) { failure("JSON_PARSE", `${where} is not valid JSON`); } }
-  exact(s, ["schema_version", "entities", "assertions"], where);
+  exact(s, ["schema_version", "registry", "entities", "assertions"], where);
   if (s.schema_version !== "semantic-dialogue-v1") failure("SEMANTIC_VERSION", "unsupported semantic schema_version");
+  const semanticRegistry = createSemanticPredicateRegistry(s.registry);
   if (!Array.isArray(s.entities) || !Array.isArray(s.assertions) || s.entities.length > 100 || s.assertions.length > 100) failure("SEMANTIC_COLLECTION_LIMIT", `${where} entities/assertions exceed limits`);
   const entities = new Map();
   s.entities.forEach((e, i) => {
@@ -122,10 +133,10 @@ function validateSemanticRecord(record, where = "semantic_record") {
     const w = `${where}.assertions[${i}]`;
     exact(a, ["id", "predicate", "arguments", "polarity", "modality", "time", "source"], w);
     if (typeof a.id !== "string" || !ATOM.test(a.id) || ids.has(a.id)) failure("SEMANTIC_ASSERTION", `${w}.id`); ids.add(a.id);
-    if (typeof a.predicate !== "string" || !SEMANTIC_PREDICATES.has(a.predicate)) failure("SEMANTIC_PREDICATE", `${w}.predicate`);
-    if (!Array.isArray(a.arguments) || a.arguments.length !== 2 || a.arguments.some(x => typeof x !== "string" || !ATOM.test(x) || !entities.has(x))) failure("SEMANTIC_ARGUMENT", `${w}.arguments`);
-    const expected = SEMANTIC_PREDICATES.get(a.predicate);
-    if (!expected[0].has(entities.get(a.arguments[0])) || !expected[1].has(entities.get(a.arguments[1]))) failure("SEMANTIC_ARGUMENT_TYPE", `${w}.arguments`);
+    if (typeof a.predicate !== "string" || !semanticRegistry.has(a.predicate)) failure("SEMANTIC_PREDICATE", `${w}.predicate`);
+    const declaration = semanticRegistry.get(a.predicate);
+    if (!Array.isArray(a.arguments) || a.arguments.length !== declaration.arity || a.arguments.some(x => typeof x !== "string" || !ATOM.test(x) || !entities.has(x))) failure("SEMANTIC_ARGUMENT", `${w}.arguments`);
+    if (a.arguments.some((x, j) => !declaration.argument_types[j].has(entities.get(x)))) failure("SEMANTIC_ARGUMENT_TYPE", `${w}.arguments`);
     if (!["positive", "negative"].includes(a.polarity)) failure("SEMANTIC_POLARITY", `${w}.polarity`);
     if (!["asserted", "reported", "questioned", "uncertain"].includes(a.modality)) failure("SEMANTIC_MODALITY", `${w}.modality`);
     if (!a.time || typeof a.time !== "object" || Array.isArray(a.time) || typeof a.time.kind !== "string") failure("SEMANTIC_TIME", `${w}.time`);
@@ -200,7 +211,7 @@ function run(p, request = { query: "derived" }, options = {}) {
     try { const x = JSON.parse(stdout); resolve(result(p, "ok", x.answers || [], null, x.supporting_rules || [])); } catch (_) { resolve(result(p, "swipl_error", [], { code: "INVALID_JSON", message: "SWI returned invalid JSON" })); }
   }));
 }
-module.exports = { validateProposal, validateSemanticRecord, compile, run, RELATIONS, ARITIES, DERIVED_ARITIES, PREDICATE_REGISTRY, createPredicateRegistry, RESERVED_PREDICATES, SEMANTIC_PREDICATES };
+module.exports = { validateProposal, validateSemanticRecord, compile, run, RELATIONS, ARITIES, DERIVED_ARITIES, PREDICATE_REGISTRY, createPredicateRegistry, createSemanticPredicateRegistry, RESERVED_PREDICATES };
 
 if (require.main === module) {
   const i = process.argv.indexOf("--proposal");

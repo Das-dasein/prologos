@@ -95,6 +95,11 @@ const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-
   // explicit negative award must never become a degree fact.
   const dialogue = {
     schema_version: "semantic-dialogue-v1",
+    registry: { version: "semantic-predicate-registry-v1", declarations: [
+      { name: "postgraduate_program_completed", arity: 2, argument_types: ["person", "postgraduate_program"] },
+      { name: "dissertation_note_written", arity: 2, argument_types: ["person", "work"] },
+      { name: "degree_awarded", arity: 2, argument_types: ["person", "degree"] }
+    ] },
     entities: [
       { id: "person_1", type: "person" },
       { id: "program_1", type: "postgraduate_program" },
@@ -119,5 +124,26 @@ const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-
   const unsafeSemantic = JSON.parse(JSON.stringify(dialogue));
   unsafeSemantic.assertions[0].predicate = "degree_awarded";
   assert.throws(() => validateSemanticRecord(unsafeSemantic), { code: "SEMANTIC_ARGUMENT_TYPE" });
+  // Semantic validation is domain-neutral: a separately declared custom
+  // vocabulary receives the same shape, polarity, modality, time and source
+  // checks as the postgraduate fixture above.
+  const customSemantic = {
+    schema_version: "semantic-dialogue-v1",
+    registry: { version: "semantic-predicate-registry-v1", declarations: [
+      { name: "sensor_observed", arity: 2, argument_types: ["sensor", "reading"] },
+      { name: "reading_assigned_to", arity: 2, argument_types: ["reading", "device"] }
+    ] },
+    entities: [
+      { id: "sensor_1", type: "sensor" }, { id: "reading_1", type: "reading" }, { id: "device_1", type: "device" }
+    ],
+    assertions: [
+      { id: "obs_1", predicate: "sensor_observed", arguments: ["sensor_1", "reading_1"], polarity: "positive", modality: "reported", time: { kind: "point", value: "2026-09-03T10:00:00Z" }, source: { kind: "supplied", ref: "log-1" } },
+      { id: "assign_1", predicate: "reading_assigned_to", arguments: ["reading_1", "device_1"], polarity: "negative", modality: "uncertain", time: { kind: "unknown" }, source: { kind: "unresolved", reason: "device link not identified" } }
+    ]
+  };
+  assert.doesNotThrow(() => validateSemanticRecord(customSemantic));
+  const unknownSemanticPredicate = JSON.parse(JSON.stringify(customSemantic));
+  unknownSemanticPredicate.assertions[0].predicate = "degree_awarded";
+  assert.throws(() => validateSemanticRecord(unknownSemanticPredicate), { code: "SEMANTIC_PREDICATE" });
   console.log("ontology-harness ok");
 })().catch(e => { console.error(e); process.exitCode = 1; });
