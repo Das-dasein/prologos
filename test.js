@@ -117,9 +117,6 @@ assert.throws(() => validateProposal({
   const reflectionProposal = await codexProvider.reflect({ duplicates: ["A = a1, B = a2"] });
   assert.equal(reflectionProposal.schema_version, "reflection-proposal-v1");
   assert.equal(reflectionProposal.actions[0].action, "mark_duplicate");
-  const semanticRecord = await codexProvider.extractSemantic("I like it.");
-  assert.equal(semanticRecord.schema_version, "semantic-dialogue-v1");
-  assert.equal(semanticRecord.assertions[0].predicate, "likes");
   if (oldBinary === undefined) delete process.env.CODEX_BIN;
   else process.env.CODEX_BIN = oldBinary;
   console.log("codex-provider ok");

@@ -1,7 +1,6 @@
 const OpenAI = require("openai");
 const { zodResponseFormat } = require("openai/helpers/zod");
-const { Extraction, ReflectionProposal, SemanticRecord, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
-const { validateSemanticRecord } = require("../ontology-harness");
+const { Extraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
 
 const model = process.env.OPENAI_MODEL || "gpt-5.6";
 let client;
@@ -41,16 +40,4 @@ async function reflect(report) {
   return result.choices[0].message.parsed;
 }
 
-async function extractSemantic(text) {
-  const result = await getClient().chat.completions.parse({
-    model,
-    messages: [
-      { role: "system", content: "Extract only what the dialogue states into semantic-dialogue-v1. Preserve polarity, modality, time and provenance. Do not infer facts." },
-      { role: "user", content: text },
-    ],
-    response_format: zodResponseFormat(SemanticRecord, "semantic_dialogue"),
-  });
-  return validateSemanticRecord(result.choices[0].message.parsed);
-}
-
-module.exports = { name: "openai-api", extractClaims, extractSemantic, respond, reflect };
+module.exports = { name: "openai-api", extractClaims, respond, reflect };
