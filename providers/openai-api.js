@@ -1,6 +1,6 @@
 const OpenAI = require("openai");
 const { zodResponseFormat } = require("openai/helpers/zod");
-const { Extraction, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
+const { Extraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
 
 const model = process.env.OPENAI_MODEL || "gpt-5.6";
 let client;
@@ -28,5 +28,16 @@ async function respond(text, memory, conflicts) {
   return result.output_text;
 }
 
-module.exports = { name: "openai-api", extractClaims, respond };
+async function reflect(report) {
+  const result = await getClient().chat.completions.parse({
+    model,
+    messages: [
+      { role: "system", content: "Review assertion diagnostics. Propose only reversible, evidence-based reflection actions. Do not modify files or choose a winner in a conflict." },
+      { role: "user", content: JSON.stringify(report) },
+    ],
+    response_format: zodResponseFormat(ReflectionProposal, "reflection_proposal"),
+  });
+  return result.choices[0].message.parsed;
+}
 
+module.exports = { name: "openai-api", extractClaims, respond, reflect };

@@ -86,6 +86,9 @@ assert.throws(() => validateProposal({
   assert.deepEqual(claims[0].arguments, ["user", "python"]);
   const reply = await codexProvider.respond("Что я знаю?", "knows_technology(user,python).", []);
   assert.match(reply, /Mock response/);
+  const reflectionProposal = await codexProvider.reflect({ duplicates: ["A = a1, B = a2"] });
+  assert.equal(reflectionProposal.schema_version, "reflection-proposal-v1");
+  assert.equal(reflectionProposal.actions[0].action, "mark_duplicate");
   if (oldBinary === undefined) delete process.env.CODEX_BIN;
   else process.env.CODEX_BIN = oldBinary;
   console.log("codex-provider ok");

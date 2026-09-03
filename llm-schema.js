@@ -12,11 +12,22 @@ const Proposal = z.object({
 
 const Extraction = z.object({ claims: z.array(Proposal) });
 
+const ReflectionAction = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("mark_duplicate"), canonical_id: z.string(), duplicate_id: z.string(), reason: z.string().min(1) }),
+  z.object({ action: z.literal("propose_alias"), from: z.string(), to: z.string(), reason: z.string().min(1) }),
+  z.object({ action: z.literal("propose_revision"), new_id: z.string(), old_id: z.string(), relation: z.enum(["replaces", "confirms"]), reason: z.string().min(1) }),
+  z.object({ action: z.literal("review"), assertion_id: z.string(), reason: z.string().min(1) }),
+]);
+
+const ReflectionProposal = z.object({
+  schema_version: z.literal("reflection-proposal-v1"),
+  actions: z.array(ReflectionAction).max(50),
+});
+
 const EXTRACTION_INSTRUCTIONS = `Extract only durable user facts worth remembering.
 Return an empty claims array for chatter, questions, hypotheticals, quoted text, or uncertain claims.
 Normalize entities as lowercase latin snake_case Prolog atoms.
 Use YYYYMMDD integer dates or null. Never infer sensitive facts.
 Allowed relations: ${[...RELATIONS].join(", ")}.`;
 
-module.exports = { Extraction, EXTRACTION_INSTRUCTIONS };
-
+module.exports = { Extraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS };

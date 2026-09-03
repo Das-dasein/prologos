@@ -1,6 +1,6 @@
 const { spawn } = require("node:child_process");
 const path = require("node:path");
-const { Extraction, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
+const { Extraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
 
 function runCodex(prompt, { schema } = {}) {
   return new Promise((resolve, reject) => {
@@ -60,5 +60,14 @@ Do not use tools and do not modify files.
 MEMORY:\n${memory}\n\nNEW CONFLICTS:\n${conflictText}\n\nUSER:\n${text}`);
 }
 
-module.exports = { name: "codex", extractClaims, respond, runCodex };
+async function reflect(report) {
+  const schema = path.resolve(__dirname, "../schemas/reflection-proposal.schema.json");
+  const output = await runCodex(`Review this diagnostic report about a Prolog assertion journal.
+Propose only evidence-based, reversible actions. Do not invent facts, select a winner in a conflict, or modify files.
+Return only reflection-proposal-v1 JSON.
 
+REPORT:\n${JSON.stringify(report)}`, { schema });
+  return ReflectionProposal.parse(JSON.parse(output));
+}
+
+module.exports = { name: "codex", extractClaims, respond, reflect, runCodex };
