@@ -8,7 +8,7 @@ process.stdin.on("end", () => {
     const schema = process.argv[process.argv.indexOf("--output-schema") + 1];
     process.stdout.write(JSON.stringify(schema.includes("reflection-proposal") ? {
       schema_version: "reflection-proposal-v1",
-      actions: [{ action: "mark_duplicate", canonical_id: "a2", duplicate_id: "a1", reason: "same proposition; a2 is the later assertion" }]
+      actions: [{ action: "mark_duplicate", canonical_id: "c_1788462646473_9d6d0f", duplicate_id: "c_20260903_002", reason: "same proposition; later source" }]
     } : {
       claims: [{
         polarity: "positive",

@@ -7,6 +7,7 @@ const { run: runCdrGold, fixedQuery } = require("./cdr-eval-harness");
 const { consult: consultProlog, query: queryProlog } = require("./prolog-engine");
 const { reflect } = require("./memory-reflection");
 const { validateReflectionProposal, applyApprovedReflection } = require("./reflection-socrates");
+const { runReflection } = require("./reflection-agent");
 const codexProvider = require("./providers/codex");
 
 const output = execFileSync(process.execPath, ["cli.js", "demo.pl"], {
@@ -95,6 +96,9 @@ assert.throws(() => validateProposal({
   const applied = applyApprovedReflection(reflectionInput, reflectionMemory, { approved: true, report: reflection });
   assert.deepEqual(applied.applied, ["assertion_revision(c_1788462646473_9d6d0f, replaces, c_20260903_002)."]);
   assert.match(fs.readFileSync(reflectionMemory, "utf8"), /assertion_revision\(c_1788462646473_9d6d0f, replaces, c_20260903_002\)/);
+  const agentReflection = await runReflection({ provider: { reflect: async () => reflectionInput }, report: reflection });
+  assert.equal(agentReflection.status, "accepted");
+  assert.deepEqual(agentReflection.writes, []);
   console.log("memory reflection ok");
 
   const oldBinary = process.env.CODEX_BIN;
