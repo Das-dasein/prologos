@@ -2,7 +2,7 @@
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
-const { run, validateProposal, createPredicateRegistry } = require("./ontology-harness");
+const { run, validateProposal, validateSemanticRecord, createPredicateRegistry } = require("./ontology-harness");
 
 const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-20260903-001", facts: [
   { predicate: "knows_technology", arguments: ["user", "java"] },
@@ -89,5 +89,35 @@ const base = { schema_version: "ontology-proposal-v0", candidate_version: "cand-
   const manuallyInjectedUnsafe = { ["consult"]: { arity: 1, kind: "base" } };
   const safeShape = { schema_version: "ontology-proposal-v0", candidate_version: "cand-manual", facts: [], rules: [] };
   assert.equal((await run(safeShape, { query: "derived", parameters: [] }, { registry: manuallyInjectedUnsafe })).error.code, "IMMUTABLE_PREDICATE");
+
+  // The dialogue-side contract keeps completion, dissertation note, and
+  // award as separate typed propositions.  In particular, completion plus an
+  // explicit negative award must never become a degree fact.
+  const dialogue = {
+    schema_version: "semantic-dialogue-v1",
+    entities: [
+      { id: "person_1", type: "person" },
+      { id: "program_1", type: "postgraduate_program" },
+      { id: "work_1", type: "work" },
+      { id: "degree_1", type: "degree" }
+    ],
+    assertions: [
+      { id: "a_completed", predicate: "postgraduate_program_completed", arguments: ["person_1", "program_1"], polarity: "positive", modality: "asserted", time: { kind: "point", value: "2024" }, source: { kind: "dialogue", turn: "t3", span: "I completed the postgraduate programme." } },
+      { id: "a_note", predicate: "dissertation_note_written", arguments: ["person_1", "work_1"], polarity: "positive", modality: "reported", time: { kind: "unknown" }, source: { kind: "dialogue", turn: "t4", span: "I wrote a note about my dissertation." } },
+      { id: "a_no_degree", predicate: "degree_awarded", arguments: ["person_1", "degree_1"], polarity: "negative", modality: "asserted", time: { kind: "ongoing", since: "2024" }, source: { kind: "dialogue", turn: "t5", span: "I have not received the degree." } }
+    ]
+  };
+  assert.doesNotThrow(() => validateSemanticRecord(dialogue));
+  const semanticProposal = { ...base, candidate_version: "cand-semantic", semantic_record: dialogue };
+  assert.doesNotThrow(() => validateProposal(semanticProposal));
+  const semanticResult = await run(semanticProposal, { query: "derived", parameters: [] });
+  assert.equal(semanticResult.status, "ok");
+  assert(!semanticResult.answers.some(a => a.value === "degree_awarded"));
+  const questioned = JSON.parse(JSON.stringify(dialogue));
+  questioned.assertions[0].modality = "questioned";
+  assert.doesNotThrow(() => validateSemanticRecord(questioned));
+  const unsafeSemantic = JSON.parse(JSON.stringify(dialogue));
+  unsafeSemantic.assertions[0].predicate = "degree_awarded";
+  assert.throws(() => validateSemanticRecord(unsafeSemantic), { code: "SEMANTIC_ARGUMENT_TYPE" });
   console.log("ontology-harness ok");
 })().catch(e => { console.error(e); process.exitCode = 1; });

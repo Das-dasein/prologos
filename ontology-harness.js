@@ -33,6 +33,14 @@ const ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([,
 const DERIVED = new Set(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p]) => p));
 const DERIVED_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).filter(([, x]) => x.kind === "derived").map(([p, x]) => [p, x.arity]));
 const ALL_ARITIES = Object.fromEntries(Object.entries(PREDICATE_REGISTRY).map(([p, x]) => [p, x.arity]));
+// Extraction-side semantic vocabulary.  These records deliberately do not
+// enter the executable v0 fact set: they retain distinctions which v0 cannot
+// represent (polarity, modality, time and provenance).
+const SEMANTIC_PREDICATES = new Map([
+  ["postgraduate_program_completed", [new Set(["person"]), new Set(["postgraduate_program", "program"])]],
+  ["dissertation_note_written", [new Set(["person"]), new Set(["work", "dissertation", "dissertation_note"])]],
+  ["degree_awarded", [new Set(["person"]), new Set(["degree", "academic_degree", "phd"] )]]
+]);
 const IMMUTABLE_CORE = new Set(["claim", "active_claim", "conflict", "supersedes", "ontology_support"]);
 // These names are owned by the trusted runner or by SWI-Prolog.  The check is
 // intentionally independent of the selected registry: a caller must not be
@@ -96,10 +104,49 @@ function validateTerm(t, where, registry = PREDICATE_REGISTRY) {
   if (!(t.predicate in registry) || registry[t.predicate].arity !== t.arguments.length)
     failure("PREDICATE_ARITY", `${t.predicate}/${t.arguments.length} is not registered`);
 }
+function validateSemanticRecord(record, where = "semantic_record") {
+  let s = record;
+  if (typeof s === "string") { try { s = JSON.parse(s); } catch (_) { failure("JSON_PARSE", `${where} is not valid JSON`); } }
+  exact(s, ["schema_version", "entities", "assertions"], where);
+  if (s.schema_version !== "semantic-dialogue-v1") failure("SEMANTIC_VERSION", "unsupported semantic schema_version");
+  if (!Array.isArray(s.entities) || !Array.isArray(s.assertions) || s.entities.length > 100 || s.assertions.length > 100) failure("SEMANTIC_COLLECTION_LIMIT", `${where} entities/assertions exceed limits`);
+  const entities = new Map();
+  s.entities.forEach((e, i) => {
+    exact(e, ["id", "type"], `${where}.entities[${i}]`);
+    if (typeof e.id !== "string" || !ATOM.test(e.id) || entities.has(e.id)) failure("SEMANTIC_ENTITY", `${where}.entities[${i}].id`);
+    if (typeof e.type !== "string" || !ATOM.test(e.type)) failure("SEMANTIC_ENTITY", `${where}.entities[${i}].type`);
+    entities.set(e.id, e.type);
+  });
+  const ids = new Set();
+  s.assertions.forEach((a, i) => {
+    const w = `${where}.assertions[${i}]`;
+    exact(a, ["id", "predicate", "arguments", "polarity", "modality", "time", "source"], w);
+    if (typeof a.id !== "string" || !ATOM.test(a.id) || ids.has(a.id)) failure("SEMANTIC_ASSERTION", `${w}.id`); ids.add(a.id);
+    if (typeof a.predicate !== "string" || !SEMANTIC_PREDICATES.has(a.predicate)) failure("SEMANTIC_PREDICATE", `${w}.predicate`);
+    if (!Array.isArray(a.arguments) || a.arguments.length !== 2 || a.arguments.some(x => typeof x !== "string" || !ATOM.test(x) || !entities.has(x))) failure("SEMANTIC_ARGUMENT", `${w}.arguments`);
+    const expected = SEMANTIC_PREDICATES.get(a.predicate);
+    if (!expected[0].has(entities.get(a.arguments[0])) || !expected[1].has(entities.get(a.arguments[1]))) failure("SEMANTIC_ARGUMENT_TYPE", `${w}.arguments`);
+    if (!["positive", "negative"].includes(a.polarity)) failure("SEMANTIC_POLARITY", `${w}.polarity`);
+    if (!["asserted", "reported", "questioned", "uncertain"].includes(a.modality)) failure("SEMANTIC_MODALITY", `${w}.modality`);
+    if (!a.time || typeof a.time !== "object" || Array.isArray(a.time) || typeof a.time.kind !== "string") failure("SEMANTIC_TIME", `${w}.time`);
+    const timeKeys = { unknown: ["kind"], point: ["kind", "value"], interval: ["kind", "from", "to"], ongoing: ["kind", "since"] };
+    if (!timeKeys[a.time.kind]) failure("SEMANTIC_TIME", `${w}.time.kind`);
+    exact(a.time, timeKeys[a.time.kind], `${w}.time`);
+    if (timeKeys[a.time.kind].length > 1 && timeKeys[a.time.kind].slice(1).some(k => typeof a.time[k] !== "string" || a.time[k].length === 0)) failure("SEMANTIC_TIME", `${w}.time`);
+    exact(a.source, ["kind", ...(a.source && a.source.kind === "dialogue" ? ["turn", "span"] : a.source && a.source.kind === "supplied" ? ["ref"] : ["reason"])], `${w}.source`);
+    if (!["dialogue", "supplied", "unresolved"].includes(a.source.kind)) failure("SEMANTIC_SOURCE", `${w}.source.kind`);
+    const sourceFields = a.source.kind === "dialogue" ? [a.source.turn, a.source.span] : a.source.kind === "supplied" ? [a.source.ref] : [a.source.reason];
+    if (sourceFields.some(x => typeof x !== "string" || x.length === 0)) failure("SEMANTIC_SOURCE", `${w}.source`);
+  });
+  return s;
+}
 function validateProposal(proposal, registry = PREDICATE_REGISTRY) {
   let p = proposal;
   if (typeof p === "string") { try { p = JSON.parse(p); } catch (_) { failure("JSON_PARSE", "proposal is not valid JSON"); } }
-  exact(p, own(p, "registry") ? ["schema_version", "candidate_version", "facts", "rules", "registry"] : ["schema_version", "candidate_version", "facts", "rules"], "proposal");
+  const sidecar = own(p, "semantic_record") ? "semantic_record" : (own(p, "semantic") ? "semantic" : null);
+  const allowed = ["schema_version", "candidate_version", "facts", "rules", ...(own(p, "registry") ? ["registry"] : []), ...(sidecar ? [sidecar] : [])];
+  exact(p, allowed, "proposal");
+  if (sidecar) validateSemanticRecord(p[sidecar], sidecar);
   if (own(p, "registry") && registry === PREDICATE_REGISTRY) registry = createPredicateRegistry(p.registry);
   assertRegistrySafe(registry);
   if (p.schema_version !== "ontology-proposal-v0") failure("SCHEMA_VERSION", "unsupported schema_version");
@@ -153,7 +200,7 @@ function run(p, request = { query: "derived" }, options = {}) {
     try { const x = JSON.parse(stdout); resolve(result(p, "ok", x.answers || [], null, x.supporting_rules || [])); } catch (_) { resolve(result(p, "swipl_error", [], { code: "INVALID_JSON", message: "SWI returned invalid JSON" })); }
   }));
 }
-module.exports = { validateProposal, compile, run, RELATIONS, ARITIES, DERIVED_ARITIES, PREDICATE_REGISTRY, createPredicateRegistry, RESERVED_PREDICATES };
+module.exports = { validateProposal, validateSemanticRecord, compile, run, RELATIONS, ARITIES, DERIVED_ARITIES, PREDICATE_REGISTRY, createPredicateRegistry, RESERVED_PREDICATES, SEMANTIC_PREDICATES };
 
 if (require.main === module) {
   const i = process.argv.indexOf("--proposal");
