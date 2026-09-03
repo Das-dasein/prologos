@@ -3,7 +3,7 @@ const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
 const { MemoryStore, validateProposal } = require("./memory-store");
-const { run: runCdrGold } = require("./cdr-eval-harness");
+const { run: runCdrGold, fixedQuery } = require("./cdr-eval-harness");
 const codexProvider = require("./providers/codex");
 
 const output = execFileSync(process.execPath, ["cli.js", "demo.pl"], {
@@ -23,14 +23,31 @@ assert.throws(() => validateProposal({
 }), /not allowed/);
 
 (async () => {
+  const testRoot = path.join(process.cwd(), "test-tmp");
+  fs.mkdirSync(testRoot, { recursive: true });
+
   const goldRun = await runCdrGold();
   assert.equal(goldRun.status, "ok");
   assert.equal(goldRun.case_count, 12);
   assert.equal(goldRun.cases.filter(item => item.status === "ok").length, 12);
+  assert.match(goldRun.trusted_memory_sha256, /^[a-f0-9]{64}$/);
+
+  const badConfig = {
+    ...JSON.parse(fs.readFileSync(".cdr/results/prolog-memory-eval-v0/eval-config-v1.json", "utf8")),
+    trusted_memory_sha256: "0".repeat(64),
+  };
+  const badConfigFile = path.join(testRoot, "cdr-gold-bad-config.json");
+  fs.writeFileSync(badConfigFile, JSON.stringify(badConfig), "utf8");
+  await assert.rejects(
+    runCdrGold({ config: badConfigFile }),
+    error => error.code === "INPUT_SHA256",
+  );
+  assert.throws(
+    () => fixedQuery({ case_id: "stable-01", oracle: { query: "true." } }),
+    error => error.code === "QUERY_REGISTRY",
+  );
   console.log("cdr gold harness ok");
 
-  const testRoot = path.join(process.cwd(), "test-tmp");
-  fs.mkdirSync(testRoot, { recursive: true });
   const dir = fs.mkdtempSync(path.join(testRoot, "prolog-memory-"));
   const store = new MemoryStore(path.join(dir, "memory.pl"));
   const base = { polarity: "positive", relation: "lives_in", arguments: ["user", "moscow"], valid_from: 20250101, valid_to: null, confidence: 0.9 };

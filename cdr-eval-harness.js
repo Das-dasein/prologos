@@ -14,6 +14,20 @@ const DEFAULT_ORACLE = path.join(ROOT, ".cdr/results/prolog-memory-eval-v0/pilot
 const DEFAULT_CONFIG = path.join(ROOT, ".cdr/results/prolog-memory-eval-v0/eval-config-v1.json");
 const ATOM = /^[a-z][a-z0-9_]*$/;
 const CLAIM_ID = /^c_[a-z0-9_]+$/;
+const PILOT_QUERY_REGISTRY = Object.freeze({
+  "stable-01": "active_claim(Id, positive, lives_in(user, City), _, From, To, _).",
+  "stable-02": "active_claim(Id, positive, knows_technology(user, Language), _, From, To, _).",
+  "correction-01": "active_claim(Id, positive, lives_in(user, City), _, From, To, _).",
+  "correction-02": "current_project(user, acme, Project).",
+  "temporal-01": "active_claim(Id, positive, lives_in(user, City), _, From, To, _), overlaps(20210101, 20211231, From, To).",
+  "temporal-02": "active_claim(Id, positive, worked_with_technology(user, Technology), _, From, To, _), overlaps(20250101, 20251231, From, To).",
+  "conflict-01": "conflict(direct, Id1, Id2, likes(user,coffee)).",
+  "conflict-02": "conflict(direct, Id1, Id2, lives_in(user,paris)).",
+  "nonmemory-01": "active_claim(_,_,_,_,_,_,_).",
+  "nonmemory-02": "active_claim(_,_,_,_,_,_,_).",
+  "ambiguity-01": "active_claim(_,_,_,_,_,_,_).",
+  "ambiguity-02": "active_claim(_,_,_,_,_,_,_).",
+});
 
 function fail(code, message) {
   const error = new Error(message);
@@ -156,26 +170,66 @@ function provenance(record, expected) {
 
 function sha256(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
 
+function validateConfig(config) {
+  if (!config || config.version !== "eval-config-v1") fail("CONFIG_SHAPE", "expected eval-config-v1");
+  if (config.mode !== "gold-injection" || config.condition !== "B5") {
+    fail("CONFIG_MODE", "gold harness requires mode=gold-injection and condition=B5");
+  }
+  if (config.effective_context_tokens !== 4096 || config.retry_policy !== "none" || config.temperature !== 0) {
+    fail("CONFIG_SENTINEL", "gold harness configuration does not match the pinned protocol");
+  }
+  if (config.dataset_case_count !== Object.keys(PILOT_QUERY_REGISTRY).length) {
+    fail("CONFIG_CASE_COUNT", "pinned case count does not match the query registry");
+  }
+  for (const key of ["dataset_sha256", "oracle_sha256", "trusted_memory_sha256"]) {
+    if (typeof config[key] !== "string" || !/^[a-f0-9]{64}$/.test(config[key])) {
+      fail("CONFIG_SHA256", `${key} must be a SHA-256 digest`);
+    }
+  }
+  return config;
+}
+
+function verifyPinnedInputs(config, datasetFile, oracleFile) {
+  const actual = {
+    dataset_sha256: sha256(datasetFile),
+    oracle_sha256: sha256(oracleFile),
+    trusted_memory_sha256: sha256(path.join(ROOT, "memory.pl")),
+  };
+  for (const [key, digest] of Object.entries(actual)) {
+    if (config[key] !== digest) fail("INPUT_SHA256", `${key} does not match pinned input`);
+  }
+  return actual;
+}
+
+function fixedQuery(record) {
+  const queryText = PILOT_QUERY_REGISTRY[record.case_id];
+  if (!queryText) fail("QUERY_REGISTRY", `${record.case_id}: unregistered case`);
+  if (!record.oracle || record.oracle.query !== queryText) {
+    fail("QUERY_REGISTRY", `${record.case_id}: query differs from the pinned registry`);
+  }
+  return queryText;
+}
+
 function sourceCommit() {
   try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(); }
   catch (_) { return null; }
 }
 
-async function runCase(record, oracleCase) {
+async function runCase(record, oracleCase, queryText) {
   const program = fs.readFileSync(path.join(ROOT, "memory.pl"), "utf8") + "\n" + operationsFor(record).join("\n") + "\n";
   const session = consult(program);
   try {
     const [active, conflicts, answers] = await Promise.all([
       query(session, "active_claim(Id, P, Proposition, Source, From, To, Confidence)."),
       query(session, "unresolved_conflict(Type, Id1, Id2, Subject)."),
-      query(session, record.oracle.query),
+      query(session, queryText),
     ]);
     const activeClaims = active.map(idsFromActive).filter(Boolean).sort();
     const conflictStates = conflicts.map(conflictFromAnswer).filter(Boolean).sort();
     const actual = {
       active_claims: activeClaims,
       conflicts: conflictStates,
-      query_answers: answers.map(answer => queryAnswer(record.oracle.query, answer)).sort(),
+      query_answers: answers.map(answer => queryAnswer(queryText, answer)).sort(),
       provenance: provenance(record, oracleCase.provenance),
     };
     const expected = {
@@ -197,16 +251,12 @@ async function run(options = {}) {
   const datasetFile = options.dataset || DEFAULT_DATASET;
   const oracleFile = options.oracle || DEFAULT_ORACLE;
   const configFile = options.config || DEFAULT_CONFIG;
-  const config = readJson(configFile);
-  if (config.mode !== "gold-injection" || config.condition !== "B5") {
-    fail("CONFIG_MODE", "gold harness requires mode=gold-injection and condition=B5");
-  }
-  if (config.effective_context_tokens !== 4096 || config.retry_policy !== "none" || config.temperature !== 0) {
-    fail("CONFIG_SENTINEL", "gold harness configuration does not match the pinned protocol");
-  }
+  const config = validateConfig(readJson(configFile));
+  const inputHashes = verifyPinnedInputs(config, datasetFile, oracleFile);
   const records = readJsonl(datasetFile);
   const oracle = readJson(oracleFile);
   if (records.length !== config.dataset_case_count) fail("DATASET_COUNT", `expected ${config.dataset_case_count} records, got ${records.length}`);
+  if (new Set(records.map(record => record.case_id)).size !== records.length) fail("DATASET_CASE_ID", "dataset contains duplicate case IDs");
   if (!oracle.expected_active_states || !oracle.expected_conflict_states || !oracle.expected_query_answers) fail("ORACLE_SHAPE", "pilot oracle is incomplete");
   const cases = [];
   for (const record of records) {
@@ -220,7 +270,7 @@ async function run(options = {}) {
       provenance: record.oracle.provenance || {},
     };
     if (!oracleCase.active_claims) fail("ORACLE_CASE", `missing ${record.case_id}`);
-    cases.push(await runCase(record, oracleCase));
+    cases.push(await runCase(record, oracleCase, fixedQuery(record)));
   }
   return {
     schema_version: "cdr-gold-result-v1",
@@ -228,8 +278,9 @@ async function run(options = {}) {
     mode: "gold-injection",
     source_commit: sourceCommit(),
     config_sha256: sha256(configFile),
-    dataset_sha256: sha256(datasetFile),
-    oracle_sha256: sha256(oracleFile),
+    dataset_sha256: inputHashes.dataset_sha256,
+    oracle_sha256: inputHashes.oracle_sha256,
+    trusted_memory_sha256: inputHashes.trusted_memory_sha256,
     case_count: cases.length,
     cases,
   };
@@ -249,4 +300,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { run, readJsonl, claimFact };
+module.exports = { run, readJsonl, claimFact, validateConfig, fixedQuery };
