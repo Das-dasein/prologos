@@ -99,6 +99,9 @@ assert.throws(() => validateProposal({
   const applied = applyApprovedReflection(reflectionInput, reflectionMemory, { approved: true, report: reflection });
   assert.deepEqual(applied.applied, ["assertion_revision(c_1788462646473_9d6d0f, replaces, c_20260903_002)."]);
   assert.match(fs.readFileSync(reflectionMemory, "utf8"), /assertion_revision\(c_1788462646473_9d6d0f, replaces, c_20260903_002\)/);
+  const reviewInput = { schema_version: "reflection-proposal-v1", actions: [{ action: "review", assertion_id: "c_20260903_003", reason: "time needs clarification" }] };
+  const reviewed = applyApprovedReflection(reviewInput, reflectionMemory, { approved: true, report: reflection });
+  assert.deepEqual(reviewed.applied, ["assertion_status_event(c_20260903_003, reviewed)."]);
   const agentReflection = await runReflection({ provider: { reflect: async () => reflectionInput }, report: reflection });
   assert.equal(agentReflection.status, "accepted");
   assert.deepEqual(agentReflection.writes, []);

@@ -7,6 +7,7 @@
 :- dynamic(assertion_source/2).
 :- dynamic(assertion_confidence/2).
 :- dynamic(assertion_status/2).
+:- dynamic(assertion_status_event/2).
 :- dynamic(assertion_revision/3).
 
 valid_assertion_status(observed).
@@ -30,6 +31,8 @@ allowed_status_transition(reviewed, rejected).
 allowed_status_transition(accepted, superseded).
 allowed_status_transition(conflicted, superseded).
 
+effective_assertion_status(Id, superseded) :- assertion_revision(_, replaces, Id), !.
+effective_assertion_status(Id, reviewed) :- assertion_status_event(Id, reviewed), !.
 effective_assertion_status(Id, Status) :- assertion_status(Id, Status), !.
 % Legacy assertions predate lifecycle-v1 and remain usable until reviewed.
 effective_assertion_status(Id, accepted) :- assertion(Id, _).

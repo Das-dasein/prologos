@@ -39,6 +39,7 @@ function applyApprovedReflection(proposal, memoryPath, { approved = false, repor
   const writes = checked.actions.flatMap(action => {
     if (action.action === "mark_duplicate") return [`assertion_revision(${action.canonical_id}, replaces, ${action.duplicate_id}).`];
     if (action.action === "propose_revision") return [`assertion_revision(${action.new_id}, ${action.relation}, ${action.old_id}).`];
+    if (action.action === "review") return [`assertion_status_event(${action.assertion_id}, reviewed).`];
     return [];
   });
   if (writes.length) fs.appendFileSync(memoryPath, `${writes.join("\n")}\n`, "utf8");
