@@ -24,10 +24,19 @@ const ReflectionProposal = z.object({
   actions: z.array(ReflectionAction).max(50),
 });
 
+// Shape gate for the LLM transport; ontology-harness performs the stricter
+// registry, entity-type, provenance and qualifier validation afterwards.
+const SemanticRecord = z.object({
+  schema_version: z.literal("semantic-dialogue-v1"),
+  registry: z.record(z.string(), z.any()),
+  entities: z.array(z.any()).max(100),
+  assertions: z.array(z.any()).max(100),
+});
+
 const EXTRACTION_INSTRUCTIONS = `Extract only durable user facts worth remembering.
 Return an empty claims array for chatter, questions, hypotheticals, quoted text, or uncertain claims.
 Normalize entities as lowercase latin snake_case Prolog atoms.
 Use YYYYMMDD integer dates or null. Never infer sensitive facts.
 Allowed relations: ${[...RELATIONS].join(", ")}.`;
 
-module.exports = { Extraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS };
+module.exports = { Extraction, ReflectionProposal, SemanticRecord, EXTRACTION_INSTRUCTIONS };

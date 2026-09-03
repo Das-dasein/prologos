@@ -1,6 +1,7 @@
 const { spawn } = require("node:child_process");
 const path = require("node:path");
-const { Extraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
+const { Extraction, ReflectionProposal, SemanticRecord, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
+const { validateSemanticRecord } = require("../ontology-harness");
 
 function runCodex(prompt, { schema } = {}) {
   return new Promise((resolve, reject) => {
@@ -70,4 +71,15 @@ REPORT:\n${JSON.stringify(report)}`, { schema });
   return ReflectionProposal.parse(JSON.parse(output));
 }
 
-module.exports = { name: "codex", extractClaims, respond, reflect, runCodex };
+async function extractSemantic(text) {
+  const schema = path.resolve(__dirname, "../schemas/semantic-dialogue.schema.json");
+  const output = await runCodex(`Extract a domain-neutral semantic dialogue record.
+Preserve polarity, modality, time and provenance. Do not infer unstated facts.
+Return only semantic-dialogue-v1 JSON.
+
+USER MESSAGE:\n${text}`, { schema });
+  const record = SemanticRecord.parse(JSON.parse(output));
+  return validateSemanticRecord(record);
+}
+
+module.exports = { name: "codex", extractClaims, extractSemantic, respond, reflect, runCodex };
