@@ -4,6 +4,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { evaluateHypothesis } = require("./hypothesis-elenchus");
+const { execFileSync } = require("node:child_process");
 
 const memoryPath = path.join(__dirname, "test-fixtures", "elenchus-memory.pl");
 const registry = { version: "predicate-registry-v1", declarations: [
@@ -38,5 +39,7 @@ function hypothesis(id, support) { return {
   const repeatB = await evaluateHypothesis(hypothesis("h_repeat", ["a_work_carol"]), { memoryPath });
   assert.deepEqual(repeatA, repeatB);
   assert.equal(fs.readFileSync(memoryPath, "utf8"), before);
+  const cli = JSON.parse(execFileSync(process.execPath, ["elenchus-cli.js", "--hypothesis", "test-fixtures/hypothesis-accept.json", "--memory", "test-fixtures/elenchus-memory.pl"], { cwd: __dirname, encoding: "utf8" }));
+  assert.equal(cli.decision, "accepted");
   console.log("elenchus ok");
 })().catch(error => { console.error(error); process.exitCode = 1; });
