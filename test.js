@@ -5,6 +5,7 @@ const path = require("node:path");
 const { MemoryStore, validateProposal } = require("./memory-store");
 const { run: runCdrGold, fixedQuery } = require("./cdr-eval-harness");
 const { consult: consultProlog, query: queryProlog } = require("./prolog-engine");
+const { reflect } = require("./memory-reflection");
 const codexProvider = require("./providers/codex");
 
 const output = execFileSync(process.execPath, ["cli.js", "demo.pl"], {
@@ -71,6 +72,12 @@ assert.throws(() => validateProposal({
   assert.equal(result.conflicts.length, 1);
   assert.match(store.read(), /lives_in\(user,berlin\)/);
   console.log("memory-store ok");
+
+  const reflection = await reflect();
+  assert(reflection.duplicates.some(answer => answer.includes("works_at(user,softlink)")));
+  assert(reflection.unknown_time.length > 0);
+  assert(reflection.identity_review.some(answer => answer.includes("artem") && answer.includes("user")));
+  console.log("memory reflection ok");
 
   const oldBinary = process.env.CODEX_BIN;
   process.env.CODEX_BIN = path.join(process.cwd(), "test-fixtures", "fake-codex.js");
