@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { MemoryStore, validateProposal } = require("./memory-store");
 const { run: runCdrGold, fixedQuery } = require("./cdr-eval-harness");
+const { consult: consultProlog, query: queryProlog } = require("./prolog-engine");
 const codexProvider = require("./providers/codex");
 
 const output = execFileSync(process.execPath, ["cli.js", "demo.pl"], {
@@ -49,6 +50,18 @@ assert.throws(() => validateProposal({
     error => error.code === "QUERY_REGISTRY",
   );
   console.log("cdr gold harness ok");
+
+  const boundaryClaims = [
+    "claim(a,positive,lives_in(user,samara),source,20260101,inf,1).",
+    "claim(b,positive,lives_in(user,berlin),source,20260101,inf,1).",
+  ].join("\n");
+  const coreOnly = await consultProlog(`${fs.readFileSync("memory.pl", "utf8")}\n${boundaryClaims}`);
+  assert.deepEqual(await queryProlog(coreOnly, "conflict(functional, A, B, R)."), []);
+  const coreWithDomain = await consultProlog(
+    `${fs.readFileSync("memory.pl", "utf8")}\n${fs.readFileSync("domain-rules.pl", "utf8")}\n${boundaryClaims}`,
+  );
+  assert.match((await queryProlog(coreWithDomain, "conflict(functional, A, B, R)."))[0], /R = lives_in/);
+  console.log("core/domain boundary ok");
 
   const dir = fs.mkdtempSync(path.join(testRoot, "prolog-memory-"));
   const store = new MemoryStore(path.join(dir, "memory.pl"));

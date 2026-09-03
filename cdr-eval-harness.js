@@ -181,7 +181,7 @@ function validateConfig(config) {
   if (config.dataset_case_count !== Object.keys(PILOT_QUERY_REGISTRY).length) {
     fail("CONFIG_CASE_COUNT", "pinned case count does not match the query registry");
   }
-  for (const key of ["dataset_sha256", "oracle_sha256", "trusted_memory_sha256"]) {
+  for (const key of ["dataset_sha256", "oracle_sha256", "trusted_memory_sha256", "trusted_domain_sha256"]) {
     if (typeof config[key] !== "string" || !/^[a-f0-9]{64}$/.test(config[key])) {
       fail("CONFIG_SHA256", `${key} must be a SHA-256 digest`);
     }
@@ -194,6 +194,7 @@ function verifyPinnedInputs(config, datasetFile, oracleFile) {
     dataset_sha256: sha256(datasetFile),
     oracle_sha256: sha256(oracleFile),
     trusted_memory_sha256: sha256(path.join(ROOT, "memory.pl")),
+    trusted_domain_sha256: sha256(path.join(ROOT, "domain-rules.pl")),
   };
   for (const [key, digest] of Object.entries(actual)) {
     if (config[key] !== digest) fail("INPUT_SHA256", `${key} does not match pinned input`);
@@ -222,7 +223,9 @@ function sourceCommit(override) {
 }
 
 async function runCase(record, oracleCase, queryText) {
-  const program = fs.readFileSync(path.join(ROOT, "memory.pl"), "utf8") + "\n" + operationsFor(record).join("\n") + "\n";
+  const program = fs.readFileSync(path.join(ROOT, "memory.pl"), "utf8") + "\n"
+    + fs.readFileSync(path.join(ROOT, "domain-rules.pl"), "utf8") + "\n"
+    + operationsFor(record).join("\n") + "\n";
   const session = consult(program);
   try {
     const [active, conflicts, answers] = await Promise.all([
@@ -287,6 +290,7 @@ async function run(options = {}) {
     dataset_sha256: inputHashes.dataset_sha256,
     oracle_sha256: inputHashes.oracle_sha256,
     trusted_memory_sha256: inputHashes.trusted_memory_sha256,
+    trusted_domain_sha256: inputHashes.trusted_domain_sha256,
     case_count: cases.length,
     cases,
   };

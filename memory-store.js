@@ -63,8 +63,9 @@ class MemoryStore {
     const facts = proposals.map(p => toFact(p, messageId));
     if (!facts.length) return { facts: [], conflicts: [] };
     const rules = fs.readFileSync("memory.pl", "utf8");
+    const domainRules = fs.readFileSync("domain-rules.pl", "utf8");
     const candidate = this.read() + "\n" + facts.map(f => f.text).join("\n") + "\n";
-    const session = await consult(rules + "\n" + candidate);
+    const session = await consult(rules + "\n" + domainRules + "\n" + candidate);
     const all = await query(session, "conflict_explanation(Type, Id1, Id2, Explanation).");
     const ids = new Set(facts.map(f => f.id));
     const conflicts = all.filter(answer => [...ids].some(id => answer.includes(id)));
