@@ -54,9 +54,12 @@ The 12 cases must include two examples of each:
 
 ## Data refs
 
-- `.cdr/datasets/source-snapshot-2026-09-03.manifest.md` plus
-  `.cdr/datasets/source-snapshot-2026-09-03.sha256` — current implementation
-  snapshot; local source files only.
+- `.cdr/datasets/source-snapshot-f8796ab.manifest.md` plus
+  `.cdr/datasets/source-snapshot-f8796ab.sha256` — current implementation
+  snapshot, pinned to commit `f8796abc1c7c9a0ff2c9a61b32841e0b83bdd250`;
+  local source files only.
+- `.cdr/datasets/source-snapshot-2026-09-03.*` — historical initial snapshot;
+  retained for provenance, not used as the current source identity.
 - `.cdr/datasets/dialogues-pilot-v1.manifest.md` — alpha-produced synthetic
   dataset manifest.
 
