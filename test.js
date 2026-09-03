@@ -6,6 +6,7 @@ const { MemoryStore, validateProposal } = require("./memory-store");
 const { run: runCdrGold, fixedQuery } = require("./cdr-eval-harness");
 const { consult: consultProlog, query: queryProlog } = require("./prolog-engine");
 const { reflect } = require("./memory-reflection");
+const { validateReflectionProposal, applyApprovedReflection } = require("./reflection-socrates");
 const codexProvider = require("./providers/codex");
 
 const output = execFileSync(process.execPath, ["cli.js", "demo.pl"], {
@@ -83,6 +84,17 @@ assert.throws(() => validateProposal({
   assert(reflection.duplicates.some(answer => answer.includes("works_at(user,softlink)")));
   assert(reflection.unknown_time.length > 0);
   assert(reflection.identity_review.some(answer => answer.includes("artem") && answer.includes("user")));
+  const reflectionInput = { schema_version: "reflection-proposal-v1", actions: [{
+    action: "mark_duplicate", canonical_id: "c_1788462646473_9d6d0f", duplicate_id: "c_20260903_002", reason: "same proposition; later source",
+  }] };
+  const checkedReflection = validateReflectionProposal(reflectionInput, fs.readFileSync(process.env.MEMORY_FILE || "data/memory.pl", "utf8"), reflection);
+  assert.equal(checkedReflection.actions.length, 1);
+  const reflectionMemory = path.join(dir, "reflection-memory.pl");
+  fs.writeFileSync(reflectionMemory, fs.readFileSync(process.env.MEMORY_FILE || "data/memory.pl", "utf8"), "utf8");
+  assert.throws(() => applyApprovedReflection(reflectionInput, reflectionMemory, { report: reflection }), /explicit approval/);
+  const applied = applyApprovedReflection(reflectionInput, reflectionMemory, { approved: true, report: reflection });
+  assert.deepEqual(applied.applied, ["assertion_revision(c_1788462646473_9d6d0f, replaces, c_20260903_002)."]);
+  assert.match(fs.readFileSync(reflectionMemory, "utf8"), /assertion_revision\(c_1788462646473_9d6d0f, replaces, c_20260903_002\)/);
   console.log("memory reflection ok");
 
   const oldBinary = process.env.CODEX_BIN;
