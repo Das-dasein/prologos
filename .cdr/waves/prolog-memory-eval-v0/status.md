@@ -30,3 +30,5 @@ Next transition: a fresh independent CDR beta re-audit must reproduce the
 pinned symbolic evidence, verify the replacement source snapshot, and decide
 whether the remaining live-model-sentinel gap keeps the wave at `REVISE`.
 Receipt remains blocked until that review and every required gate are complete.
+
+Dispatch handoff: `beta-dispatch-r2.md`.
