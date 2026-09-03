@@ -24,10 +24,36 @@ const ReflectionProposal = z.object({
   actions: z.array(ReflectionAction).max(50),
 });
 
+const HypothesisTerm = z.object({
+  predicate: z.string(),
+  arguments: z.array(z.string()).min(1).max(4),
+}).strict();
+
+const ReflectionHypothesis = z.object({
+  schema_version: z.literal("reflection-hypothesis-v1"),
+  hypothesis_id: z.string().regex(/^h_[a-z0-9_]{1,47}$/),
+  decision: z.literal("proposed"),
+  registry_identity: z.object({
+    name: z.string().regex(/^[a-z][a-z0-9_]*$/),
+    version: z.literal("predicate-registry-v1"),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  }).strict(),
+  registry: z.object({
+    version: z.literal("predicate-registry-v1"),
+    declarations: z.array(z.object({
+      name: z.string(), arity: z.number().int(), kind: z.enum(["base", "derived"]),
+    }).strict()).min(1).max(100),
+  }).strict(),
+  supporting_assertion_ids: z.array(z.string().regex(/^[a-z][a-z0-9_]*$/)).min(1).max(100),
+  rule: z.object({
+    id: z.string(), head: HypothesisTerm, body: z.array(HypothesisTerm).min(1).max(4),
+  }).strict(),
+}).strict();
+
 const EXTRACTION_INSTRUCTIONS = `Extract only durable user facts worth remembering.
 Return an empty claims array for chatter, questions, hypotheticals, quoted text, or uncertain claims.
 Normalize entities as lowercase latin snake_case Prolog atoms.
 Use YYYYMMDD integer dates or null. Never infer sensitive facts.
 Allowed relations: ${[...RELATIONS].join(", ")}.`;
 
-module.exports = { Extraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS };
+module.exports = { Extraction, ReflectionProposal, ReflectionHypothesis, EXTRACTION_INSTRUCTIONS };

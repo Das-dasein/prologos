@@ -81,3 +81,12 @@ executable baseline for the shared World of Ideas. A proposal may carry an
 explicit registry for an isolated domain extension; it cannot shadow reserved
 runtime predicates. The registry is declarations only: it introduces no
 facts and is not a substitute for dialogue-derived memory.
+
+## Bounded rule hypotheses
+
+`npm run elenchus -- --hypothesis FILE [--memory FILE]` evaluates one proposed
+rule against explicitly named assertions in a snapshot. It emits an auditable
+decision (`accepted`, `rejected`, `conflicted`, or `insufficient_evidence`) and
+never writes memory or the ontology registry. A matching negative assertion is
+a counterexample and prevents candidate execution. The input contract is
+documented in `.cdd/waves/reflection-elenchus-v1/gamma-spec.md`.

@@ -1,0 +1,20 @@
+assertion(a_work, works_at(alice,acme)).
+assertion_polarity(a_work, positive).
+assertion_status(a_work, accepted).
+assertion(a_work_carol, works_at(carol,acme)).
+assertion_polarity(a_work_carol, positive).
+assertion_status(a_work_carol, accepted).
+assertion(a_reviewed_work, works_at(dan,acme)).
+assertion_polarity(a_reviewed_work, positive).
+assertion_status(a_reviewed_work, accepted).
+assertion_status_event(a_reviewed_work, reviewed).
+assertion(a_not_eligible, eligible(alice)).
+assertion_polarity(a_not_eligible, negative).
+assertion_status(a_not_eligible, accepted).
+assertion(a_old_work, works_at(bob,acme)).
+assertion_polarity(a_old_work, positive).
+assertion_status(a_old_work, accepted).
+assertion(a_new_work, works_at(bob,other)).
+assertion_polarity(a_new_work, positive).
+assertion_status(a_new_work, accepted).
+assertion_revision(a_new_work, replaces, a_old_work).
