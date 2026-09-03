@@ -31,6 +31,8 @@ assert.throws(() => validateProposal({
   assert.equal(goldRun.case_count, 12);
   assert.equal(goldRun.cases.filter(item => item.status === "ok").length, 12);
   assert.match(goldRun.trusted_memory_sha256, /^[a-f0-9]{64}$/);
+  const pinnedSourceRun = await runCdrGold({ sourceCommit: "a".repeat(40) });
+  assert.equal(pinnedSourceRun.source_commit, "a".repeat(40));
 
   const badConfig = {
     ...JSON.parse(fs.readFileSync(".cdr/results/prolog-memory-eval-v0/eval-config-v1.json", "utf8")),

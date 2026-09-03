@@ -210,7 +210,13 @@ function fixedQuery(record) {
   return queryText;
 }
 
-function sourceCommit() {
+function sourceCommit(override) {
+  if (override !== undefined) {
+    if (typeof override !== "string" || !/^[a-f0-9]{40}$/.test(override)) {
+      fail("SOURCE_COMMIT", "source commit must be a 40-character SHA-1");
+    }
+    return override;
+  }
   try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(); }
   catch (_) { return null; }
 }
@@ -276,7 +282,7 @@ async function run(options = {}) {
     schema_version: "cdr-gold-result-v1",
     status: "ok",
     mode: "gold-injection",
-    source_commit: sourceCommit(),
+    source_commit: sourceCommit(options.sourceCommit),
     config_sha256: sha256(configFile),
     dataset_sha256: inputHashes.dataset_sha256,
     oracle_sha256: inputHashes.oracle_sha256,
@@ -292,7 +298,12 @@ if (require.main === module) {
     const index = args.indexOf(name);
     return index < 0 ? undefined : args[index + 1];
   };
-  run({ config: option("--config"), dataset: option("--dataset"), oracle: option("--oracle") })
+  run({
+    config: option("--config"),
+    dataset: option("--dataset"),
+    oracle: option("--oracle"),
+    sourceCommit: option("--source-commit"),
+  })
     .then(result => process.stdout.write(`${JSON.stringify(result)}\n`))
     .catch(error => {
       process.stdout.write(`${JSON.stringify({ schema_version: "cdr-gold-result-v1", status: "rejected", error: { code: error.code || "HARNESS", message: error.message } })}\n`);
