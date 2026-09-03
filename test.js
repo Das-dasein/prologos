@@ -62,6 +62,12 @@ assert.throws(() => validateProposal({
     `${fs.readFileSync("memory.pl", "utf8")}\n${fs.readFileSync("domain-rules.pl", "utf8")}\n${boundaryClaims}`,
   );
   assert.match((await queryProlog(coreWithDomain, "conflict(functional, A, B, R)."))[0], /R = lives_in/);
+  const conflictingKnowledge = await consultProlog(`${fs.readFileSync("memory.pl", "utf8")}\n${fs.readFileSync("domain-rules.pl", "utf8")}\n` + [
+    "assertion(j1,knows_technology(user,java)). assertion_polarity(j1,positive). assertion_modality(j1,asserted). assertion_time(j1,unknown). assertion_source(j1,source). assertion_confidence(j1,1).",
+    "assertion(j2,knows_technology(user,java)). assertion_polarity(j2,negative). assertion_modality(j2,asserted). assertion_time(j2,unknown). assertion_source(j2,source). assertion_confidence(j2,1).",
+    "assertion(p1,knows_technology(user,python)). assertion_polarity(p1,positive). assertion_modality(p1,asserted). assertion_time(p1,unknown). assertion_source(p1,source). assertion_confidence(p1,1).",
+  ].join("\n"));
+  assert.deepEqual(await queryProlog(conflictingKnowledge, "knows_multiple_programming_languages(user)."), []);
   console.log("core/domain boundary ok");
 
   const dir = fs.mkdtempSync(path.join(testRoot, "prolog-memory-"));

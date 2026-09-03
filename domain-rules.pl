@@ -6,20 +6,20 @@ functional(birth_year).
 functional(email).
 
 worked_on(Person, Project) :-
-    active_assertion(_, project_role_at(Person, _, Project, _)).
+    safe_assertion(_, project_role_at(Person, _, Project, _)).
 
 has_frontend_experience(Person) :-
-    active_assertion(_, project_role_at(Person, _, _, frontend_developer)).
+    safe_assertion(_, project_role_at(Person, _, _, frontend_developer)).
 
 current_project(Person, Employer, Project) :-
-    active_assertion(_, current_project_at(Person, Employer, Project)).
+    safe_assertion(_, current_project_at(Person, Employer, Project)).
 
 knows_frontend_framework(Person) :-
-    active_assertion(_, knows_technology(Person, angular)).
+    safe_assertion(_, knows_technology(Person, angular)).
 
 knows_multiple_programming_languages(Person) :-
-    active_assertion(_, knows_technology(Person, java)),
-    active_assertion(_, knows_technology(Person, python)).
+    safe_assertion(_, knows_technology(Person, java)),
+    safe_assertion(_, knows_technology(Person, python)).
 
 conflict(functional, Id1, Id2, Relation) :-
     active_assertion_record(Id1, positive, Proposition1, _, From1, To1, _),

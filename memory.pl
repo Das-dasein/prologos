@@ -21,6 +21,13 @@ active_assertion_record(Id, Polarity, Proposition, Source, From, To, Confidence)
     assertion_confidence(Id, Confidence),
     \+ assertion_revision(_, replaces, Id).
 
+% Socrates gate: unresolved contradictions remain visible, but cannot support
+% derived domain conclusions.
+safe_assertion(Id, Proposition) :-
+    active_assertion(Id, Proposition),
+    \+ (conflict(_, Id, _, _)),
+    \+ (conflict(_, _, Id, _)).
+
 assertion_time_interval(Id, From, To) :-
     assertion_time(Id, interval(From, To)), !.
 assertion_time_interval(Id, 10000101, inf) :-
