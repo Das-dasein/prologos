@@ -27,3 +27,4 @@ append-only and reviewable.
 - application is append-only and requires explicit approval;
 - existing regression and CDR gold tests remain green;
 - an alpha report records evidence and limitations.
+- a gamma specification fixes the lifecycle and reflection boundaries.
