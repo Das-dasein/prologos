@@ -26,6 +26,13 @@ The complete proposal is one JSON object (no JSONL framing inside the object):
 {
   "schema_version": "ontology-proposal-v0",
   "candidate_version": "cand-20260903-001",
+  "registry": {
+    "version": "predicate-registry-v1",
+    "declarations": [
+      {"name":"knows_technology","arity":2,"kind":"base"},
+      {"name":"knows_multiple_programming_languages","arity":1,"kind":"derived"}
+    ]
+  },
   "facts": [
     {"predicate":"knows_technology","arguments":["user","python"]}
   ],
@@ -53,31 +60,25 @@ an uppercase initial (`^[A-Z][A-Za-z0-9_]*$`) denotes a Prolog variable and
 all other arguments are atoms. `_` is not permitted as an argument. A body
 has 1--4 goals. Duplicate rule IDs are rejected.
 
-The v0 fact predicate allowlist is the `RELATIONS` set in `memory-store.js`:
-`likes`, `dislikes`, `lives_in`, `works_at`, `studies_at`, `role`,
-`birth_year`, `email`, `prefers`, `owns`, `uses`, `interested_in`,
-`previous_project`, `role_at_semester`, `role_before_semester`,
-`project_role_at`, `current_project_at`, `knows_technology`, and
-`worked_with_technology`. Facts are positive typed propositions only in this
-contract; polarity, dates, confidence, and source remain the existing claim
-ingestion contract and are not silently reinterpreted as ontology facts.
+The CDD core has no bundled domain predicate allowlist. A proposal must carry
+an explicit `registry` with literal version `predicate-registry-v1` and
+non-empty declarations, each naming an arity and `base` or `derived` kind.
+This registry is the complete vocabulary for that candidate; a proposal
+without it cannot use domain facts. Employment, education, and technology
+predicates may appear only in explicitly declared test fixtures or the
+separate legacy `memory-store.js` ingestion path. The old claim-ingestion
+allowlist is not the CDD ontology registry.
 
-The pinned arities for this slice are: `likes/2`, `dislikes/2`, `lives_in/2`,
-`works_at/2`, `studies_at/2`, `role/2`, `birth_year/2`, `email/2`,
-`prefers/2`, `owns/2`, `uses/2`, `interested_in/2`, `previous_project/2`,
-`role_at_semester/4`, `role_before_semester/4`, `project_role_at/4`,
-`current_project_at/3`, `knows_technology/2`, and
-`worked_with_technology/2`. Derived predicates are `worked_on/2`,
-`has_frontend_experience/1`, `current_project/3`,
-`knows_frontend_framework/1`, and `knows_multiple_programming_languages/1`.
-An alpha implementation must reject an arity not listed here; adding a
-predicate or arity requires a new contract version.
+Facts are positive typed propositions only in this contract; polarity, dates,
+confidence, and source remain the separate claim-ingestion contract and are
+not silently reinterpreted as ontology facts. Arity and base/derived status
+come only from declarations in the candidate registry.
 
-Rule predicates (head and body) must be in the same allowlist, extended only
-by the following existing derived predicates: `worked_on`,
-`has_frontend_experience`, `current_project`, `knows_frontend_framework`, and
-`knows_multiple_programming_languages`. A rule head may not be a claim,
+Rule predicates (head and body) must be in the proposal's registry. A rule
+head may not be a claim,
 `active_claim`, `conflict`, `supersedes`, or any Prolog/system predicate.
+
+No fixture predicate has privileged status in the CDD core.
 
 ## Validator and compiler boundary
 
