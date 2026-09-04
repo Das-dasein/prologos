@@ -41,13 +41,13 @@ function runCodex(prompt, { schema } = {}) {
   });
 }
 
-async function extractClaims(text) {
+async function extractMemory(text) {
   const schema = path.resolve(__dirname, "../schemas/memory-extraction.schema.json");
   const output = await runCodex(
     `${EXTRACTION_INSTRUCTIONS}\n\nUSER MESSAGE:\n${text}\n\nReturn only the schema-conforming result. Do not use tools.`,
     { schema },
   );
-  return Extraction.parse(JSON.parse(output)).claims;
+  return Extraction.parse(JSON.parse(output));
 }
 
 async function respond(text, memory, conflicts) {
@@ -70,4 +70,4 @@ REPORT:\n${JSON.stringify(report)}`, { schema });
   return ReflectionProposal.parse(JSON.parse(output));
 }
 
-module.exports = { name: "codex", extractClaims, respond, reflect, runCodex };
+module.exports = { name: "codex", extractMemory, respond, reflect, runCodex };

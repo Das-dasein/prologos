@@ -4,12 +4,20 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { MemoryStore, validateProposal } = require("./memory-store");
 const { EXTRACTION_INSTRUCTIONS } = require("./llm-schema");
+const { ACTIVE_ONTOLOGY } = require("./ontology-registry");
 const { run: runCdrGold, fixedQuery } = require("./cdr-eval-harness");
 const { consult: consultProlog, query: queryProlog } = require("./prolog-engine");
 const { reflect } = require("./memory-reflection");
 const { validateReflectionProposal, applyApprovedReflection } = require("./reflection-socrates");
 const { runReflection } = require("./reflection-agent");
 const codexProvider = require("./providers/codex");
+
+const extraction = assertions => ({
+  schema_version: "memory-extraction-v2",
+  registry_identity: ACTIVE_ONTOLOGY.identity,
+  assertions,
+  ontology_candidates: [],
+});
 
 const output = execFileSync(process.execPath, ["cli.js", "demo.pl"], {
   encoding: "utf8",
@@ -92,8 +100,8 @@ assert.match(EXTRACTION_INSTRUCTIONS, /project_role_at\/4/);
   const dir = fs.mkdtempSync(path.join(testRoot, "prolog-memory-"));
   const store = new MemoryStore(path.join(dir, "memory.pl"));
   const base = { polarity: "positive", relation: "lives_in", arguments: ["user", "moscow"], valid_from: 20250101, valid_to: null, confidence: 0.9 };
-  await store.add([base], "m1");
-  const result = await store.add([{ ...base, arguments: ["user", "berlin"] }], "m2");
+  await store.add(extraction([base]), "m1");
+  const result = await store.add(extraction([{ ...base, arguments: ["user", "berlin"] }]), "m2");
   assert.equal(result.conflicts.length, 1);
   assert.match(store.read(), /lives_in\(user,berlin\)/);
   console.log("memory-store ok");
@@ -123,13 +131,14 @@ assert.match(EXTRACTION_INSTRUCTIONS, /project_role_at\/4/);
 
   const oldBinary = process.env.CODEX_BIN;
   process.env.CODEX_BIN = path.join(process.cwd(), "test-fixtures", "fake-codex.js");
-  const claims = await codexProvider.extractClaims("Я знаю Python");
-  assert.equal(claims[0].relation, "knows_technology");
-  assert.deepEqual(claims[0].arguments, ["user", "python"]);
-  const pizzaClaims = await codexProvider.extractClaims("I love pizza but cannot stand pizza.");
-  assert.deepEqual(pizzaClaims.map(claim => [claim.relation, claim.polarity]), [["likes", "positive"], ["likes", "negative"]]);
+  const extracted = await codexProvider.extractMemory("Я знаю Python");
+  assert.deepEqual(extracted.registry_identity, ACTIVE_ONTOLOGY.identity);
+  assert.equal(extracted.assertions[0].relation, "knows_technology");
+  assert.deepEqual(extracted.assertions[0].arguments, ["user", "python"]);
+  const pizzaExtraction = await codexProvider.extractMemory("I love pizza but cannot stand pizza.");
+  assert.deepEqual(pizzaExtraction.assertions.map(claim => [claim.relation, claim.polarity]), [["likes", "positive"], ["likes", "negative"]]);
   const pizzaStore = new MemoryStore(path.join(dir, "pizza-memory.pl"));
-  const pizzaResult = await pizzaStore.add(pizzaClaims, "pizza_turn");
+  const pizzaResult = await pizzaStore.add(pizzaExtraction, "pizza_turn");
   assert.equal(pizzaResult.conflicts.length, 1);
   assert.match(pizzaResult.conflicts[0], /direct/);
   const reply = await codexProvider.respond("Что я знаю?", "knows_technology(user,python).", []);

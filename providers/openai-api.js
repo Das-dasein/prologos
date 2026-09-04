@@ -6,7 +6,7 @@ const model = process.env.OPENAI_MODEL || "gpt-5.6";
 let client;
 function getClient() { client ??= new OpenAI(); return client; }
 
-async function extractClaims(text) {
+async function extractMemory(text) {
   const result = await getClient().chat.completions.parse({
     model,
     messages: [
@@ -15,7 +15,7 @@ async function extractClaims(text) {
     ],
     response_format: zodResponseFormat(Extraction, "memory_extraction"),
   });
-  return result.choices[0].message.parsed.claims;
+  return result.choices[0].message.parsed;
 }
 
 async function respond(text, memory, conflicts) {
@@ -40,4 +40,4 @@ async function reflect(report) {
   return result.choices[0].message.parsed;
 }
 
-module.exports = { name: "openai-api", extractClaims, respond, reflect };
+module.exports = { name: "openai-api", extractMemory, respond, reflect };
