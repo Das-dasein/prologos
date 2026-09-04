@@ -8,4 +8,5 @@
 - Record count: 8.
 - Coverage: independent conjunction, direct negation, interval qualifier,
   hypothetical, question, reported speech, and ambiguous coreference.
-- Integrity: SHA-256 is checked by `npm run test:cdr-annotation`.
+- Integrity: SHA-256 is checked by `npm run test:cdr-annotation`:
+  `64b68339eb158c9f4242f179b63502718a92382c2e22470b8ca1a6e268341b4f`.

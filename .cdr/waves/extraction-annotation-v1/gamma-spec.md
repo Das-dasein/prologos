@@ -36,7 +36,11 @@ mistakes; it does not itself infer their cause.
 The harness rejects unknown keys/classes, duplicate assertion IDs, invalid
 atoms, illegal decision/assertion combinations, a missing source span,
 non-explicit time, or an unsupported modality. It does not score natural
-language similarity and does not call a model.
+language similarity and does not call a model. A separate deterministic scorer
+compares a structurally valid candidate annotation against the pinned gold
+fixture and emits only pre-registered taxonomy labels. Seeded candidate errors
+exercise `atomicity`, `polarity`, `time`, `decision`, `hallucination`, and
+`coreference`; unsupported categories remain a future fixture requirement.
 
 ## Acceptance evidence
 
@@ -44,3 +48,5 @@ Positive fixture: one conjunction produces two facts and a direct negation
 remains negative with its own source span. Negative fixtures: a hypothetical,
 question, reported speech, and ambiguous reference contain no durable write.
 The fixture and manifest are synthetic and contain no `data/memory.pl` data.
+Its SHA-256 is pinned in the manifest, and the structural harness rejects known
+private-data markers before scoring.

@@ -8,6 +8,9 @@ const DECISIONS = new Set(["write", "ignore", "clarify"]);
 const MODALITIES = new Set(["asserted", "reported", "questioned", "uncertain"]);
 const POLARITIES = new Set(["positive", "negative"]);
 const TIME_KEYS = { unknown: ["kind"], point: ["kind", "value"], interval: ["kind", "from", "to"], ongoing: ["kind", "since"] };
+const DEFAULT_DATASET = ".cdr/datasets/extraction-annotation-pilot-v1.jsonl";
+const DATASET_SHA256 = "64b68339eb158c9f4242f179b63502718a92382c2e22470b8ca1a6e268341b4f";
+const PRIVATE_MARKERS = ["data/memory.pl", "OPENAI_API_KEY", "sk-", "DO_NOT_RENDER_PRIVATE_MEMORY"];
 
 function fail(code, message) { const error = new Error(message); error.code = code; throw error; }
 function exact(object, keys, where) {
@@ -42,13 +45,54 @@ function validateRecord(record) {
 }
 function readJsonl(file) { return fs.readFileSync(file, "utf8").trim().split(/\r?\n/).map((line, i) => { try { return JSON.parse(line); } catch (_) { fail("JSONL", `line ${i + 1}`); } }); }
 function sha256(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
-function validateDataset(file) {
+function validateDataset(file, expectedSha256 = file === DEFAULT_DATASET ? DATASET_SHA256 : null) {
   const records = readJsonl(file), cases = new Set();
   records.forEach(record => { validateRecord(record); if (cases.has(record.case_id)) fail("DUPLICATE_CASE", record.case_id); cases.add(record.case_id); });
-  return { status: "ok", record_count: records.length, sha256: sha256(file) };
+  const digest = sha256(file);
+  if (expectedSha256 && digest !== expectedSha256) fail("DATASET_SHA256", "dataset does not match pinned SHA-256");
+  const source = fs.readFileSync(file, "utf8");
+  if (PRIVATE_MARKERS.some(marker => source.includes(marker))) fail("DATA_POLICY", "dataset contains a prohibited private-data marker");
+  return { status: "ok", record_count: records.length, sha256: digest };
+}
+function assertionKey(assertion) { return `${assertion.predicate}(${assertion.arguments.join(",")})`; }
+function scoreAnnotations(goldFile, candidateFile) {
+  const gold = readJsonl(goldFile), candidate = readJsonl(candidateFile);
+  gold.forEach(validateRecord); candidate.forEach(validateRecord);
+  const predicted = new Map();
+  for (const record of candidate) { if (predicted.has(record.case_id)) fail("DUPLICATE_CASE", record.case_id); predicted.set(record.case_id, record); }
+  const cases = [];
+  for (const expected of gold) {
+    const actual = predicted.get(expected.case_id);
+    if (!actual) { cases.push({ case_id: expected.case_id, errors: ["decision"] }); continue; }
+    const errors = new Set();
+    if (actual.decision !== expected.decision) {
+      errors.add("decision");
+      if (expected.decision === "clarify") errors.add("coreference");
+      if (actual.decision === "write" && expected.decision !== "write") errors.add("hallucination");
+    }
+    if (expected.decision === "write" && actual.decision === "write") {
+      if (expected.assertions.length !== actual.assertions.length) errors.add("atomicity");
+      const byKey = new Map(actual.assertions.map(assertion => [assertionKey(assertion), assertion]));
+      for (const wanted of expected.assertions) {
+        const got = byKey.get(assertionKey(wanted));
+        if (!got) { errors.add("atomicity"); continue; }
+        if (got.polarity !== wanted.polarity) errors.add("polarity");
+        if (got.modality !== wanted.modality) errors.add("modality");
+        if (JSON.stringify(got.time) !== JSON.stringify(wanted.time)) errors.add("time");
+        if (got.source_span !== wanted.source_span) errors.add("provenance");
+      }
+      const expectedKeys = new Set(expected.assertions.map(assertionKey));
+      for (const got of actual.assertions) if (!expectedKeys.has(assertionKey(got))) errors.add("hallucination");
+    }
+    cases.push({ case_id: expected.case_id, errors: [...errors].sort() });
+  }
+  for (const id of predicted.keys()) if (!gold.some(record => record.case_id === id)) fail("UNKNOWN_CASE", id);
+  const error_counts = {};
+  cases.flatMap(item => item.errors).forEach(error => { error_counts[error] = (error_counts[error] || 0) + 1; });
+  return { schema_version: "extraction-annotation-score-v1", gold_sha256: sha256(goldFile), candidate_sha256: sha256(candidateFile), cases, error_counts };
 }
 if (require.main === module) {
-  const file = process.argv[2] || ".cdr/datasets/extraction-annotation-pilot-v1.jsonl";
+  const file = process.argv[2] || DEFAULT_DATASET;
   try { process.stdout.write(`${JSON.stringify(validateDataset(file))}\n`); } catch (error) { process.stderr.write(`${error.code || "ERROR"}: ${error.message}\n`); process.exitCode = 1; }
 }
-module.exports = { validateDataset, validateRecord };
+module.exports = { validateDataset, validateRecord, scoreAnnotations, DATASET_SHA256 };

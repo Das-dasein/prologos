@@ -39,10 +39,14 @@ No branch changes, registry writes, memory writes, or rule installation occur.
 
 ## Result invariants
 
-Every result names the hypothesis, registry identity, source snapshot hash,
-supporting assertion IDs, refuting assertion IDs, decision, and (when run) a
-disposable candidate result. Equal input bytes and equal hypothesis must yield
-byte-stable JSON after canonical sorting.
+Every result has the fields hypothesis ID, registry identity, source snapshot
+hash, supporting assertion IDs, refuting assertion IDs, decision, and (when
+run) a disposable candidate result. For malformed input, identity fields may
+be `null` rather than fabricated; the source snapshot is still hashed before
+validation. Registry identity binds the exact inline declaration bytes through
+SHA-256; adoption of a shared on-disk registry remains a separate governance
+step. Equal input bytes and equal hypothesis must yield byte-stable JSON after
+canonical sorting.
 
 ## Rejection examples
 

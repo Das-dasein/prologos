@@ -68,6 +68,18 @@ function decisionResult(h, sourceHash, decision, supporting, refuting, candidate
     refuting_assertion_ids: [...refuting].sort(), candidate,
   };
 }
+function malformedResult(input, sourceHash, error) {
+  const candidateIdentity = input && input.registry_identity;
+  const registryIdentity = candidateIdentity && typeof candidateIdentity === "object" && !Array.isArray(candidateIdentity)
+    ? { name: typeof candidateIdentity.name === "string" ? candidateIdentity.name : null, version: typeof candidateIdentity.version === "string" ? candidateIdentity.version : null, sha256: typeof candidateIdentity.sha256 === "string" ? candidateIdentity.sha256 : null }
+    : null;
+  return {
+    schema_version: "elenchus-result-v1", hypothesis_id: input && typeof input.hypothesis_id === "string" ? input.hypothesis_id : null,
+    registry_identity: registryIdentity, source_snapshot_sha256: sourceHash,
+    decision: "rejected", error: { code: "HYPOTHESIS_INVALID", message: error.message },
+    supporting_assertion_ids: [], refuting_assertion_ids: [], candidate: null,
+  };
+}
 function validateHypothesis(input) {
   const h = ReflectionHypothesis.parse(input);
   if (new Set(h.supporting_assertion_ids).size !== h.supporting_assertion_ids.length) throw new Error("Elenchus: duplicate supporting assertion ID");
@@ -79,10 +91,11 @@ function validateHypothesis(input) {
   return h;
 }
 async function evaluateHypothesis(input, { memoryPath = process.env.MEMORY_FILE || "data/memory.pl" } = {}) {
+  const memory = fs.readFileSync(memoryPath, "utf8"), sourceHash = sha256(memory);
   let h;
   try { h = validateHypothesis(input); }
-  catch (error) { return { schema_version: "elenchus-result-v1", hypothesis_id: input && input.hypothesis_id || null, decision: "rejected", error: { code: "HYPOTHESIS_INVALID", message: error.message }, supporting_assertion_ids: [], refuting_assertion_ids: [], candidate: null }; }
-  const memory = fs.readFileSync(memoryPath, "utf8"), sourceHash = sha256(memory), records = parseTerms(memory);
+  catch (error) { return malformedResult(input, sourceHash, error); }
+  const records = parseTerms(memory);
   const support = h.supporting_assertion_ids.map(id => records.get(id));
   if (support.some(x => !x)) return decisionResult(h, sourceHash, "rejected", h.supporting_assertion_ids, [], null);
   if (support.some(x => !safeSupport(x))) return decisionResult(h, sourceHash, "conflicted", h.supporting_assertion_ids, support.filter(x => !safeSupport(x)).map(x => x.id), null);

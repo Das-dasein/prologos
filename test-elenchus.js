@@ -7,6 +7,7 @@ const { evaluateHypothesis } = require("./hypothesis-elenchus");
 const { execFileSync } = require("node:child_process");
 
 const memoryPath = path.join(__dirname, "test-fixtures", "elenchus-memory.pl");
+const trustedRegistryPath = path.join(__dirname, "ontology-registry-v1.json");
 const registry = { version: "predicate-registry-v1", declarations: [
   { name: "works_at", arity: 2, kind: "base" }, { name: "eligible", arity: 1, kind: "derived" }
 ] };
@@ -19,6 +20,7 @@ function hypothesis(id, support) { return {
 }; }
 (async () => {
   const before = fs.readFileSync(memoryPath, "utf8");
+  const registryBefore = fs.readFileSync(trustedRegistryPath, "utf8");
   const accepted = await evaluateHypothesis(hypothesis("h_accept", ["a_work_carol"]), { memoryPath });
   assert.equal(accepted.decision, "accepted");
   assert.equal(accepted.candidate.status, "ok");
@@ -35,10 +37,13 @@ function hypothesis(id, support) { return {
   assert.equal(reviewed.candidate, null);
   const invalid = await evaluateHypothesis({ ...hypothesis("h_invalid", []), supporting_assertion_ids: [] }, { memoryPath });
   assert.equal(invalid.decision, "rejected");
+  assert.equal(invalid.registry_identity.name, "test_registry");
+  assert.match(invalid.source_snapshot_sha256, /^[a-f0-9]{64}$/);
   const repeatA = await evaluateHypothesis(hypothesis("h_repeat", ["a_work_carol"]), { memoryPath });
   const repeatB = await evaluateHypothesis(hypothesis("h_repeat", ["a_work_carol"]), { memoryPath });
   assert.deepEqual(repeatA, repeatB);
   assert.equal(fs.readFileSync(memoryPath, "utf8"), before);
+  assert.equal(fs.readFileSync(trustedRegistryPath, "utf8"), registryBefore);
   const cli = JSON.parse(execFileSync(process.execPath, ["elenchus-cli.js", "--hypothesis", "test-fixtures/hypothesis-accept.json", "--memory", "test-fixtures/elenchus-memory.pl"], { cwd: __dirname, encoding: "utf8" }));
   assert.equal(cli.decision, "accepted");
   console.log("elenchus ok");

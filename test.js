@@ -28,6 +28,7 @@ assert.throws(() => validateProposal({
 
 (async () => {
   const testRoot = path.join(process.cwd(), "test-tmp");
+  const reflectionFixture = path.join(process.cwd(), "test-fixtures", "reflection-memory.pl");
   fs.mkdirSync(testRoot, { recursive: true });
 
   const goldRun = await runCdrGold();
@@ -84,25 +85,25 @@ assert.throws(() => validateProposal({
   assert.match(store.read(), /lives_in\(user,berlin\)/);
   console.log("memory-store ok");
 
-  const reflection = await reflect();
-  assert(reflection.duplicates.some(answer => answer.includes("works_at(user,softlink)")));
+  const reflection = await reflect(reflectionFixture);
+  assert(reflection.duplicates.some(answer => answer.includes("works_at(user,acme)")));
   assert(reflection.unknown_time.length > 0);
   assert(reflection.identity_review.some(answer => answer.includes("artem") && answer.includes("user")));
   const reflectionInput = { schema_version: "reflection-proposal-v1", actions: [{
-    action: "mark_duplicate", canonical_id: "c_1788462646473_9d6d0f", duplicate_id: "c_20260903_002", reason: "same proposition; later source",
+    action: "mark_duplicate", canonical_id: "a_reflect_one", duplicate_id: "a_reflect_two", reason: "same proposition; fixture source",
   }] };
-  const checkedReflection = validateReflectionProposal(reflectionInput, fs.readFileSync(process.env.MEMORY_FILE || "data/memory.pl", "utf8"), reflection);
+  const checkedReflection = validateReflectionProposal(reflectionInput, fs.readFileSync(reflectionFixture, "utf8"), reflection);
   assert.equal(checkedReflection.actions.length, 1);
   const reflectionMemory = path.join(dir, "reflection-memory.pl");
-  fs.writeFileSync(reflectionMemory, fs.readFileSync(process.env.MEMORY_FILE || "data/memory.pl", "utf8"), "utf8");
+  fs.writeFileSync(reflectionMemory, fs.readFileSync(reflectionFixture, "utf8"), "utf8");
   assert.throws(() => applyApprovedReflection(reflectionInput, reflectionMemory, { report: reflection }), /explicit approval/);
   const applied = applyApprovedReflection(reflectionInput, reflectionMemory, { approved: true, report: reflection });
-  assert.deepEqual(applied.applied, ["assertion_revision(c_1788462646473_9d6d0f, replaces, c_20260903_002)."]);
-  assert.match(fs.readFileSync(reflectionMemory, "utf8"), /assertion_revision\(c_1788462646473_9d6d0f, replaces, c_20260903_002\)/);
-  const reviewInput = { schema_version: "reflection-proposal-v1", actions: [{ action: "review", assertion_id: "c_20260903_003", reason: "time needs clarification" }] };
+  assert.deepEqual(applied.applied, ["assertion_revision(a_reflect_one, replaces, a_reflect_two)."]);
+  assert.match(fs.readFileSync(reflectionMemory, "utf8"), /assertion_revision\(a_reflect_one, replaces, a_reflect_two\)/);
+  const reviewInput = { schema_version: "reflection-proposal-v1", actions: [{ action: "review", assertion_id: "a_identity", reason: "time needs clarification" }] };
   const reviewed = applyApprovedReflection(reviewInput, reflectionMemory, { approved: true, report: reflection });
-  assert.deepEqual(reviewed.applied, ["assertion_status_event(c_20260903_003, reviewed)."]);
-  const agentReflection = await runReflection({ provider: { reflect: async () => reflectionInput }, report: reflection });
+  assert.deepEqual(reviewed.applied, ["assertion_status_event(a_identity, reviewed)."]);
+  const agentReflection = await runReflection({ provider: { reflect: async () => reflectionInput }, report: reflection, memoryFile: reflectionFixture });
   assert.equal(agentReflection.status, "accepted");
   assert.deepEqual(agentReflection.writes, []);
   console.log("memory reflection ok");
