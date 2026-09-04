@@ -46,3 +46,28 @@ answer/baseline experiment.
   re-runs all affected checks, and updates the caller/peer enumeration for the
   CLI, raw-output writer and workflow.
 - A fresh beta re-review is required; this clarification is not a verdict.
+
+## Repair R2: β-R2 findings
+
+Authority: independent β-R2, commit
+`8324a9e053184b7ee9750756c48457f5301ce192`.
+
+1. **OpenAI evidence adapter.** Keep the existing application-facing
+   `extractMemory` compatibility path, but add a harness-facing adapter result
+   that returns parsed v2 output, provider-reported input/output/total token
+   usage, and raw completion output. The harness maps the provider's native
+   usage fields into its normalized three-field contract and rejects missing or
+   unreconciled values. The selected model must be explicit and match the run
+   config; do not silently substitute a default model in an opt-in run.
+2. **Raw-output gate.** `--provider openai-api` additionally requires a
+   non-empty `--raw-output-dir` before the OpenAI adapter/client is created.
+   The CLI must fail with usage/exit 2 if it is absent. Fake fixtures may prove
+   local raw-writing behavior without network access.
+3. **Hosted CI prerequisite.** The deterministic workflow installs the
+   non-interactive SWI-Prolog package before any test invoking the Prolog
+   engine. Retain locked Node installation and no-secrets/no-provider-call
+   behavior.
+4. **Evidence.** Add deterministic adapter/CLI tests for usage mapping, raw
+   reference behavior and the new gate. Alpha records F-3/F-4 resolution in
+   the existing self-coherence fix-round history; fresh beta must verify a
+   successful GitHub Actions run for the repair head.
