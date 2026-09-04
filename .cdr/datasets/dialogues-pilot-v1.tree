@@ -1,0 +1,134 @@
+case stable-01 stable recall
+	dialogue
+		turn1 user \I live in Samara.
+		turn2 user \I work at Acme.
+		turn3 user \What city do I live in?
+	gold
+		turn1 write c_stable_01_a positive lives_in(user,samara)
+		turn2 write c_stable_01_b positive works_at(user,acme)
+		turn3 ignore
+	oracle active \c_stable_01_a,c_stable_01_b
+
+case stable-02 stable recall
+	dialogue
+		turn1 user \I use Python.
+		turn2 user \I like tea.
+		turn3 user \Which programming language do I use?
+	gold
+		turn1 write c_stable_02_a positive knows_technology(user,python)
+		turn2 write c_stable_02_b positive likes(user,tea)
+		turn3 ignore
+	oracle active \c_stable_02_a,c_stable_02_b
+
+case correction-01 explicit correction/supersession
+	dialogue
+		turn1 user \I live in Kazan.
+		turn2 user \Correction: I moved to Samara.
+		turn3 user \Where do I live now?
+	gold
+		turn1 write c_correction_01_old positive lives_in(user,kazan)
+		turn2 write c_correction_01_new positive lives_in(user,samara)
+		turn2 supersede
+		turn3 ignore
+	oracle active \c_correction_01_new
+
+case correction-02 explicit correction/supersession
+	dialogue
+		turn1 user \My current project is Atlas at Acme.
+		turn2 user \Please replace that: my current project is Borealis at Acme.
+		turn3 user \What is my current project at Acme?
+	gold
+		turn1 write c_correction_02_old positive current_project_at(user,acme,atlas)
+		turn2 write c_correction_02_new positive current_project_at(user,acme,borealis)
+		turn2 supersede
+		turn3 ignore
+	oracle active \c_correction_02_new
+
+case temporal-01 temporal change without contradiction
+	dialogue
+		turn1 user \I lived in Omsk from 2020-01-01 to 2022-12-31.
+		turn2 user \I lived in Samara from 2023-01-01 onward.
+		turn3 user \Where did I live in 2021?
+	gold
+		turn1 write c_temporal_01_a positive lives_in(user,omsk)
+		turn2 write c_temporal_01_b positive lives_in(user,samara)
+		turn3 ignore
+	oracle active \c_temporal_01_a,c_temporal_01_b
+
+case temporal-02 temporal change without contradiction
+	dialogue
+		turn1 user \I used Java at work during 2024.
+		turn2 user \I use Python at work during 2025.
+		turn3 user \Which technology was current in 2025?
+	gold
+		turn1 write c_temporal_02_a positive worked_with_technology(user,java)
+		turn2 write c_temporal_02_b positive worked_with_technology(user,python)
+		turn3 ignore
+	oracle active \c_temporal_02_a,c_temporal_02_b
+
+case conflict-01 direct positive/negative conflict
+	dialogue
+		turn1 user \I like coffee.
+		turn2 user \I do not like coffee.
+		turn3 user \Do I like coffee?
+	gold
+		turn1 write c_conflict_01_pos positive likes(user,coffee)
+		turn2 write c_conflict_01_neg negative likes(user,coffee)
+		turn3 ignore
+	oracle active \c_conflict_01_pos,c_conflict_01_neg
+
+case conflict-02 direct positive/negative conflict
+	dialogue
+		turn1 user \I live in Paris.
+		turn2 user \I do not live in Paris.
+		turn3 user \Where do I live?
+	gold
+		turn1 write c_conflict_02_pos positive lives_in(user,paris)
+		turn2 write c_conflict_02_neg negative lives_in(user,paris)
+		turn3 ignore
+	oracle active \c_conflict_02_pos,c_conflict_02_neg
+
+case nonmemory-01 non-memory content
+	dialogue
+		turn1 user \What is the capital of France?
+		turn2 user \Suppose I moved to Paris next year.
+		turn3 user \I am not sure whether I like jazz.
+	gold
+		turn1 ignore
+		turn2 ignore
+		turn3 ignore
+	oracle active \none
+
+case nonmemory-02 non-memory content
+	dialogue
+		turn1 user \My friend says I work at Globex.
+		turn2 user \Can you explain what a database is?
+		turn3 user \Would Python be useful for data analysis?
+	gold
+		turn1 ignore
+		turn2 ignore
+		turn3 ignore
+	oracle active \none
+
+case ambiguity-01 alias/coreference ambiguity
+	dialogue
+		turn1 user \I work with Alex.
+		turn2 user \They live in Berlin.
+		turn3 user \Who lives in Berlin, Alex or Jordan?
+	gold
+		turn1 clarify
+		turn2 clarify
+		turn3 ignore
+	oracle active \none
+
+case ambiguity-02 alias/coreference ambiguity
+	dialogue
+		turn1 user \Sam told me that Pat uses Java.
+		turn2 user \They also use Python.
+		turn3 user \Is Pat the person who uses Python?
+	gold
+		turn1 clarify
+		turn2 clarify
+		turn3 ignore
+	oracle active \none
+
