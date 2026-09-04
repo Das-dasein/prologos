@@ -31,7 +31,7 @@ from `time`.
 ## Matrix A cell definitions
 
 The unit is a turn unless stated otherwise. For a category `k`, `N_k` is the
-number of dialogue turns in that category (24 total); `W_k` is gold write
+number of dialogue turns in that category (36 total); `W_k` is gold write
 turns; `A_k` is gold assertions; `D_k` is non-ambiguous durable turns; and
 `Q_k` is answerable oracle queries. Each rate reports numerator/denominator;
 an inapplicable cell is `N/A`, never zero.

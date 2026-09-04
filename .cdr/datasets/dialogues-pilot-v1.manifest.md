@@ -28,4 +28,4 @@ SHA-256 (computed after writing): see the `sha256` field below and verify with:
 shasum -a 256 .cdr/datasets/dialogues-pilot-v1.jsonl
 ```
 
-sha256: 88776d46d0ddd34307ef4cfd519e68f17862fd51118463a0ef9497cd25ba0f9f
+sha256: ed9dd7f7ab4983266ab2df3a5ccb31a1f8b367163a09f2c57d2d096e8699d041
