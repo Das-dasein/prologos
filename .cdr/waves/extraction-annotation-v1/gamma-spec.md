@@ -7,8 +7,8 @@ extraction result and does not establish model precision, recall, or utility.
 
 One JSONL record represents one user turn. Its decision is exactly one of:
 
-- `write`: zero or more independent assertions explicitly supported by the
-  turn;
+- `write`: one or more independent assertions explicitly supported by the
+  turn; an empty write is `ignore`;
 - `ignore`: no durable user assertion may be written;
 - `clarify`: reference or scope is unresolved, so no assertion may be written.
 

@@ -23,6 +23,7 @@ try {
   assert.throws(() => scoreAnnotations(dataset, privateCandidate), { code: "DATA_POLICY" });
 } finally { fs.rmSync(temp, { recursive: true, force: true }); }
 assert.throws(() => validateRecord({ case_id: "extract-99", turn: "Maybe I work.", decision: "ignore", assertions: [{ id: "a", predicate: "works_at", arguments: ["user", "acme"], polarity: "positive", modality: "asserted", time: { kind: "unknown" }, source_span: "Maybe" }] }), { code: "NONWRITE_ASSERTIONS" });
+assert.throws(() => validateRecord({ case_id: "extract-99", turn: "I work at Acme.", decision: "write", assertions: [] }), { code: "WRITE_EMPTY" });
 assert.throws(() => validateRecord({ case_id: "extract-99", turn: "I work at Acme.", decision: "write", assertions: [{ id: "a", predicate: "works_at", arguments: ["user", "acme"], polarity: "positive", modality: "asserted", time: { kind: "unknown" }, source_span: "not in source" }] }), { code: "PROVENANCE" });
 assert.throws(() => validateRecord({ case_id: "extract-99", turn: "I work at Acme.", decision: "write", assertions: [{ id: "a", predicate: "works_at", arguments: ["user", "acme"], polarity: "positive", modality: "asserted", time: { kind: "current" }, source_span: "I work at Acme" }] }), { code: "TIME" });
 console.log("cdr annotation ok");
