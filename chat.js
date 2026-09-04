@@ -7,8 +7,8 @@ const provider = createProvider();
 
 async function turn(text) {
   const messageId = `m_${Date.now()}`;
-  const proposals = await provider.extractClaims(text);
-  const stored = await memory.add(proposals, messageId);
+  const extraction = await provider.extractMemory(text);
+  const stored = await memory.add(extraction, messageId);
   const context = memory.read().slice(-12000);
   return { reply: await provider.respond(text, context, stored.conflicts), ...stored };
 }
@@ -27,6 +27,7 @@ async function main() {
       if (process.env.DEBUG_MEMORY === "1") {
         result.facts.forEach(f => console.log(`  + ${f.text}`));
         result.conflicts.forEach(c => console.log(`  ! ${c}`));
+        result.ontology_candidates.forEach(candidate => console.log(`  ? ontology candidate: ${JSON.stringify(candidate)}`));
       }
     } catch (error) {
       console.error(`error> ${error.message}`);

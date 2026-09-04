@@ -26,8 +26,10 @@ npm run chat
 ```
 
 Codex CLI is invoked in non-interactive, ephemeral, read-only mode. It receives
-memory as prompt data and cannot modify the project. Fact extraction uses
-`--output-schema` and is validated again with Zod before Prolog serialization.
+memory as prompt data and cannot modify the project. Fact extraction uses the
+checked-in `memory-extraction-v2` output schema and is validated again with a
+Zod schema generated from the same active ontology profile before Prolog
+serialization.
 
 To use usage-based OpenAI API access instead:
 
@@ -45,9 +47,18 @@ Set `DEBUG_MEMORY=1` to display each generated Prolog fact and conflict. Use
 
 Each turn has two model calls: strict structured extraction first, then a
 natural-language response grounded in the updated memory and any conflicts.
-The model never writes raw Prolog. It proposes typed fields; `memory-store.js`
-validates an allowlist and serializes an assertion with separate qualifiers. This prevents
-arbitrary predicates or executable Prolog from entering the trusted program.
+The model never writes raw Prolog. `ontology/active-profile-v1.json` selects a
+versioned universal-core layer plus explicit domain layers. That profile
+generates the prompt and provider validators; `memory-store.js` checks its exact
+content-addressed identity again before serializing an assertion with separate
+qualifiers. This prevents stale output, arbitrary predicates, or executable
+Prolog from entering the trusted program.
+
+Unknown durable vocabulary may be returned only as an untrusted ontology
+candidate with a verbatim evidence span. Candidates are diagnostic data: they
+are never appended to Prolog memory or registry files. Run
+`node ontology-registry.js` to inspect the active profile identity and its
+core/domain projection.
 
 Run an arbitrary query:
 
@@ -76,11 +87,11 @@ allows bounded, JSON-encoded rule proposals; those rules are validated,
 compiled into an isolated candidate ontology and executed by SWI-Prolog. See
 `.cdd/ontology-mvp-v0.md`.
 
-The ontology harness loads `ontology-registry-v1.json` as the versioned,
-executable baseline for the shared World of Ideas. A proposal may carry an
-explicit registry for an isolated domain extension; it cannot shadow reserved
-runtime predicates. The registry is declarations only: it introduces no
-facts and is not a substitute for dialogue-derived memory.
+The isolated rule-hypothesis harness still uses `ontology-registry-v1.json` as
+its separate executable candidate baseline. A proposal may carry an explicit
+registry for an isolated domain extension; it cannot shadow reserved runtime
+predicates. This candidate registry is not the active chat-ingestion profile,
+introduces no facts, and is not a substitute for dialogue-derived memory.
 
 ## Bounded rule hypotheses
 
