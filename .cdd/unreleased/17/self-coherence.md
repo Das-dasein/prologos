@@ -22,7 +22,7 @@ Post-implementation self-check: the diff adds only the harness, its fake-only fo
 
 ## Debt
 
-At this point focused harness implementation and test evidence are pending. No live provider run, raw live output, CDR dataset/oracle/threshold/claim edit, trusted-memory write, registry mutation, beta/gamma artifact, or quality claim is permitted.
+Known debt: no real-provider adapter is wired into this harness CLI; live execution remains deliberately out of scope for alpha and must be separately reviewed. Cross-condition budget equality and CDR scoring remain CDR #5/#7 responsibilities. No live provider run, raw live output, CDR dataset/oracle/threshold/claim edit, trusted-memory write, registry mutation, beta/gamma artifact, or quality claim was produced.
 
 ## CDD Trace
 
