@@ -44,13 +44,17 @@ function validateRecord(record) {
   if (record.decision === "write" && !record.assertions.length) fail("WRITE_EMPTY", "write needs at least one assertion");
   const ids = new Set();
   for (const assertion of record.assertions) {
-    exact(assertion, ["id", "predicate", "arguments", "polarity", "modality", "time", "source_span"], "assertion");
+    if (!Object.prototype.hasOwnProperty.call(assertion, "scope")) assertion.scope = "self";
+    if (!Object.prototype.hasOwnProperty.call(assertion, "qualifier")) assertion.qualifier = assertion.time && assertion.time.kind === "interval" ? "interval" : "N/A";
+    exact(assertion, ["id", "predicate", "arguments", "polarity", "modality", "time", "source_span", "scope", "qualifier"], "assertion");
     if (typeof assertion.id !== "string" || !ATOM.test(assertion.id) || ids.has(assertion.id)) fail("ASSERTION_ID", "bad or duplicate assertion id"); ids.add(assertion.id);
     if (typeof assertion.predicate !== "string" || !ATOM.test(assertion.predicate)) fail("PREDICATE", "bad predicate");
     if (!Array.isArray(assertion.arguments) || assertion.arguments.length < 1 || assertion.arguments.length > 4 || assertion.arguments.some(value => typeof value !== "string" || !ATOM.test(value))) fail("ARGUMENT", "bad arguments");
     if (!POLARITIES.has(assertion.polarity)) fail("POLARITY", "bad polarity");
     if (!MODALITIES.has(assertion.modality)) fail("MODALITY", "bad modality");
     validateTime(assertion.time, "assertion.time");
+    if (!["self", "third_party", "N/A"].includes(assertion.scope)) fail("SCOPE", "bad scope");
+    if (!["N/A", "interval", "uncertain_reference"].includes(assertion.qualifier)) fail("QUALIFIER", "bad qualifier");
     if (typeof assertion.source_span !== "string" || !assertion.source_span || !record.turn.includes(assertion.source_span)) fail("PROVENANCE", "source span is not in turn");
   }
   return record;
