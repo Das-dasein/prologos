@@ -77,11 +77,11 @@ function toV2(assertion) {
   if (arity !== assertion.arguments.length) fail("PROFILE_ARITY", assertion.predicate);
   if (assertion.modality !== "asserted") return null;
   const time = assertion.time;
-  return { polarity: assertion.polarity, relation: assertion.predicate, arguments: assertion.arguments,
+  return { schema_version: "memory-extraction-v2", registry_identity: "conversation_profile@1.0.0", proposal: { polarity: assertion.polarity, relation: assertion.predicate, arguments: assertion.arguments,
     valid_from: time.kind === "interval" ? Number(time.from.replaceAll("-", "")) : null,
     valid_to: time.kind === "interval" ? Number(time.to.replaceAll("-", "")) : null,
-    confidence: 1, scope: "self", qualifier: time.kind === "interval" ? "interval" : "N/A",
-    provenance: { source_span: assertion.source_span } };
+    confidence: 1, scope: assertion.scope || "self", qualifier: assertion.qualifier || (time.kind === "interval" ? "interval" : "N/A"),
+    provenance: { source_span: assertion.source_span } } };
 }
 function assertionKey(assertion) { return `${assertion.predicate}(${assertion.arguments.join(",")})`; }
 function scoreAnnotations(goldFile, candidateFile) {

@@ -16,8 +16,9 @@ assert.deepEqual(score.error_counts, { argument: 1, atomicity: 1, coreference: 1
 assert.equal(score.category_metrics["stable recall"].decision.denominator, 2);
 assert.equal(score.category_metrics["explicit correction/supersession"].decision.rate, null);
 assert.deepEqual(toV2({ predicate: "lives_in", arguments: ["user", "omsk"], polarity: "positive", modality: "asserted", time: { kind: "interval", from: "2020-01-01", to: "2022-12-31" }, source_span: "Omsk" }), {
+  schema_version: "memory-extraction-v2", registry_identity: "conversation_profile@1.0.0", proposal: {
   polarity: "positive", relation: "lives_in", arguments: ["user", "omsk"], valid_from: 20200101, valid_to: 20221231,
-  confidence: 1, scope: "self", qualifier: "interval", provenance: { source_span: "Omsk" },
+  confidence: 1, scope: "self", qualifier: "interval", provenance: { source_span: "Omsk" }, },
 });
 assert.throws(() => toV2({ predicate: "not_registered", arguments: ["user"], polarity: "positive", modality: "asserted", time: { kind: "unknown" }, source_span: "x" }), { code: "UNKNOWN_RELATION" });
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "cdr-annotation-"));

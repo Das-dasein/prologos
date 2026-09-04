@@ -35,7 +35,8 @@ function score(records) {
     const assertions = subset.reduce((sum, record) => sum + record.gold_operations.filter(operation => operation.kind === "write").length, 0);
     const durable_turns = category === "alias/coreference ambiguity" ? 0 : write_turns;
     const answerable_queries = subset.filter(record => record.oracle.query_answers.length > 0).length;
-    category_metrics[category] = { turns, write_turns, assertions, durable_turns, answerable_queries };
+    category_metrics[category] = { turns, write_turns, assertions, durable_turns, answerable_queries,
+      cells: { decision: { numerator: null, denominator: turns }, assertion_exact_match: { numerator: null, denominator: write_turns }, write_precision: { numerator: null, denominator: null }, write_recall: { numerator: null, denominator: assertions }, predicate: { numerator: null, denominator: assertions }, arguments: { numerator: null, denominator: assertions }, polarity: { numerator: null, denominator: assertions }, time: { numerator: null, denominator: assertions }, modality: { numerator: null, denominator: assertions }, provenance: { numerator: null, denominator: assertions }, hallucination: { numerator: null, denominator: null }, false_clarification: { numerator: null, denominator: durable_turns } } };
   }
   return { schema_version: "prolog-memory-evaluation-matrix-v1", dataset_sha256: SHA256, case_count: records.length, turn_count: records.reduce((n, r) => n + r.dialogue.length, 0), category_metrics, metrics: { "Matrix A": ["decision", "assertion_exact_match", "write_precision", "write_recall", "predicate", "arguments", "polarity", "time", "modality", "provenance", "hallucination", "false_clarification"], "Matrix B": ["write_precision", "write_recall", "active_state_accuracy", "conflict_accuracy", "provenance_completeness", "false_clarification", "stale_or_contradictory_error"] }, status: "gold_contract_valid" };
 }
