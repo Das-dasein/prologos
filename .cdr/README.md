@@ -15,3 +15,11 @@ receipts.
 
 No result is transmissible. Alpha matter exists, but the independent beta
 verdict is `REVISE`; gamma has opened a bounded repair transition.
+
+## Preparatory annotation contract
+
+[`extraction-annotation-v1`](waves/extraction-annotation-v1/manifest.md)
+defines synthetic turn-level labels for independent facts, negation, and
+qualifiers. It is a pre-gate structural contract for issue #5, not a live
+extraction experiment and not a transition out of `prolog-memory-eval-v0`'s
+`REVISE` state.

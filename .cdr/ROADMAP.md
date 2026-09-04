@@ -3,6 +3,7 @@
 | Wave | Question | Primary output | Opens when |
 |---|---|---|---|
 | `prolog-memory-eval-v0` | Can the evaluation distinguish symbolic correctness, extraction quality, and end-to-end utility? | Pre-registered method, fixture schema, 12-case pilot dataset | Initial open-claim selection |
+| `extraction-annotation-v1` | Are extraction labels for atomic facts, negation, and qualifiers structurally auditable? | Synthetic annotation contract and validator | Preparatory only; no evaluation gate opened |
 | `symbolic-oracle-v1` | Does the Prolog layer produce the correct active state, conflicts, and provenance from gold claims? | Deterministic results and failure taxonomy | v0 receives GO or BOUNDED-GO |
 | `extraction-v1` | Can the model safely turn dialogue into the required memory operations? | Extraction metrics and error corpus | Symbolic oracle reaches GO |
 | `comparative-e2e-v1` | Does Prolog-backed memory beat the strongest baseline under a fixed budget? | Comparative result table and raw outputs | Extraction reaches GO or bounded threshold |
