@@ -18,6 +18,8 @@ The proposed surface keeps the harness independent from durable-memory and regis
 
 Peer enumeration before code: provider adapters `{providers/codex.js, providers/openai-api.js}` — exempt, because the harness consumes an injected adapter and does not alter either adapter; extraction-envelope producers/consumers `{llm-schema.js, memory-store.js, schemas/memory-extraction.schema.json, chat.js, providers/codex.js, providers/openai-api.js}` — audited, no contract edits; active profile/registry `{ontology-registry.js, ontology/active-profile-v1.json, ontology/registries/*}` — audited, immutable; CDR writers/readers `{cdr-annotation-harness.js, cdr-eval-harness.js, .cdr/results/*, .cdr/datasets/*}` — exempt by explicit no-dataset/oracle/result mutation; provider fixtures/tests `{test-fixtures/fake-codex.js, test.js, test-registry-ingestion.js}` — audited, new focused fake tests will be additive. Harness/schema-bearing producers and consumers are therefore explicitly enumerated before implementation.
 
+Post-implementation self-check: the diff adds only the harness, its fake-only focused test, and the test script registration. The new module caller is `test-live-extraction.js` (calls `runHarness`, `createFakeProvider`, and `writeRunArtifact`); the CLI entrypoint is explicit `--provider fake`. Claims in this report are backed by the test runner output and source diff; no claim about model quality is made.
+
 ## Debt
 
 At this point focused harness implementation and test evidence are pending. No live provider run, raw live output, CDR dataset/oracle/threshold/claim edit, trusted-memory write, registry mutation, beta/gamma artifact, or quality claim is permitted.
