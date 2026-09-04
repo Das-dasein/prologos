@@ -74,3 +74,37 @@ modified. The fake result establishes harness determinism only; it does not
 establish utility, causality, or Prolog superiority.
 
 **Terminal verdict: REQUEST CHANGES**
+
+---
+
+## β-R2 final re-review
+
+**Head SHA:** `29c0562f8d74f3ebbc038762b46c54f8c731772e`
+**Branch:** `cycle/21`
+**Review identity:** `beta <beta@prologos.cdd.cnos>`
+
+The γ repair pins the pilot config's `source_commit` to the immutable pilot
+implementation head `56d5263afe784aa8ba52b645d4bc49981975474f` (the reviewed
+pilot code; the later `tree.d` and config commits do not alter that code).
+The all-zero source pin finding is resolved. The tree-form dataset view is
+present and does not change the pinned JSONL dataset or its SHA-256.
+
+| Final check | Result |
+|---|---|
+| `npm run test:pilot` | PASS: `pilot-runner ok: 8 assertions` |
+| `npm test` | PASS: all suites; live-extraction 15 assertions |
+| B1--B5 fake CLI runs | PASS: 12 cases each; source pin is emitted as `56d5263...` |
+| B4 Matrix B | PASS: exact `12/12`, stale/contradictory error `0/12` |
+| B5 | PASS: `gold_oracle` boundary preserved |
+| `cdr-matrix-harness.js` | PASS: `gold_contract_valid`; candidate cells remain N/A until supplied |
+| Trusted files | PASS: memory/domain hashes unchanged |
+| Live safety gates | PASS: prior no-provider opt-in, raw-output, usage and budget checks remain green |
+
+The remaining literal identity/hash copies are pre-existing schema, fixture,
+and annotation-contract surfaces audited in R1; the pilot itself still reads
+the active identity from `ACTIVE_ONTOLOGY`. They are maintenance debt, not a
+remaining acceptance blocker for this bounded pilot.
+
+No live provider/API call, merge, or issue closure was performed.
+
+**Terminal verdict: APPROVED**
