@@ -77,6 +77,7 @@ async function runHarness({ config, datasetFile, provider, promptBuilder = ({ te
       if (!response || typeof response !== "object" || typeof response.output !== "object" || !response.usage) fail("MALFORMED_OUTPUT", "provider must return output and usage");
       const usage = response.usage;
       if (!["input_tokens", "output_tokens", "total_tokens"].every(k => Number.isInteger(usage[k]) && usage[k] >= 0)) fail("USAGE_MISSING", "complete provider usage evidence is required");
+      if (usage.total_tokens !== usage.input_tokens + usage.output_tokens) fail("USAGE_MISMATCH", "provider usage totals do not reconcile");
       if (usage.total_tokens > config.max_context_tokens || usage.input_tokens > config.max_context_tokens) fail("BUDGET", "provider usage exceeds configured context budget");
       const extraction = Extraction.parse(response.output);
       records.push({ ...meta, status: "ok", usage: { input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.total_tokens }, extraction });
