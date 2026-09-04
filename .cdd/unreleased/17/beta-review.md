@@ -158,3 +158,56 @@ The implementation correctly leaves CDR policy, dataset, oracle, thresholds, reg
 F-3 must either implement a real adapter result contract carrying reconciled usage and raw output, write raw output only beneath an explicit local non-overwriting directory while retaining only a path reference in parsed records, and test both opt-in gates without network; or the issue/AC5 must be formally amended before approval. F-4 must make the declared workflow pass on GitHub (including its SWI-Prolog prerequisite) and produce a successful run for the repair head. Keep CDR policy/method, datasets, oracles, thresholds, claims, durable memory and registries unchanged. No β close-out, merge, or issue closure is authorized by this review.
 
 **Terminal verdict: REQUEST CHANGES**
+
+---
+
+## β-R3 re-review
+
+**Round:** 3 (fresh independent review after α repair R2)
+**Base SHA:** `04a08184ddbba32862068f9f1d03d2f0c80b71a4`
+**Head SHA:** `69e363871d0f3169adc9399df8966c48dcd127fd`
+**Branch:** `cycle/17`
+**Review identity:** `beta@prologos.cdd.cnos`
+**Scope:** independent review of the full repair diff and all prior findings; no
+provider/API invocation, merge, or issue closure.
+
+### Prior finding re-verification
+
+| Finding | Result | Evidence |
+|---|---|---|
+| F-1 CLI parser/entrypoint | **RESOLVED** | `parseArgs` uses explicit option parsing; `node test-live-extraction.js` covers a valid tracked fake invocation plus missing-argument exit 2, usage, and no stack trace. The subprocess writes one local artifact. |
+| F-2 prompt pin | **RESOLVED** | `validateConfig` compares `config.prompt_sha256` with the named `PROMPT_TEMPLATE`; each turn separately records `assembled_prompt_sha256`; mismatch is covered by the focused test and fails with `PROMPT_PIN`. |
+| R2 F-3 OpenAI evidence path | **RESOLVED** | `createOpenAIProvider` is lazy and calls `extractMemoryEvidence`; `providers/openai-api.js` returns parsed v2 output, selected model, native usage, and raw completion. The harness maps `prompt_tokens/completion_tokens/total_tokens` to normalized usage, rejects missing/unreconciled usage and model mismatch, writes raw output only to an explicit non-overwriting local directory, and retains only `raw_output_path` in the normalized record. Fake tests prove native mapping, path/content, and absence of embedded raw content. |
+| R2 F-3 gate ordering | **RESOLVED** | The CLI checks provider allowlist, `--allow-live-provider`, and non-empty `--raw-output-dir` before `createOpenAIProvider()` is called; the provider module/client is therefore not constructed on a failed gate. The negative subprocess test proves the raw-directory gate exits 2 without a call. |
+| R2 F-4 workflow content | **RESOLVED** | `.github/workflows/deterministic.yml` installs `swi-prolog-nox` before `npm ci`, then runs `npm test` and `npm run test:cdr-gold`; no secrets or provider invocation are present. |
+| R2 F-4 hosted status | **RESOLVED** | GitHub Actions run [33924092275](https://github.com/Das-dasein/prologos/actions/runs/33924092275) for this exact head is `completed / success`; its job shows successful SWI-Prolog install, `npm ci`, `npm test`, and `npm run test:cdr-gold`. |
+
+### Contract and invariant audit
+
+| Check | Result | Notes |
+|---|---|---|
+| v2 validation/no-write | yes | `Extraction.parse` and active profile identity are used; no `MemoryStore` import/call or trusted-memory write is introduced. |
+| Leakage preflight | yes | `preflightPrompt` runs before adapter invocation; private-marker and stable-01 leakage tests assert zero provider calls. |
+| Identity/budget evidence | yes | Config pins source, dataset, profile, provider, model, prompt template/hash, sampling, retry, and context budget; provider usage is required, reconciled, and budget-checked. |
+| Fixed provider boundary | yes | Only `fake` and `openai-api` are accepted; no arbitrary module, command, executable, or user-supplied provider path exists. |
+| Raw-output boundary | yes | Live use requires explicit opt-in and local `--raw-output-dir`; raw files use non-overwriting paths and are not embedded in records. |
+| CDR boundary | yes | CDR policy/method, datasets, oracle, thresholds, claims, registry, and durable-memory surfaces are unchanged. |
+| Gamma artifact | yes | `.cdd/unreleased/17/gamma-scaffold.md` and clarification are present on `cycle/17`. |
+
+### Commands and output
+
+| Command | Result |
+|---|---|
+| `git fetch --verbose origin main && git rev-parse origin/main` | passed; `origin/main = 04a08184ddbba32862068f9f1d03d2f0c80b71a4` |
+| `node test-live-extraction.js` | `live-extraction ok: 15 assertions` |
+| `npm test` | passed; all suites green |
+| `npm run test:cdr-gold` | `cdr gold harness ok` |
+| `npm run test:cdr-annotation` | `cdr annotation ok` |
+| `git diff --check origin/main...HEAD` | clean |
+| `gh run view 33924092275 --json status,conclusion,headSha,url` | exact head `69e363871d0f3169adc9399df8966c48dcd127fd`; `completed`, `success`; [run](https://github.com/Das-dasein/prologos/actions/runs/33924092275) |
+
+No real provider/API call was made. The local fake tests and source inspection
+are the evidence for the OpenAI adapter path; they do not constitute a live
+model result or CDR claim.
+
+**Terminal verdict: APPROVED**
