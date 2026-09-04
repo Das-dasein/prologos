@@ -40,7 +40,8 @@ language similarity and does not call a model. A separate deterministic scorer
 compares a structurally valid candidate annotation against the pinned gold
 fixture and emits only pre-registered taxonomy labels. Seeded candidate errors
 exercise `atomicity`, `polarity`, `time`, `decision`, `hallucination`, and
-`coreference`; unsupported categories remain a future fixture requirement.
+`coreference`, `predicate`, `argument`, `modality`, and `provenance`;
+unsupported categories remain a future fixture requirement.
 
 ## Acceptance evidence
 

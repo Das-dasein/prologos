@@ -10,8 +10,9 @@ preparatory annotation contract, not an extraction measurement.
 - The validator rejects known private-data markers before scoring.
 - A deterministic annotation scorer compares structurally valid predictions to
   the gold fixture and emits only the pre-registered error taxonomy.
-- A synthetic seeded-errors fixture exercises atomicity, polarity, time,
-  decision, hallucination, and coreference labels with exact expected counts.
+- A synthetic seeded-errors fixture exercises atomicity, polarity, predicate,
+  argument, time, modality, provenance, decision, hallucination, and
+  coreference labels with exact expected counts.
 
 ## Re-run evidence
 
@@ -25,6 +26,6 @@ git diff --check              PASS
 ## Remaining boundary
 
 No provider call, precision/recall calculation, baseline comparison, or
-utility claim has been added. Predicate/argument/modality/provenance seeded
-error coverage remains a future expansion; beta must decide whether current
+utility claim has been added. The scorer is an exact fixture oracle, not a
+semantic-equivalence scorer; beta must decide whether current synthetic
 coverage is adequate for the preparatory issue scope.

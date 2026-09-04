@@ -225,7 +225,7 @@ function sourceCommit(override) {
     }
     return override;
   }
-  try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(); }
+  try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); }
   catch (_) { return null; }
 }
 

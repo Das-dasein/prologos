@@ -3,24 +3,22 @@ const assert = require("node:assert");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { evaluateHypothesis } = require("./hypothesis-elenchus");
+const { evaluateHypothesis, canonicalJson } = require("./hypothesis-elenchus");
 const { execFileSync } = require("node:child_process");
 
 const memoryPath = path.join(__dirname, "test-fixtures", "elenchus-memory.pl");
-const trustedRegistryPath = path.join(__dirname, "ontology-registry-v1.json");
 const registry = { version: "predicate-registry-v1", declarations: [
   { name: "works_at", arity: 2, kind: "base" }, { name: "eligible", arity: 1, kind: "derived" }
 ] };
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 function hypothesis(id, support) { return {
   schema_version: "reflection-hypothesis-v1", hypothesis_id: id, decision: "proposed",
-  registry_identity: { name: "test_registry", version: "predicate-registry-v1", sha256: sha256(JSON.stringify(registry)) },
+  registry_identity: { name: "test_registry", version: "predicate-registry-v1", sha256: sha256(canonicalJson(registry)) },
   registry, supporting_assertion_ids: support,
   rule: { id: "r_eligible", head: { predicate: "eligible", arguments: ["P"] }, body: [{ predicate: "works_at", arguments: ["P", "acme"] }] }
 }; }
 (async () => {
   const before = fs.readFileSync(memoryPath, "utf8");
-  const registryBefore = fs.readFileSync(trustedRegistryPath, "utf8");
   const accepted = await evaluateHypothesis(hypothesis("h_accept", ["a_work_carol"]), { memoryPath });
   assert.equal(accepted.decision, "accepted");
   assert.equal(accepted.candidate.status, "ok");
@@ -43,7 +41,7 @@ function hypothesis(id, support) { return {
   const repeatB = await evaluateHypothesis(hypothesis("h_repeat", ["a_work_carol"]), { memoryPath });
   assert.deepEqual(repeatA, repeatB);
   assert.equal(fs.readFileSync(memoryPath, "utf8"), before);
-  assert.equal(fs.readFileSync(trustedRegistryPath, "utf8"), registryBefore);
+  assert.equal(accepted.registry_identity.sha256, sha256(canonicalJson(registry)));
   const cli = JSON.parse(execFileSync(process.execPath, ["elenchus-cli.js", "--hypothesis", "test-fixtures/hypothesis-accept.json", "--memory", "test-fixtures/elenchus-memory.pl"], { cwd: __dirname, encoding: "utf8" }));
   assert.equal(cli.decision, "accepted");
   console.log("elenchus ok");

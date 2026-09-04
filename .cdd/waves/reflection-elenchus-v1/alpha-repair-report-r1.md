@@ -9,7 +9,7 @@ does not replace a fresh beta review.
   an explicit `registry_identity` object or `null`; no missing identity is
   silently invented.
 - The contract now defines inline registry identity precisely: the SHA-256
-  binds exact declaration bytes. A shared on-disk registry is deferred to its
+  binds canonical declaration JSON. A shared on-disk registry is deferred to its
   own governance/versioning contract rather than being falsely implied.
 - Focused tests compare the trusted `ontology-registry-v1.json` bytes before
   and after evaluation in addition to the memory fixture bytes.

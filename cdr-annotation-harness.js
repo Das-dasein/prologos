@@ -45,7 +45,7 @@ function validateRecord(record) {
 }
 function readJsonl(file) { return fs.readFileSync(file, "utf8").trim().split(/\r?\n/).map((line, i) => { try { return JSON.parse(line); } catch (_) { fail("JSONL", `line ${i + 1}`); } }); }
 function sha256(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
-function validateDataset(file, expectedSha256 = file === DEFAULT_DATASET ? DATASET_SHA256 : null) {
+function validateDataset(file, expectedSha256 = DATASET_SHA256) {
   const records = readJsonl(file), cases = new Set();
   records.forEach(record => { validateRecord(record); if (cases.has(record.case_id)) fail("DUPLICATE_CASE", record.case_id); cases.add(record.case_id); });
   const digest = sha256(file);
@@ -56,6 +56,8 @@ function validateDataset(file, expectedSha256 = file === DEFAULT_DATASET ? DATAS
 }
 function assertionKey(assertion) { return `${assertion.predicate}(${assertion.arguments.join(",")})`; }
 function scoreAnnotations(goldFile, candidateFile) {
+  validateDataset(goldFile, DATASET_SHA256);
+  validateDataset(candidateFile, null);
   const gold = readJsonl(goldFile), candidate = readJsonl(candidateFile);
   gold.forEach(validateRecord); candidate.forEach(validateRecord);
   const predicted = new Map();
@@ -72,17 +74,25 @@ function scoreAnnotations(goldFile, candidateFile) {
     }
     if (expected.decision === "write" && actual.decision === "write") {
       if (expected.assertions.length !== actual.assertions.length) errors.add("atomicity");
-      const byKey = new Map(actual.assertions.map(assertion => [assertionKey(assertion), assertion]));
+      const unmatched = new Set(actual.assertions);
       for (const wanted of expected.assertions) {
-        const got = byKey.get(assertionKey(wanted));
+        let got = actual.assertions.find(assertion => unmatched.has(assertion) && assertionKey(assertion) === assertionKey(wanted));
+        if (!got) {
+          got = actual.assertions.find(assertion => unmatched.has(assertion) && assertion.predicate === wanted.predicate);
+          if (got) errors.add("argument");
+        }
+        if (!got) {
+          got = actual.assertions.find(assertion => unmatched.has(assertion) && JSON.stringify(assertion.arguments) === JSON.stringify(wanted.arguments));
+          if (got) errors.add("predicate");
+        }
         if (!got) { errors.add("atomicity"); continue; }
+        unmatched.delete(got);
         if (got.polarity !== wanted.polarity) errors.add("polarity");
         if (got.modality !== wanted.modality) errors.add("modality");
         if (JSON.stringify(got.time) !== JSON.stringify(wanted.time)) errors.add("time");
         if (got.source_span !== wanted.source_span) errors.add("provenance");
       }
-      const expectedKeys = new Set(expected.assertions.map(assertionKey));
-      for (const got of actual.assertions) if (!expectedKeys.has(assertionKey(got))) errors.add("hallucination");
+      if (unmatched.size) errors.add("hallucination");
     }
     cases.push({ case_id: expected.case_id, errors: [...errors].sort() });
   }

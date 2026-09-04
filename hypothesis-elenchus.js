@@ -11,6 +11,11 @@ const ATOM = /^[a-z][a-z0-9_]*$/;
 const VARIABLE = /^[A-Z][A-Za-z0-9_]*$/;
 
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+  return JSON.stringify(value);
+}
 function parseTerms(memory) {
   const records = new Map();
   const assertion = /assertion\(([^,\s]+),\s*([a-z][a-z0-9_]*)\(([^()]*)\)\)\./g;
@@ -85,7 +90,7 @@ function validateHypothesis(input) {
   if (new Set(h.supporting_assertion_ids).size !== h.supporting_assertion_ids.length) throw new Error("Elenchus: duplicate supporting assertion ID");
   const registry = createPredicateRegistry(h.registry);
   if (h.registry.version !== h.registry_identity.version) throw new Error("Elenchus: registry version identity mismatch");
-  const computed = sha256(JSON.stringify(h.registry));
+  const computed = sha256(canonicalJson(h.registry));
   if (computed !== h.registry_identity.sha256) throw new Error("Elenchus: registry hash identity mismatch");
   validateProposal({ schema_version: "ontology-proposal-v0", candidate_version: `cand-${h.hypothesis_id.slice(2)}`, registry: h.registry, facts: [], rules: [h.rule] }, registry);
   return h;
@@ -108,4 +113,4 @@ async function evaluateHypothesis(input, { memoryPath = process.env.MEMORY_FILE 
   return decisionResult(h, sourceHash, candidate.status === "ok" ? "accepted" : "rejected", h.supporting_assertion_ids, [], candidate);
 }
 
-module.exports = { evaluateHypothesis, validateHypothesis, parseTerms, derive };
+module.exports = { evaluateHypothesis, validateHypothesis, parseTerms, derive, canonicalJson };

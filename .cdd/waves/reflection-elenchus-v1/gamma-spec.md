@@ -43,10 +43,12 @@ Every result has the fields hypothesis ID, registry identity, source snapshot
 hash, supporting assertion IDs, refuting assertion IDs, decision, and (when
 run) a disposable candidate result. For malformed input, identity fields may
 be `null` rather than fabricated; the source snapshot is still hashed before
-validation. Registry identity binds the exact inline declaration bytes through
-SHA-256; adoption of a shared on-disk registry remains a separate governance
-step. Equal input bytes and equal hypothesis must yield byte-stable JSON after
-canonical sorting.
+validation. Registry identity binds canonical JSON of the inline declaration
+object through SHA-256 (recursive object-key sorting, while declaration-array
+order remains meaningful). This avoids treating parser-specific whitespace as
+ontology identity. Adoption of a shared on-disk registry remains a separate
+governance step. Equal input bytes and equal hypothesis must yield byte-stable
+JSON after canonical sorting.
 
 ## Rejection examples
 
