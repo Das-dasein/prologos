@@ -81,7 +81,7 @@ function toV2(assertion) {
   if (arity !== assertion.arguments.length) fail("PROFILE_ARITY", assertion.predicate);
   if (assertion.modality !== "asserted") return null;
   const time = assertion.time;
-  return { schema_version: "memory-extraction-v2", registry_identity: "conversation_profile@1.0.0", proposal: { polarity: assertion.polarity, relation: assertion.predicate, arguments: assertion.arguments,
+  return { schema_version: "memory-extraction-v2", registry_identity: { name: "prologos_agent_memory", version: "1.0.0", sha256: "40558d46e4e73028cc19e5f97cdaf316833f74b916f76552f6443e8d5312e3a0" }, proposal: { polarity: assertion.polarity, relation: assertion.predicate, arguments: assertion.arguments,
     valid_from: time.kind === "interval" ? Number(time.from.replaceAll("-", "")) : null,
     valid_to: time.kind === "interval" ? Number(time.to.replaceAll("-", "")) : null,
     confidence: 1, scope: assertion.scope || "self", qualifier: assertion.qualifier || (time.kind === "interval" ? "interval" : "N/A"),
