@@ -1,0 +1,34 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { runPilot, goldProvider, checkQuery, normalizeAnswers } = require("./pilot-runner");
+const { sha256, PROMPT_TEMPLATE } = require("./live-extraction-harness");
+const dataset = ".cdr/datasets/dialogues-pilot-v1.jsonl";
+const config = JSON.parse(fs.readFileSync(".cdr/results/prolog-memory-eval-v0/pilot-config-v1.json"));
+const cfg = { ...config, prompt_sha256: sha256(PROMPT_TEMPLATE) };
+const cases = fs.readFileSync(dataset, "utf8").trim().split(/\r?\n/).map(JSON.parse);
+const run = condition => runPilot({ config: cfg, datasetFile: dataset, oracleFile: ".cdr/results/prolog-memory-eval-v0/pilot-oracle.json", provider: goldProvider(cases), condition });
+
+(async () => {
+  const first = await run("B1");
+  const second = await run("B1");
+  assert.equal(JSON.stringify(first), JSON.stringify(second));
+  assert.equal(first.case_count, 12);
+  assert.equal(first.matrixB.B1.answer_exact.denominator, 12);
+  const b4 = await run("B4");
+  assert.equal(b4.matrixB.B4.answer_exact.numerator, 12);
+  assert.throws(() => checkQuery("assert(foo)."), { code: "UNSAFE_QUERY" });
+  assert.doesNotThrow(() => checkQuery("active_assertion_record(_,_,_,_,_,_,_)."));
+  assert.deepEqual(normalizeAnswers(["Id = c, X = y"]), ["Id=c,X=y"]);
+  const badConfig = { ...cfg, trusted_memory_sha256: "0".repeat(64) };
+  await assert.rejects(() => runPilot({ config: badConfig, datasetFile: dataset, oracleFile: ".cdr/results/prolog-memory-eval-v0/pilot-oracle.json", provider: goldProvider(cases), condition: "B1" }), { code: "TRUSTED_HASH_MISMATCH" });
+  const before = fs.readFileSync("memory.pl", "utf8"); await run("B1"); assert.equal(fs.readFileSync("memory.pl", "utf8"), before);
+  const leaked = { extract: async () => ({ output: { schema_version: "memory-extraction-v2", registry_identity: require("./ontology-registry").ACTIVE_ONTOLOGY.identity, assertions: [], ontology_candidates: [] }, usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }) };
+  const leakedFile = path.join(os.tmpdir(), `pam-leaked-${process.pid}.jsonl`);
+  fs.writeFileSync(leakedFile, `${JSON.stringify({ case_id: "leak", dialogue: [{ speaker: "user", text: "c_stable_01_a" }], gold_operations: [{ turn: 1, kind: "ignore" }], oracle: { query: "active_assertion_record(_,_,_,_,_,_,_).", query_answers: [] } })}\n`);
+  const leakedConfig = { ...cfg, dataset_sha256: sha256(fs.readFileSync(leakedFile)) };
+  await assert.rejects(() => runPilot({ config: leakedConfig, datasetFile: leakedFile, oracleFile: ".cdr/results/prolog-memory-eval-v0/pilot-oracle.json", provider: leaked, condition: "B1" }), /gold claim leaked/);
+  console.log("pilot-runner ok: 8 assertions");
+})().catch(error => { console.error(error); process.exitCode = 1; });

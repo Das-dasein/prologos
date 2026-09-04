@@ -101,3 +101,17 @@ decision (`accepted`, `rejected`, `conflicted`, or `insufficient_evidence`) and
 never writes memory or the ontology registry. A matching negative assertion is
 a counterexample and prevents candidate execution. The input contract is
 documented in `.cdd/waves/reflection-elenchus-v1/gamma-spec.md`.
+# Bounded Matrix A/B pilot
+
+The pilot is fake-provider deterministic by default and runs each case in an
+isolated Prolog program. It never writes `memory.pl` or `domain-rules.pl`:
+
+```sh
+npm run pilot -- --condition B4 --output /tmp/pilot-b4.json
+npm run test:pilot
+```
+
+Use B1--B4 for extraction conditions. B5 is the gold ceiling. A live provider
+requires explicit `--allow-live-provider=true` and `--raw-output-dir DIR`.
+Fake results establish harness determinism only; they do not support a memory
+utility or superiority claim.
