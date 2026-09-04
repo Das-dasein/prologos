@@ -6,21 +6,33 @@ const engine = process.env.PROLOG_ENGINE === "swipl"
   : require("./prolog-engine");
 const { consult, query } = engine;
 
-const RELATIONS = new Set([
-  "likes", "dislikes", "lives_in", "works_at", "studies_at", "role",
-  "birth_year", "email", "prefers", "owns", "uses", "interested_in",
-  "previous_project",
-  "role_at_semester", "role_before_semester",
-  "project_role_at", "current_project_at",
-  "knows_technology",
-  "worked_with_technology",
-]);
+const RELATION_SIGNATURES = Object.freeze({
+  likes: { arity: 2, meaning: "person's positive or negative preference for a thing" },
+  lives_in: { arity: 2, meaning: "person lives in place" },
+  works_at: { arity: 2, meaning: "person works at organization" },
+  studies_at: { arity: 2, meaning: "person studies at organization" },
+  role: { arity: 2, meaning: "entity has role" },
+  birth_year: { arity: 2, meaning: "person has year of birth" },
+  email: { arity: 2, meaning: "entity has email address atom" },
+  prefers: { arity: 2, meaning: "person prefers thing" },
+  owns: { arity: 2, meaning: "entity owns thing" },
+  uses: { arity: 2, meaning: "entity uses thing" },
+  interested_in: { arity: 2, meaning: "person is interested in thing or activity" },
+  previous_project: { arity: 2, meaning: "person previously worked on project" },
+  role_at_semester: { arity: 4, meaning: "person, organization, role, semester" },
+  role_before_semester: { arity: 4, meaning: "person, organization, role, semester" },
+  project_role_at: { arity: 4, meaning: "person, organization, project, role" },
+  current_project_at: { arity: 3, meaning: "person, organization, project" },
+  knows_technology: { arity: 2, meaning: "person knows technology" },
+  worked_with_technology: { arity: 2, meaning: "person worked with technology" },
+});
+const RELATIONS = new Set(Object.keys(RELATION_SIGNATURES));
 const ATOM = /^[a-z][a-z0-9_]*$/;
 
 function validateProposal(p) {
   if (!RELATIONS.has(p.relation)) throw new Error(`Relation not allowed: ${p.relation}`);
-  if (!Array.isArray(p.arguments) || p.arguments.length < 1 || p.arguments.length > 4)
-    throw new Error("A proposition needs 1-4 arguments");
+  if (!Array.isArray(p.arguments) || p.arguments.length !== RELATION_SIGNATURES[p.relation].arity)
+    throw new Error(`Bad arity for ${p.relation}: expected ${RELATION_SIGNATURES[p.relation].arity}`);
   for (const arg of p.arguments) {
     if (typeof arg !== "string" || !ATOM.test(arg))
       throw new Error(`Unsafe atom: ${JSON.stringify(arg)}`);
@@ -82,4 +94,4 @@ class MemoryStore {
   }
 }
 
-module.exports = { MemoryStore, validateProposal, toFact, RELATIONS };
+module.exports = { MemoryStore, validateProposal, toFact, RELATIONS, RELATION_SIGNATURES };

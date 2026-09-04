@@ -3,6 +3,7 @@ const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
 const { MemoryStore, validateProposal } = require("./memory-store");
+const { EXTRACTION_INSTRUCTIONS } = require("./llm-schema");
 const { run: runCdrGold, fixedQuery } = require("./cdr-eval-harness");
 const { consult: consultProlog, query: queryProlog } = require("./prolog-engine");
 const { reflect } = require("./memory-reflection");
@@ -25,6 +26,18 @@ assert.throws(() => validateProposal({
   polarity: "positive", relation: "consult", arguments: ["evil"],
   valid_from: null, valid_to: null, confidence: 1,
 }), /not allowed/);
+assert.throws(() => validateProposal({
+  polarity: "positive", relation: "dislikes", arguments: ["user", "pizza"],
+  valid_from: null, valid_to: null, confidence: 1,
+}), /not allowed/);
+assert.throws(() => validateProposal({
+  polarity: "positive", relation: "likes", arguments: ["user"],
+  valid_from: null, valid_to: null, confidence: 1,
+}), /Bad arity/);
+assert.match(EXTRACTION_INSTRUCTIONS, /likes\(Person, Thing\).*polarity=negative/s);
+assert.match(EXTRACTION_INSTRUCTIONS, /never invent or emit an antonym predicate such as dislikes/);
+assert.match(EXTRACTION_INSTRUCTIONS, /Prolog-backed assertion journal/);
+assert.match(EXTRACTION_INSTRUCTIONS, /project_role_at\/4/);
 
 (async () => {
   const testRoot = path.join(process.cwd(), "test-tmp");
@@ -113,6 +126,12 @@ assert.throws(() => validateProposal({
   const claims = await codexProvider.extractClaims("Я знаю Python");
   assert.equal(claims[0].relation, "knows_technology");
   assert.deepEqual(claims[0].arguments, ["user", "python"]);
+  const pizzaClaims = await codexProvider.extractClaims("I love pizza but cannot stand pizza.");
+  assert.deepEqual(pizzaClaims.map(claim => [claim.relation, claim.polarity]), [["likes", "positive"], ["likes", "negative"]]);
+  const pizzaStore = new MemoryStore(path.join(dir, "pizza-memory.pl"));
+  const pizzaResult = await pizzaStore.add(pizzaClaims, "pizza_turn");
+  assert.equal(pizzaResult.conflicts.length, 1);
+  assert.match(pizzaResult.conflicts[0], /direct/);
   const reply = await codexProvider.respond("Что я знаю?", "knows_technology(user,python).", []);
   assert.match(reply, /Mock response/);
   const reflectionProposal = await codexProvider.reflect({ duplicates: ["A = a1, B = a2"] });
