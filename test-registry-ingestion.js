@@ -8,6 +8,7 @@ const { zodResponseFormat } = require("openai/helpers/zod");
 const {
   ACTIVE_ONTOLOGY,
   MEMORY_PREDICATES,
+  RESERVED_PREDICATES,
   loadOntologyProfile,
   printRegistry,
 } = require("./ontology-registry");
@@ -17,7 +18,7 @@ const {
   createExtractionSchema,
   createMemoryExtractionJsonSchema,
 } = require("./llm-schema");
-const { MemoryStore, validateExtraction } = require("./memory-store");
+const { MemoryStore, validateExtraction, validateOntologyCandidate } = require("./memory-store");
 
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -121,6 +122,16 @@ assert.throws(() => validateExtraction(envelope([assertion], [], {
 })), /unknown or missing keys/);
 assert.equal(Extraction.parse(envelope([], [candidate])).ontology_candidates[0].name, "teaches");
 assert.throws(() => Extraction.parse(envelope([], [{ ...candidate, name: "likes" }])));
+for (const name of RESERVED_PREDICATES) {
+  const reservedCandidate = {
+    ...candidate,
+    name,
+    arity: 1,
+    argument_types: ["entity"],
+  };
+  assert.throws(() => validateOntologyCandidate(reservedCandidate), /unsafe predicate/);
+  assert.throws(() => Extraction.parse(envelope([], [reservedCandidate])), /unsafe predicate/);
+}
 
 (async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "prologos-registry-"));
@@ -145,7 +156,28 @@ assert.throws(() => Extraction.parse(envelope([], [{ ...candidate, name: "likes"
       ontology_candidates: [],
     }).assertions.length, 1);
 
-    const firstHash = loaded.identity.sha256;
+    writeProfile(root, {
+      domain: layer("test_domain", [type("activity", "entity")], [predicate("derived_activity", ["entity"], "derived")]),
+    });
+    const derivedRegistry = loadOntologyProfile(profileFile);
+    const derivedCandidate = {
+      ...candidate,
+      name: "derived_activity",
+      arity: 1,
+      argument_types: ["entity"],
+    };
+    assert.throws(
+      () => validateOntologyCandidate(derivedCandidate, derivedRegistry),
+      /already registered/,
+    );
+    assert.throws(() => createExtractionSchema(derivedRegistry).parse({
+      schema_version: "memory-extraction-v2",
+      registry_identity: derivedRegistry.identity,
+      assertions: [],
+      ontology_candidates: [derivedCandidate],
+    }), /already registered/);
+
+    const firstHash = derivedRegistry.identity.sha256;
     writeJson(path.join(root, "registries", "core.json"), layer(
       "test_core",
       [type("entity"), type("value", "entity")],

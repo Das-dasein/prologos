@@ -10,6 +10,7 @@ const { consult, query } = engine;
 const {
   ACTIVE_ONTOLOGY,
   MEMORY_PREDICATES,
+  validateOntologyCandidateName,
   validateRegistryIdentity,
 } = require("./ontology-registry");
 
@@ -46,16 +47,15 @@ function validateProposal(proposal) {
   return proposal;
 }
 
-function validateOntologyCandidate(candidate) {
+function validateOntologyCandidate(candidate, registry = ACTIVE_ONTOLOGY) {
   exactObject(candidate, ["name", "arity", "argument_types", "meaning", "evidence_span"], "ontology candidate");
-  if (!ATOM.test(candidate.name)) throw new Error(`Unsafe ontology candidate name: ${candidate.name}`);
-  if (RELATIONS.has(candidate.name)) throw new Error(`Ontology candidate is already registered: ${candidate.name}`);
+  validateOntologyCandidateName(candidate.name, registry);
   if (!Number.isInteger(candidate.arity) || candidate.arity < 1 || candidate.arity > 4)
     throw new Error(`Bad ontology candidate arity: ${candidate.arity}`);
   if (!Array.isArray(candidate.argument_types) || candidate.argument_types.length !== candidate.arity)
     throw new Error(`Bad ontology candidate argument types for ${candidate.name}`);
   for (const type of candidate.argument_types) {
-    if (typeof type !== "string" || !ACTIVE_ONTOLOGY.types[type])
+    if (typeof type !== "string" || !registry.types[type])
       throw new Error(`Unknown ontology candidate argument type: ${type}`);
   }
   if (typeof candidate.meaning !== "string" || !candidate.meaning.trim() || candidate.meaning.length > 500)
@@ -76,7 +76,7 @@ function validateExtraction(extraction) {
   if (extraction.assertions.length > 100 || extraction.ontology_candidates.length > 50)
     throw new Error("Memory extraction exceeds collection limits");
   extraction.assertions.forEach(validateProposal);
-  extraction.ontology_candidates.forEach(validateOntologyCandidate);
+  extraction.ontology_candidates.forEach(candidate => validateOntologyCandidate(candidate));
   return extraction;
 }
 

@@ -52,6 +52,21 @@ function validateIdentity(identity, label) {
   if (!ATOM.test(identity.name) || !VERSION.test(identity.version)) fail("REGISTRY_IDENTITY", `invalid ${label}`);
 }
 
+function validatePredicateName(name) {
+  if (!ATOM.test(name) || RESERVED_PREDICATES.has(name))
+    fail("REGISTRY_PREDICATE", `unsafe predicate ${name}`);
+  return name;
+}
+
+function validateOntologyCandidateName(name, registry) {
+  validatePredicateName(name);
+  if (!registry || !registry.predicates || typeof registry.predicates !== "object")
+    fail("REGISTRY_SCHEMA", "ontology candidate registry is required");
+  if (registry.predicates[name])
+    fail("REGISTRY_DUPLICATE", `ontology candidate is already registered: ${name}`);
+  return name;
+}
+
 function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, "utf8")); }
   catch (error) { fail("REGISTRY_READ", `cannot read registry JSON: ${error.message}`); }
@@ -77,7 +92,7 @@ function validateLayer(layer, role) {
   }
   for (const [index, predicate] of layer.predicates.entries()) {
     exact(predicate, ["name", "arity", "kind", "argument_types", "meaning"], `${role}.predicates[${index}]`);
-    if (!ATOM.test(predicate.name) || RESERVED_PREDICATES.has(predicate.name)) fail("REGISTRY_PREDICATE", `unsafe predicate ${predicate.name}`);
+    validatePredicateName(predicate.name);
     if (!Number.isInteger(predicate.arity) || predicate.arity < 1 || predicate.arity > 4 || !["base", "derived"].includes(predicate.kind))
       fail("REGISTRY_PREDICATE", `invalid signature for ${predicate.name}`);
     if (!Array.isArray(predicate.argument_types) || predicate.argument_types.length !== predicate.arity || predicate.argument_types.some(type => !ATOM.test(type)))
@@ -174,5 +189,7 @@ module.exports = {
   canonicalJson,
   loadOntologyProfile,
   printRegistry,
+  validateOntologyCandidateName,
+  validatePredicateName,
   validateRegistryIdentity,
 };

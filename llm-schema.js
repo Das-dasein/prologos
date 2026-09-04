@@ -1,7 +1,11 @@
 "use strict";
 
 const { z } = require("zod");
-const { ACTIVE_ONTOLOGY } = require("./ontology-registry");
+const {
+  ACTIVE_ONTOLOGY,
+  RESERVED_PREDICATES,
+  validateOntologyCandidateName,
+} = require("./ontology-registry");
 
 const ATOM = /^[a-z][a-z0-9_]*$/;
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -32,8 +36,11 @@ function createExtractionSchema(registry = ACTIVE_ONTOLOGY) {
   }).strict().superRefine((candidate, context) => {
     if (candidate.argument_types.length !== candidate.arity)
       context.addIssue({ code: "custom", path: ["argument_types"], message: `${candidate.name} requires ${candidate.arity} argument types` });
-    if (registry.predicates[candidate.name])
-      context.addIssue({ code: "custom", path: ["name"], message: `${candidate.name} is already registered` });
+    try {
+      validateOntologyCandidateName(candidate.name, registry);
+    } catch (error) {
+      context.addIssue({ code: "custom", path: ["name"], message: error.message });
+    }
   });
   return z.object({
     schema_version: z.literal("memory-extraction-v2"),
@@ -154,6 +161,7 @@ function registryGuide(registry = ACTIVE_ONTOLOGY) {
 }
 
 const RELATION_GUIDE = registryGuide();
+const RESERVED_CANDIDATE_NAMES = [...RESERVED_PREDICATES].sort().join(", ");
 const EXTRACTION_INSTRUCTIONS = `You are the structured ingestion component for a Prolog-backed assertion journal.
 You are not a conversational assistant. Emit one memory-extraction-v2 object and no prose.
 The active ontology profile identity is ${ACTIVE_ONTOLOGY.identity.name}@${ACTIVE_ONTOLOGY.identity.version} sha256:${ACTIVE_ONTOLOGY.identity.sha256}.
@@ -166,7 +174,7 @@ Use polarity=positive for an affirmed registered proposition and polarity=negati
 Only registered base predicates may appear in assertions, with exact argument order and arity:
 ${RELATION_GUIDE}
 
-If a durable statement requires a safe but unregistered predicate, do not emit it as an assertion. Put it in ontology_candidates with a proposed lowercase snake_case name, arity, registered argument types, a concise meaning, and the verbatim supporting span from the user message. Ontology candidates are untrusted diagnostics: they are not assertions and cannot modify memory or the ontology profile.`;
+If a durable statement requires a safe but unregistered predicate, do not emit it as an assertion. Put it in ontology_candidates with a proposed lowercase snake_case name, arity, registered argument types, a concise meaning, and the verbatim supporting span from the user message. Never propose a reserved runtime name: ${RESERVED_CANDIDATE_NAMES}. Ontology candidates are untrusted diagnostics: they are not assertions and cannot modify memory or the ontology profile.`;
 
 module.exports = {
   Extraction,
