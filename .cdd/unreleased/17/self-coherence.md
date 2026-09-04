@@ -24,6 +24,8 @@ Post-implementation self-check: the diff adds only the harness, its fake-only fo
 
 Known debt: no real-provider adapter is wired into this harness CLI; live execution remains deliberately out of scope for alpha and must be separately reviewed. Cross-condition budget equality and CDR scoring remain CDR #5/#7 responsibilities. No live provider run, raw live output, CDR dataset/oracle/threshold/claim edit, trusted-memory write, registry mutation, beta/gamma artifact, or quality claim was produced.
 
+The final patch also rejects unreconciled provider usage totals (`total_tokens != input_tokens + output_tokens`) with `USAGE_MISMATCH`; the focused suite was rerun after this patch and remains green.
+
 ## CDD Trace
 
 1. Receive: accepted issue #17 and γ dispatch on `cycle/17`; verified checkout and read the gamma scaffold and wave contract.
