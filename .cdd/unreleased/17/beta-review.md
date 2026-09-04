@@ -112,3 +112,49 @@ Present: gamma scaffold, wave manifest/spec/dispatch, alpha self-coherence, harn
 The implementation correctly leaves CDR policy, dataset, oracle, thresholds, registry, trusted-memory writes, and claims untouched. The disclosed no-real-adapter debt is material because it conflicts with AC5 as written; it cannot be silently carried into approval. No real provider/API call was made in this review.
 
 **Terminal verdict:** REQUEST CHANGES
+
+---
+
+## β-R2 re-review
+
+**Round:** 2 (fresh independent review after α repair R1)
+**Base SHA:** `04a08184ddbba32862068f9f1d03d2f0c80b71a4`
+**Head SHA:** `046d2234b9440317b87517a834c478b51b4c742b`
+**Branch:** `cycle/17`
+**Review identity:** `beta@prologos.cdd.cnos`
+**Verdict basis:** issue #17, `gamma-scaffold.md`, `gamma-clarification.md`, α self-coherence fix round, CDR policy/method and wave artifacts were reread. The review is limited to the repair and full branch; no merge or issue closure is performed.
+
+### F-1–F-4 resolution
+
+| Finding | Result | Evidence |
+|---|---|---|
+| F-1 CLI parser/entrypoint | **RESOLVED** | `parseArgs` now rejects unknown/missing values; tracked fixture/config/dataset are present; subprocess positive invocation writes one artifact and missing arguments exit 2 with usage and no stack trace. |
+| F-2 prompt template pin | **RESOLVED** | `validateConfig` compares `prompt_sha256` to the named `PROMPT_TEMPLATE`; each turn records the independently computed `assembled_prompt_sha256`; matching and mismatch tests pass. |
+| F-3 allowlist/opt-in/raw local output | **UNRESOLVED** | Allowlist is fixed to `fake`/`openai-api`, and the live flag is checked before `createOpenAIProvider()` requires the adapter. However `createOpenAIProvider()` maps `adapter.extractMemory()` to `usage: {}` and provides no `raw_output`; the harness therefore fails every real response at `USAGE_MISSING` and cannot produce the required local raw machine-readable output. The CLI also does not require or otherwise establish a reviewable raw-output path for live runs. |
+| F-4 CI workflow/status | **UNRESOLVED** | Workflow content is minimal, locked-install based, push/PR scoped, and contains no secrets/provider call. The actual run for repair SHA `046d2234b9440317b87517a834c478b51b4c742b` is completed **failure**, run `33923515543`; `npm test` fails on GitHub-hosted Ubuntu with `Error: SWI-Prolog query failed: spawn swipl ENOENT`. |
+
+### Contract and invariant audit
+
+- **v2/no-write:** RESOLVED for the fake path. `Extraction.parse` is used, the harness has no `MemoryStore` import/call, and the focused suite proves a normalized record plus non-overwriting artifact. No `.pl`, registry, dataset, oracle, threshold, CDR result, or claim mutation is present in the branch diff.
+- **Leakage/preflight:** RESOLVED for tested private-marker and stable-01 ID paths; provider call counters remain zero. The check runs before adapter invocation. Existing gold/schema regression commands remain green locally.
+- **Regression:** local `node test-live-extraction.js`, `npm test`, `npm run test:cdr-gold`, and `git diff --check origin/main...HEAD` pass. This does not override the failed remote CI result above.
+- **Scope:** mostly preserved; F-3 remains an explicit implementation gap against issue AC5 and the CDR method requirement to record raw JSONL output. No live provider call was made.
+- **Identities:** branch/head and α/gamma/beta author identities are distinct and recorded; this review is authored as `beta@prologos.cdd.cnos`.
+
+### Commands and observed output
+
+| Command | Result |
+|---|---|
+| `git fetch origin main` | passed; `origin/main` resolved to `04a08184ddbba32862068f9f1d03d2f0c80b71a4` |
+| `node test-live-extraction.js` | `live-extraction ok: 15 assertions` |
+| `npm test` | passed locally; all suites including live extraction green |
+| `npm run test:cdr-gold` | `cdr gold harness ok` |
+| `git diff --check origin/main...HEAD` | clean |
+| `gh run list --repo Das-dasein/prologos --commit 046d2234b9440317b87517a834c478b51b4c742b` | run `33923515543`, `completed`, `failure` |
+| `gh run view 33923515543 --log-failed` | GitHub `npm test`: `spawn swipl ENOENT` |
+
+### Required next repair and scope debt
+
+F-3 must either implement a real adapter result contract carrying reconciled usage and raw output, write raw output only beneath an explicit local non-overwriting directory while retaining only a path reference in parsed records, and test both opt-in gates without network; or the issue/AC5 must be formally amended before approval. F-4 must make the declared workflow pass on GitHub (including its SWI-Prolog prerequisite) and produce a successful run for the repair head. Keep CDR policy/method, datasets, oracles, thresholds, claims, durable memory and registries unchanged. No β close-out, merge, or issue closure is authorized by this review.
+
+**Terminal verdict: REQUEST CHANGES**
