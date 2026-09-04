@@ -70,6 +70,12 @@ const run = provider => runHarness({ config, datasetFile, provider });
   const rawRun = await runHarness({ config, datasetFile, rawOutputDir: rawDir, provider: createFakeProvider({ output: valid, raw_output: "provider raw" }) });
   assert.match(rawRun.records[0].raw_output_path, /fixture-01-turn-1\.json$/);
   assert.equal(fs.readFileSync(rawRun.records[0].raw_output_path, "utf8"), "provider raw\n");
+  const nativeRun = await runHarness({ config, datasetFile, rawOutputDir: path.join(root, "native-raw"), provider: {
+    extractEvidence: async () => ({ output: valid, model: config.model, native_usage: { prompt_tokens: 3, completion_tokens: 4, total_tokens: 7 }, raw_output: { id: "fake-completion" } }),
+  } });
+  assert.deepEqual(nativeRun.records[0].usage, { input_tokens: 3, output_tokens: 4, total_tokens: 7 });
+  assert.match(nativeRun.records[0].raw_output_path, /native-raw\/fixture-01-turn-1\.json$/);
+  assert.doesNotMatch(JSON.stringify(nativeRun.records[0]), /fake-completion/);
   const cliOutput = path.join(root, "cli-run.json");
   const cli = spawnSync(process.execPath, [path.join(__dirname, "live-extraction-harness.js"), "--config", path.join(__dirname, "test-fixtures/live-extraction-config.json"), "--dataset", path.join(__dirname, "test-fixtures/live-extraction-cli.jsonl"), "--fixture", path.join(__dirname, "test-fixtures/live-extraction-valid.json"), "--output", cliOutput, "--provider", "fake"], { encoding: "utf8" });
   assert.equal(cli.status, 0, cli.stderr);
@@ -78,6 +84,9 @@ const run = provider => runHarness({ config, datasetFile, provider });
   assert.equal(badCli.status, 2);
   assert.match(badCli.stderr, /Usage:/);
   assert.doesNotMatch(badCli.stderr, /TypeError|at /);
+  const liveWithoutRaw = spawnSync(process.execPath, [path.join(__dirname, "live-extraction-harness.js"), "--config", path.join(__dirname, "test-fixtures/live-extraction-config.json"), "--dataset", path.join(__dirname, "test-fixtures/live-extraction-cli.jsonl"), "--output", path.join(root, "live.json"), "--provider", "openai-api", "--allow-live-provider"], { encoding: "utf8" });
+  assert.equal(liveWithoutRaw.status, 2);
+  assert.match(liveWithoutRaw.stderr, /raw-output-dir/);
   const privateRun = await runHarness({ config, datasetFile, promptBuilder: () => "sk-private-marker", provider: { extract: async () => { leakageCalls += 1; return { output: valid, usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }; } } });
   assert.equal(privateRun.records[0].error.code, "PRIVATE_MARKER");
   assert.equal(leakageCalls, 0);

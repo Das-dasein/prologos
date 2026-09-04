@@ -69,7 +69,7 @@ function normalizeResult(result) {
 }
 
 async function runHarness({ config, datasetFile, provider, promptBuilder = ({ text }) => PROMPT_TEMPLATE.replace("{{text}}", text), rawOutputDir }) {
-  if (!provider || typeof provider.extract !== "function") fail("CONFIG", "an explicit provider adapter is required");
+  if (!provider || (typeof provider.extract !== "function" && typeof provider.extractEvidence !== "function")) fail("CONFIG", "an explicit provider adapter is required");
   const dataset = readTurns(datasetFile); const datasetHash = sha256(dataset.text); validateConfig(config, datasetHash);
   const records = [];
   for (const item of dataset.cases) for (const turn of item.dialogue) {
@@ -77,9 +77,17 @@ async function runHarness({ config, datasetFile, provider, promptBuilder = ({ te
     const meta = { source_commit: config.source_commit, dataset_sha256: datasetHash, profile_identity: config.profile_identity, provider: config.provider, model: config.model, prompt_template: PROMPT_TEMPLATE_NAME, prompt_sha256: config.prompt_sha256, assembled_prompt_sha256: sha256(prompt), sampling: config.sampling, retry_policy: config.retry_policy, case_id: item.case_id, turn: turn.turn };
     try {
       preflightPrompt(prompt);
-      const response = await provider.extract({ prompt, case_id: item.case_id, turn: turn.turn });
-      if (!response || typeof response !== "object" || typeof response.output !== "object" || !response.usage) fail("MALFORMED_OUTPUT", "provider must return output and usage");
-      const usage = response.usage;
+      const response = await (typeof provider.extractEvidence === "function"
+        ? provider.extractEvidence({ prompt, model: config.model, case_id: item.case_id, turn: turn.turn })
+        : provider.extract({ prompt, model: config.model, case_id: item.case_id, turn: turn.turn }));
+      if (!response || typeof response !== "object" || typeof response.output !== "object") fail("MALFORMED_OUTPUT", "provider must return output and usage");
+      if (response.model && response.model !== config.model) fail("MODEL_MISMATCH", "provider model does not match configured model");
+      const nativeUsage = response.native_usage;
+      const usage = response.usage || (nativeUsage && {
+        input_tokens: nativeUsage.prompt_tokens,
+        output_tokens: nativeUsage.completion_tokens,
+        total_tokens: nativeUsage.total_tokens,
+      });
       if (!["input_tokens", "output_tokens", "total_tokens"].every(k => Number.isInteger(usage[k]) && usage[k] >= 0)) fail("USAGE_MISSING", "complete provider usage evidence is required");
       if (usage.total_tokens !== usage.input_tokens + usage.output_tokens) fail("USAGE_MISMATCH", "provider usage totals do not reconcile");
       if (usage.total_tokens > config.max_context_tokens || usage.input_tokens > config.max_context_tokens) fail("BUDGET", "provider usage exceeds configured context budget");
@@ -136,9 +144,9 @@ function writeRawOutput(dir, caseId, turn, rawOutput) {
   return file;
 }
 
-function createOpenAIProvider() {
+function createOpenAIProvider(model) {
   const adapter = require("./providers/openai-api");
-  return { extract: async ({ prompt }) => ({ output: await adapter.extractMemory(prompt), usage: {} }) };
+  return { extractEvidence: async ({ prompt }) => adapter.extractMemoryEvidence(prompt, { model }) };
 }
 
 module.exports = { createFakeProvider, normalizeResult, parseArgs, preflightPrompt, readTurns, runHarness, sha256, validateConfig, writeRawOutput, writeRunArtifact, PROMPT_TEMPLATE, PROMPT_TEMPLATE_NAME };
@@ -154,14 +162,14 @@ if (require.main === module) {
     if (args) console.error("✗ Usage: node live-extraction-harness.js --config FILE --dataset FILE --output FILE --provider fake|openai-api [--allow-live-provider] [--raw-output-dir DIR]");
     process.exitCode = 2;
   } else {
-    if (args.provider === "openai-api" && !args.allowLiveProvider) {
-      console.error("✗ Live provider is disabled; pass --provider openai-api --allow-live-provider"); process.exitCode = 2; return;
+    if (args.provider === "openai-api" && (!args.allowLiveProvider || !args["raw-output-dir"] || !args["raw-output-dir"].trim())) {
+      console.error("✗ Live provider requires --allow-live-provider and --raw-output-dir"); process.exitCode = 2; return;
     }
     try {
       const config = JSON.parse(fs.readFileSync(path.resolve(args.config), "utf8"));
       const provider = args.provider === "fake"
         ? createFakeProvider(JSON.parse(fs.readFileSync(path.resolve(args.fixture || "test-fixtures/live-extraction-valid.json"), "utf8")))
-        : createOpenAIProvider();
+        : createOpenAIProvider(config.model);
       runHarness({ config, datasetFile: args.dataset, provider, rawOutputDir: args["raw-output-dir"] })
         .then(result => { writeRunArtifact(args.output, result); console.log(`✓ Wrote ${args.output}`); })
         .catch(error => { console.error(`✗ ${error.code || "RUN"}: ${error.message}`); process.exitCode = 1; });

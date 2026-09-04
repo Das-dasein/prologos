@@ -63,3 +63,33 @@ R1. Prove: focused subprocess positive/negative tests, full regression, CDR gold
 5. α Skills: Tier 1/2/3 loaded and listed above.
 6. α Artifacts: `live-extraction-harness.js` adds config/dataset preflight, provider adapter boundary, v2 validation, normalized result and local artifact writer; `test-live-extraction.js` adds deterministic fake fixtures for valid, malformed, stale identity, leakage, usage and budget paths; `package.json` registers the focused suite. Caller path is `test-live-extraction.js` lines 10-12 and 35-75. No existing provider, CDR data, oracle, threshold, registry, or trusted memory surface changed.
 7. α Self-coherence: `node test-live-extraction.js` output is `live-extraction ok: 11 assertions`; `npm test` output is green for all six suites; `git diff --check` is clean. `git diff --stat origin/main..HEAD` is enumerated by the three implementation files plus this report and the four gamma scaffold files; role identity is verified by `git log -1 --format='%H %an <%ae>'` → `6601cdf... alpha <alpha@prologos.cdd.cnos>` (and each alpha commit uses the same identity). Branch remains `cycle/17`, fetched from origin; no rebase was needed because the branch has not drifted behind `origin/main`. This is the α handoff boundary; beta/gamma artifacts are not authored here.
+
+## Fix round R2
+
+### Gap
+
+β-R2 F-3/F-4 are repaired within the γ clarification: the harness-facing OpenAI adapter preserves parsed v2 output while exposing native usage and raw completion evidence; live use requires both explicit opt-in gates and a non-empty local raw-output directory; deterministic CI installs `swi-prolog-nox` before tests. CDR policy/method, datasets, oracles, thresholds, claims, registries, and trusted memory remain untouched.
+
+### Skills
+
+Fresh α R2 reloaded the prescribed CDD/CDS and engineering skill set in order. No β or γ role skill was used and no β/γ artifact was authored.
+
+### ACs
+
+F-3: `extractMemory` remains the application-compatible parsed-output API; `extractMemoryEvidence` is the harness-facing envelope with parsed output, selected model, native usage, and raw completion. The harness maps prompt/completion/total tokens to normalized input/output/total fields, rejects missing or unreconciled usage, and rejects a provider model differing from configured model. `openai-api` construction is reached only after `--allow-live-provider` and non-empty `--raw-output-dir`; raw data is written locally with non-overwriting paths and only its path is retained in records. Fake tests prove mapping, path/content, and gate behavior without network.
+
+F-4: the workflow installs locked Node dependencies and non-interactive `swi-prolog-nox` before `npm test`; it has no secrets or provider invocation.
+
+### Self-check
+
+`node test-live-extraction.js` → `live-extraction ok: 15 assertions`; `npm test` and `npm run test:cdr-gold` pass; `git diff --check` is clean. A YAML parse probe confirms the workflow is structurally valid. Caller/peer enumeration: `test-live-extraction.js` and the CLI call the harness; `providers/openai-api.js` is the sole live adapter and is lazily loaded after gates; `writeRawOutput` is called only by `runHarness`; `llm-schema.js` remains the v2 validator; workflow invokes only apt/npm deterministic steps. No network/API call was made.
+
+### Debt
+
+Live credentials and live completion evidence remain intentionally absent; α proves only the adapter contract and local fake projection. A fresh β must verify the hosted workflow succeeds for this repair head and independently inspect any real-provider run. No CDR artifact, quality claim, policy/method/dataset/oracle/threshold edit, registry mutation, or durable-memory write was produced.
+
+### CDD Trace
+
+R2. Receive: γ Repair R2 for unresolved F-3/F-4 only.
+R2. Produce: compatibility-preserving evidence adapter, native usage normalization, model/gate checks, deterministic tests, CI SWI-Prolog prerequisite, and this α self-coherence update.
+R2. Prove: focused/full/CDR deterministic checks and non-network gate probes pass locally; handoff is ready for fresh β review, with no merge or closure.
