@@ -8,11 +8,11 @@ const { validateDataset, validateRecord, scoreAnnotations, DATASET_SHA256 } = re
 const dataset = path.join(__dirname, ".cdr/datasets/extraction-annotation-pilot-v1.jsonl");
 const result = validateDataset(dataset);
 assert.equal(result.status, "ok");
-assert.equal(result.record_count, 8);
+assert.equal(result.record_count, 9);
 assert.equal(result.sha256, DATASET_SHA256);
 assert.match(fs.readFileSync(path.join(__dirname, ".cdr/datasets/extraction-annotation-pilot-v1.manifest.md"), "utf8"), new RegExp(DATASET_SHA256));
 const score = scoreAnnotations(dataset, path.join(__dirname, ".cdr/datasets/extraction-annotation-seeded-errors-v1.jsonl"));
-assert.deepEqual(score.error_counts, { argument: 1, atomicity: 1, coreference: 1, decision: 3, hallucination: 2, modality: 1, polarity: 1, predicate: 1, provenance: 1, time: 1 });
+assert.deepEqual(score.error_counts, { argument: 1, atomicity: 1, coreference: 1, decision: 3, hallucination: 2, modality: 1, polarity: 2, predicate: 2, provenance: 1, time: 1 });
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "cdr-annotation-"));
 try {
   const alteredGold = path.join(temp, "altered-gold.jsonl");

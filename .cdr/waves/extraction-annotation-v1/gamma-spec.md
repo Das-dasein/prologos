@@ -19,6 +19,15 @@ explicit and is not an ongoing claim. `reported`, `questioned`, and `uncertain`
 modality are annotation output but are not authorization to write a positive
 durable fact.
 
+## Canonical polarity case
+
+The pilot fixes one local canonicalization decision: “love pizza” and “cannot
+stand pizza” use the same predicate `likes(user,pizza)` with `positive` and
+`negative` polarity respectively. Emitting `dislikes(user,pizza)` for the
+second clause is scored as a predicate/polarity error in this pilot. This is a
+test oracle for the declared relation, not a claim that every antonym pair in
+natural language has this structure or a change to the shared ontology.
+
 ## Error taxonomy
 
 An evaluated extractor error must be placed in one or more of:

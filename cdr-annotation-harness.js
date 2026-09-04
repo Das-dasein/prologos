@@ -9,7 +9,7 @@ const MODALITIES = new Set(["asserted", "reported", "questioned", "uncertain"]);
 const POLARITIES = new Set(["positive", "negative"]);
 const TIME_KEYS = { unknown: ["kind"], point: ["kind", "value"], interval: ["kind", "from", "to"], ongoing: ["kind", "since"] };
 const DEFAULT_DATASET = ".cdr/datasets/extraction-annotation-pilot-v1.jsonl";
-const DATASET_SHA256 = "64b68339eb158c9f4242f179b63502718a92382c2e22470b8ca1a6e268341b4f";
+const DATASET_SHA256 = "7cf87a0f2a7b7f101872364c16d505e8c948825ac060fa2fe2bd5a8a004edf66";
 const PRIVATE_MARKERS = ["data/memory.pl", "OPENAI_API_KEY", "sk-", "DO_NOT_RENDER_PRIVATE_MEMORY"];
 
 function fail(code, message) { const error = new Error(message); error.code = code; throw error; }
