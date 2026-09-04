@@ -109,7 +109,7 @@ module.exports = { runPilot, goldProvider, validatePilotConfig, checkQuery, buil
 
 if (require.main === module) {
   (async () => {
-    const argv = process.argv.slice(2); const get = name => { const i = argv.indexOf(`--${name}`); return i < 0 ? undefined : argv[i + 1]; };
+    const argv = process.argv.slice(2); const get = name => { const prefix = `--${name}=`; const inline = argv.find(token => token.startsWith(prefix)); if (inline) return inline.slice(prefix.length); const i = argv.indexOf(`--${name}`); return i < 0 ? undefined : argv[i + 1]; };
     const condition = get("condition") || "B1"; const configFile = get("config") || ".cdr/results/prolog-memory-eval-v0/pilot-config-v1.json"; const datasetFile = get("dataset") || ".cdr/datasets/dialogues-pilot-v1.jsonl"; const output = get("output");
     if (!output) fail("CLI", "--output is required");
     const config = JSON.parse(fs.readFileSync(configFile, "utf8")); const dataset = readJsonl(datasetFile); const provider = config.provider === "fake" ? goldProvider(dataset) : { extract: async ({ prompt }) => require("./providers/openai-api").extractMemoryEvidence(prompt, { model: config.model }) };
