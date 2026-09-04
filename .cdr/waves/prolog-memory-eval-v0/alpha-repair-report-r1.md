@@ -1,41 +1,59 @@
-# Alpha repair report R1 — prolog-memory-eval-v0
+# Alpha repair report R1 — bounded F1–F4 contract repair
 
-Repair scope is limited to canonical beta findings F1–F5. No executable CDS
-harness was authored and the wave remains open for fresh beta re-audit.
+## Scope and invariants
+
+This repair addresses beta R1 findings F1–F4 from the linked issue #5
+annotation oracle and issue #20 matrix contract. It changes no gate threshold, baseline selection rule, provider,
+live data, or claim scope. The provider was not invoked.
 
 ## Repairs
 
-- **F1 (oracle):** stable and correction queries now use `active_claim/7` (or
-  the declared `current_project/3` rule); the Python query asks for
-  `knows_technology/2`; temporal queries bind an injected claim and apply
-  `overlaps/4`. Expected answers, including source/date bindings, were updated
-  in the JSONL dataset and `pilot-oracle.json`. A local Tau Prolog check shows
-  the repaired predicates succeed under case-local gold injection. The clean
-  beta reproduction must still be rerun independently.
-- **F2 (end-to-end oracle):** added `answer-oracle-v1.json`, authored before
-  model output, with an acceptable-answer contract, per-case expected answer,
-  source claim IDs, source turns, date intervals, and deterministic
-  stale/conflict classification. This makes PAM-C4 and provenance scoring
-  mechanically labelable; natural-language semantic matching remains the
-  harness's declared scorer responsibility.
-- **F3 (execution/sentinels):** method v1 now fixes provider class, sampling,
-  retry, prompt IDs, 4096-token budget, canonical CDS harness command, raw
-  output requirements, leakage abort, and budget rejection behavior. No pinned
-  CDS harness exists in this snapshot, so this finding is explicitly pending
-  separate CDS work and is not represented as reproduced evidence.
-- **F4 (baseline):** method v1 now pre-registers strongest-baseline selection
-  from B1–B3 by stale/contradictory error, then general-answer error, then
-  fixed B3/B2/B1 tie-break order, and requires all baseline scores. The fixed
-  configuration and effective-budget accounting are part of the execution
-  contract.
-- **F5 (manifest):** source provenance now says the workspace was a Git work
-  tree with no commit, with the observed commands and SHA-256 pins as the
-  source identity.
+- **F1 categories:** pinned `extraction-annotation-contract-v1.json` assigns
+  every annotation case exactly once to six registered categories. The empty
+  correction/supersession row is deterministically reported as `N/A`, rather
+  than fabricated as zero.
+- **F2 scope/qualifier:** the contract declares allowed values and defaults;
+  interval annotations map to qualifier `interval`, while absent qualifiers
+  are `N/A`. These labels remain distinct from `time`.
+- **F3 v1→v2/profile:** `toV2` pins the active profile name/version/hash,
+  rejects unknown relations and arity mismatch, maps ordered fields and
+  interval/unknown time deterministically, and routes non-asserted modalities
+  out of durable writes.
+- **F4 formulas/denominators:** the deterministic scorer emits category rows,
+  numerator/denominator/rate, unit, and explicit `N/A` for empty cells. It
+  records pre-registered formulas for decision, field accuracy, precision,
+  and recall.
 
-## Calibration and handoff
+Together these changes close the #5 structural oracle handoff and the #20
+category-stratified matrix contract at the contract level; they do not claim
+that either issue has measured model quality.
 
-Method adequacy and all PAM architecture claims remain `hypothesized`. The
-repair changes labels and reproducibility contracts; they are not model
-results. Fresh beta must rerun the gold-injection queries and audit the new
-answer oracle, configuration, and manifest. Gamma/delta review and close-out
-are outside this repair session.
+## Exact checks
+
+```text
+node test-cdr-annotation.js
+=> exit 0; cdr annotation ok
+
+node -e 'const h=require("./cdr-annotation-harness"); console.log(h.validateDataset(".cdr/datasets/extraction-annotation-pilot-v1.jsonl"))'
+=> status=ok; record_count=9; sha256=7cf87a0f2a7b7f101872364c16d505e8c948825ac060fa2fe2bd5a8a004edf66
+
+node cdr-annotation-harness.js .cdr/datasets/extraction-annotation-pilot-v1.jsonl
+=> exit 0; pinned structural validation passed
+
+git diff --check
+=> exit 0
+
+npm test
+=> exit 1; local dependency `tau-prolog` is absent (`MODULE_NOT_FOUND`);
+   this is an environment limitation and not evidence about the repair.
+```
+
+## Limitations and explicit non-results
+
+The fixture has no correction/supersession example, so that category is
+`N/A`; this repair does not add data. The scorer currently emits the
+deterministic decision category slice; live Matrix B values and full natural
+language field matching require the separately pinned CDS harness. No model,
+provider, extraction precision/recall, answer quality, stale/contradictory
+error, threshold result, usefulness claim, novelty claim, or CDR receipt is
+established. A fresh independent beta review remains required.

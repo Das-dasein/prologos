@@ -6,6 +6,14 @@
 - Redistribution: repository fixture; contains no personal, employer, API, or
   `data/memory.pl` content.
 - Record count: 9.
+- Category binding: `extraction-annotation-contract-v1.json`; every case is
+  assigned exactly once to one of six registered categories. The correction /
+  supersession row is intentionally `N/A` for this nine-turn fixture.
+- v2/profile binding: the contract pins profile
+  `prologos_agent_memory@1.0.0` and its SHA-256, checks predicate arity, and
+  maps asserted v1 writes to v2 `relation`, ordered `arguments`, `polarity`,
+  `valid_from`/`valid_to`, and provenance. Scope defaults to `self` and
+  qualifier to `N/A` (interval assertions use qualifier `interval`).
 - Coverage: independent conjunction, direct negation, canonical positive/
   negative polarity pair, interval qualifier, hypothetical, question, reported
   speech, and ambiguous coreference.

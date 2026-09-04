@@ -3,7 +3,7 @@ const assert = require("node:assert");
 const path = require("node:path");
 const fs = require("node:fs");
 const os = require("node:os");
-const { validateDataset, validateRecord, scoreAnnotations, DATASET_SHA256 } = require("./cdr-annotation-harness");
+const { validateDataset, validateRecord, scoreAnnotations, toV2, DATASET_SHA256 } = require("./cdr-annotation-harness");
 
 const dataset = path.join(__dirname, ".cdr/datasets/extraction-annotation-pilot-v1.jsonl");
 const result = validateDataset(dataset);
@@ -13,6 +13,13 @@ assert.equal(result.sha256, DATASET_SHA256);
 assert.match(fs.readFileSync(path.join(__dirname, ".cdr/datasets/extraction-annotation-pilot-v1.manifest.md"), "utf8"), new RegExp(DATASET_SHA256));
 const score = scoreAnnotations(dataset, path.join(__dirname, ".cdr/datasets/extraction-annotation-seeded-errors-v1.jsonl"));
 assert.deepEqual(score.error_counts, { argument: 1, atomicity: 1, coreference: 1, decision: 3, hallucination: 2, modality: 1, polarity: 2, predicate: 2, provenance: 1, time: 1 });
+assert.equal(score.category_metrics["stable recall"].decision.denominator, 2);
+assert.equal(score.category_metrics["explicit correction/supersession"].decision.rate, null);
+assert.deepEqual(toV2({ predicate: "lives_in", arguments: ["user", "omsk"], polarity: "positive", modality: "asserted", time: { kind: "interval", from: "2020-01-01", to: "2022-12-31" }, source_span: "Omsk" }), {
+  polarity: "positive", relation: "lives_in", arguments: ["user", "omsk"], valid_from: 20200101, valid_to: 20221231,
+  confidence: 1, scope: "self", qualifier: "interval", provenance: { source_span: "Omsk" },
+});
+assert.throws(() => toV2({ predicate: "not_registered", arguments: ["user"], polarity: "positive", modality: "asserted", time: { kind: "unknown" }, source_span: "x" }), { code: "UNKNOWN_RELATION" });
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "cdr-annotation-"));
 try {
   const alteredGold = path.join(temp, "altered-gold.jsonl");
