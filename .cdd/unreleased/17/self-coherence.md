@@ -26,6 +26,34 @@ Known debt: no real-provider adapter is wired into this harness CLI; live execut
 
 The final patch also rejects unreconciled provider usage totals (`total_tokens != input_tokens + output_tokens`) with `USAGE_MISMATCH`; the focused suite was rerun after this patch and remains green.
 
+## Fix round R1
+
+### Gap
+
+β findings F-1–F-4 are repaired within the γ clarification scope: the harness CLI is usable and explicit, prompt identity is bound to the named deterministic template, the provider/raw-output boundary is opt-in and local-only, and deterministic CI is shipped. CDR datasets, oracles, thresholds, methods, and claims remain untouched.
+
+### Skills
+
+The previously loaded CDD/CDS alpha, issue/design/plan, engineering code/test/TypeScript/CLI skills remain the governing set. This fresh α session reloaded Git artifacts only and did not use the first α session as authority.
+
+### ACs
+
+F-1: `parseArgs` rejects unknown/missing options with usage and exit 2; tracked `test-fixtures/live-extraction-cli.jsonl`, config, and output artifact provide a positive subprocess path. F-2: `PROMPT_TEMPLATE_NAME` and `PROMPT_TEMPLATE` define the pin; `prompt_sha256` must match the template and each record carries `assembled_prompt_sha256`; matching and mismatch tests are present. F-3: only `fake` and `openai-api` are accepted; `openai-api` requires both provider flag and `--allow-live-provider`, with adapter require/client construction after the gate; fake raw output is written only to explicit non-overwriting local paths and referenced, not embedded. F-4: `.github/workflows/deterministic.yml` runs locked Node tests for push/PR without secrets or provider calls.
+
+### Self-check
+
+Focused and full test evidence: `node test-live-extraction.js` → `live-extraction ok: 15 assertions`; `npm test` → all suites green; `npm run test:cdr-gold` → `cdr gold harness ok`; `git diff --check` → clean. CLI negative subprocess exits 2, prints usage, and contains no stack trace; positive subprocess writes one artifact. No network/provider invocation was made. Affected peers were re-enumerated: CLI callers are `test-live-extraction.js` and the documented shell entrypoint; raw-output writer is called only by `runHarness`; provider modules remain unchanged and openai adapter loading is gated; workflow calls only npm scripts. Existing schema/profile and MemoryStore boundaries remain unchanged.
+
+### Debt
+
+The openai-api adapter remains deliberately unexecuted in α and its provider usage contract is not synthesized: an opt-in live run must still supply reviewable usage/raw behavior and a separate β decision. No live credentials, raw live output, CDR artifact, registry mutation, durable-memory write, or quality claim was produced. GitHub-hosted CI status is pending the remote workflow run.
+
+### CDD Trace
+
+R1. Receive: fresh α repair dispatch from `gamma-clarification.md`, scoped exactly to F-1–F-4.
+R1. Produce: explicit parser, deterministic prompt pin/assembled hash, fixed provider allowlist and gates, local raw-output reference writer, tracked fixtures/tests, and minimal CI workflow.
+R1. Prove: focused subprocess positive/negative tests, full regression, CDR gold check, diff check, and no-network/no-secrets inspection passed locally. Changes are ready for fresh β re-review; α does not author β/γ artifacts, merge, or close.
+
 ## CDD Trace
 
 1. Receive: accepted issue #17 and γ dispatch on `cycle/17`; verified checkout and read the gamma scaffold and wave contract.

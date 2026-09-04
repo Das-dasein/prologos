@@ -1,12 +1,13 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { spawnSync } = require("node:child_process");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { ACTIVE_ONTOLOGY, canonicalJson } = require("./ontology-registry");
-const { createFakeProvider, runHarness, sha256, writeRunArtifact } = require("./live-extraction-harness");
+const { createFakeProvider, runHarness, sha256, writeRunArtifact, PROMPT_TEMPLATE } = require("./live-extraction-harness");
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "pam-live-extraction-"));
 const datasetFile = path.join(root, "dataset.jsonl");
@@ -24,7 +25,7 @@ const config = {
   profile_identity: ACTIVE_ONTOLOGY.identity,
   provider: "fake",
   model: "fixture-model-v1",
-  prompt_sha256: sha256("fixture-prompt-v1"),
+  prompt_sha256: sha256(PROMPT_TEMPLATE),
   sampling: { temperature: 0 },
   retry_policy: { max_attempts: 1 },
   max_context_tokens: 4096,
@@ -41,6 +42,8 @@ const run = provider => runHarness({ config, datasetFile, provider });
   assert.equal(calls, 1);
   assert.equal(JSON.stringify(first), JSON.stringify(second));
   assert.equal(first.records[0].status, "ok");
+  assert.equal(first.records[0].prompt_sha256, config.prompt_sha256);
+  assert.equal(first.records[0].assembled_prompt_sha256, sha256(PROMPT_TEMPLATE.replace("{{text}}", "I live in Samara.")));
 
   const output = path.join(root, "run.json");
   writeRunArtifact(output, first);
@@ -62,8 +65,21 @@ const run = provider => runHarness({ config, datasetFile, provider });
   const leaked = await runHarness({ config, datasetFile, promptBuilder: () => `I saw c_stable_01_a`, provider: { extract: async () => { leakageCalls += 1; return { output: valid, usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }; } } });
   assert.equal(leaked.records[0].error.code, "GOLD_LEAKAGE");
   assert.equal(leakageCalls, 0);
+  await assert.rejects(() => runHarness({ config: { ...config, prompt_sha256: sha256("changed") }, datasetFile, provider: createFakeProvider(valid) }), { code: "PROMPT_PIN" });
+  const rawDir = path.join(root, "raw");
+  const rawRun = await runHarness({ config, datasetFile, rawOutputDir: rawDir, provider: createFakeProvider({ output: valid, raw_output: "provider raw" }) });
+  assert.match(rawRun.records[0].raw_output_path, /fixture-01-turn-1\.json$/);
+  assert.equal(fs.readFileSync(rawRun.records[0].raw_output_path, "utf8"), "provider raw\n");
+  const cliOutput = path.join(root, "cli-run.json");
+  const cli = spawnSync(process.execPath, [path.join(__dirname, "live-extraction-harness.js"), "--config", path.join(__dirname, "test-fixtures/live-extraction-config.json"), "--dataset", path.join(__dirname, "test-fixtures/live-extraction-cli.jsonl"), "--fixture", path.join(__dirname, "test-fixtures/live-extraction-valid.json"), "--output", cliOutput, "--provider", "fake"], { encoding: "utf8" });
+  assert.equal(cli.status, 0, cli.stderr);
+  assert.ok(fs.existsSync(cliOutput));
+  const badCli = spawnSync(process.execPath, [path.join(__dirname, "live-extraction-harness.js")], { encoding: "utf8" });
+  assert.equal(badCli.status, 2);
+  assert.match(badCli.stderr, /Usage:/);
+  assert.doesNotMatch(badCli.stderr, /TypeError|at /);
   const privateRun = await runHarness({ config, datasetFile, promptBuilder: () => "sk-private-marker", provider: { extract: async () => { leakageCalls += 1; return { output: valid, usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }; } } });
   assert.equal(privateRun.records[0].error.code, "PRIVATE_MARKER");
   assert.equal(leakageCalls, 0);
-  console.log("live-extraction ok: 11 assertions");
+  console.log("live-extraction ok: 15 assertions");
 })().catch(error => { console.error(error); process.exitCode = 1; });
