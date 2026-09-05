@@ -48,3 +48,13 @@ source claim IDs remain in records and fake provenance. All required claims in
 this report map to focused commands or code surfaces; no live provider or
 comparative pilot was run. No ambiguity is deferred to beta about v1/v2
 identity, B5 boundary, or the configured E gate.
+
+## Debt
+
+Fake execution remains software evidence only. Live PAM-C1--C4 quality,
+thresholds, baseline selection, utility, causality, superiority, and
+statistical significance remain for a separately authorized run and fresh
+independent CDR beta. The requested CDS implementation skill is absent from
+the supplied activation snapshot. Aggregate currently records a null baseline
+until all live B1-B3 scores are available; no historical artifact was
+rewritten.
