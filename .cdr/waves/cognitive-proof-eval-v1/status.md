@@ -21,3 +21,17 @@ self-hash, method binding and manifest binding must match before a pair can
 validate. CDS #28 is now unblocked for its no-live preflight implementation;
 the eventual human-operated live run still needs measured provider equality
 and a fresh CDR beta before any effectiveness conclusion.
+
+Issue #32 adds only local deterministic receipt-intake preparation. Its
+synthetic non-result fixture validates shape and rejection paths, not a live
+artifact, aggregate, receipt, or effectiveness claim. Human operation retains
+raw outputs locally; a fresh beta must audit a complete candidate. State above
+is unchanged.
+
+Issue #32 R1 repairs the P1 proof binding with the versioned immutable
+`trusted-proof-digest-registry-v1.json`. It self-hashes and binds the pinned
+source snapshot and dataset; every case digest is recomputed from the canonical
+trusted-query result. The local stdlib-only intake now binds that registry in
+the envelope, requires P0 `null`, and rejects a well-formed P1 digest unless it
+equals its case's digest. This is still preparation only: no provider/model
+call, raw live output, aggregate, receipt, or effectiveness claim exists.

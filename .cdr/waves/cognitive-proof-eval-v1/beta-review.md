@@ -202,3 +202,78 @@ The future CDS work must still measure actual P0/P1 `E` per request with the
 pinned provider/model mechanism, retain raw artifacts and equality digest, and
 abort before calls on prompt leakage. A later fresh CDR beta remains required
 for any live result or claim.
+
+## Issue #32 fresh beta: local receipt-intake preparation
+
+Role: fresh independent CDR beta. Reviewed exact alpha target
+`fa8bf9c36144d52cf733c95a4f4b3210e98bf07f` against gamma scaffold
+`e5edd9c40d57ef4f46e9dcc2ef106ca1d1cd53ee`, `.cdr/POLICY.md`, wave
+method/status/manifest, the intake specification/schema/synthetic fixture, and
+the deterministic validator.
+
+### Verdict
+
+**REVISE — receipt intake does not bind a P1 proof to the trusted proof for
+its case.** This is a preparation-method verdict only. It is not a CDR
+receipt, live-run approval, threshold result, observed/computed effectiveness
+result, or PAM usefulness conclusion. Wave status remains
+`GO_OFFLINE_METHOD_DATASET_EQUAL_SLOT`; historical
+`prolog-memory-eval-v0` remains `REVISE`.
+
+### Clean reproduction and gates that hold
+
+At the alpha target, a clean dependency install and both requested suites
+passed:
+
+```text
+npm ci
+npm run test:cdr-receipt-intake
+npm test
+```
+
+The focused validator returned `receipt-intake-v1-self-test-ok`; the full
+suite passed, including the existing trusted-proof-preflight checks. The alpha
+delta is whitespace-clean under `git diff --check
+e5edd9c40d57ef4f46e9dcc2ef106ca1d1cd53ee
+fa8bf9c36144d52cf733c95a4f4b3210e98bf07f`. Its changed paths are intake
+documents/schema/synthetic fixture/stdlib validator plus the focused npm
+script; `prolog-memory-eval-v0` is unchanged.
+
+Beta independently constructed a complete 12-case `candidate_live_receipt`
+with unique local raw files under a temporary `--raw-root`. Its intact result
+was `candidate-integrity-valid-not-a-result`, preserving the correct
+non-effectiveness calibration. The following mutations were rejected with the
+declared gates: absent pair, duplicate record, bad raw SHA-256, unsafe raw
+reference, unequal measured `E`, wrong source immutable binding, P0 carrying
+a proof, P1 missing a proof, oracle/control field, `supersedes`, and duplicate
+raw reference. The validator is stdlib-only (`assert`, `crypto`, `fs`, `os`,
+and `path`); inspection found no provider SDK or call, network operation,
+model/scorer invocation, or sandbox executor. The committed fixture calls
+itself `synthetic_non_result`, carries nonexistent local references, and the
+documentation consistently denies aggregation, a receipt, or an effectiveness
+result. Raw answer bytes are read only through an operator-supplied local
+root, not committed to the wave.
+
+### Falsifier that failed
+
+For every P1 record in that otherwise complete candidate, beta supplied the
+same arbitrary syntactically valid value, `"f".repeat(64)`, as
+`trusted_proof_sha256`. The validator accepted the candidate unchanged as
+`candidate-integrity-valid-not-a-result`. There is no per-case canonical
+trusted-proof digest/reference in the registration or validator against which
+that value is checked: `validateRecord` tests only `isHash` for P1. Thus an
+operator can bind P1 to an unrelated, invented, or wrong-case 32-byte digest
+while satisfying every implemented intake gate. This contradicts the stated
+condition-specific P1 trusted-proof binding and makes the proof-binding
+rejection incomplete.
+
+### Required repair and retained boundary
+
+Before a method-only `GO_PREPARATION`, add a committed canonical per-case P1
+proof (or bounded-missing-result) binding and make intake reject any P1 digest
+that does not exactly match it; add a negative test for an arbitrary valid
+but wrong digest. The repair must retain the accepted raw-local-only boundary,
+the no-provider/no-network execution boundary, pair equality and no-overwrite
+gates, and the explicit `INDETERMINATE`/non-result status until a human run and
+fresh beta audit. It must not alter v0, execute a provider, aggregate scores,
+or make an effectiveness claim.

@@ -28,6 +28,13 @@ its `trusted-proof-evidence-slots-v1` protocol version and every
 dataset-derived map, the registration's self-hash, and this method and manifest
 bindings must all match before assembly or scoring.
 
+Trusted proof digest registry SHA-256:
+`a68d6a010b7225f42bedb447a209e50617cd26bf2a9a6ab40aa0d40b61ae42e4`.
+`trusted-proof-digest-registry-v1.json` canonically binds every `case_id` to
+the SHA-256 of that case's trusted `runTrustedQuery` result, with a self-hash
+and the same pinned source and dataset bindings. P1 carries exactly its
+case's registered digest; P0 carries `null`.
+
 | Condition | Answering-model material |
 | --- | --- |
 | P0 | normalized serialization of exactly that accepted snapshot and query, plus the pre-registered evidence slot filled only with the inert `~` control marker |
@@ -88,3 +95,29 @@ unequal slots, outside-slot mutation, and control or oracle leakage. These
 checks establish only the offline byte-accounting contract, not provider token
 equality or a model's understanding. Provider measurement, live prompt
 assembly and fresh CDR beta remain future work.
+
+## Local live-receipt intake amendment (issue #32)
+
+Before a human-operated live run can be examined, its operator submits a
+versioned `cognitive-proof-eval-receipt-intake-v1` envelope to local intake.
+It binds source commit, dataset, slot-registration, and trusted-proof-digest
+registry hashes; model/adapter;
+base and wrapper prompt hashes; sampling; and retry policy. Every P0/P1 record
+also binds canonical snapshot/query hashes, registered slot size, P1
+trusted-proof hash, local raw reference and SHA-256, provider usage including
+measured `E`, and a scorer decision whose opaque contract hash cannot include
+hidden answer-contract text.
+
+Raw answers remain under the operator's local `--raw-root` and are hashed
+there; no raw answer or credential is committed. Before aggregation, the
+intake rejects absent/duplicate P0/P1 records, all immutable-binding changes,
+bad/missing raw files or hashes, a P1 digest that differs from its canonical
+case registry digest, unequal measured `E`,
+oracle/control leakage, and duplicate/overwritten records. A record has no
+`supersedes` path: it is append-only and never replaced in place.
+
+The denominator is exactly cases with one valid P0 and P1 after every gate; a
+rejected, unavailable, or missing case contributes to neither rate nor claim.
+Any incomplete intake is `INDETERMINATE`; an integrity-valid intake is still
+not a result until fresh CDR beta audits local evidence. The committed fixture
+is `synthetic_non_result`, has no raw file, and demonstrates parser/gates only.
