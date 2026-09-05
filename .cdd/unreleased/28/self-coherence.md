@@ -17,6 +17,12 @@ doubles, never provider-token measurements.
   trusted-result serialization, rejects either outside the declared slot before
   the injected transport is called, and gives P0 no exception. P1/PX proof
   content is permitted only as the exact trusted serialization in that slot.
+- `assembleCondition` returns a recursively frozen assembly and records the
+  generated slot/prompt in module-private provenance.  Before the injected
+  transport, only that exact sealed object is accepted; reconstructed objects
+  and forged public `pair.p1Slot` metadata reject before a provider call.
+  This is a harness-integrity boundary, not a security sandbox against
+  arbitrary hostile JavaScript in the same process.
 - Equality digests bind source, dataset, registration, snapshot, query, model,
   prompt hashes, sampling, canonical non-empty retry policy, slot size and
   measured `E`. Retry-policy absence or mismatch, P0/P1 unequal `E`, or a

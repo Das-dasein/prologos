@@ -15,6 +15,19 @@ const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const canonical = value => stable(value);
 const readJson = file => JSON.parse(fs.readFileSync(file, "utf8"));
 const fileHash = file => sha256(fs.readFileSync(file));
+// This is intentionally module-private.  It binds the exact assembly object to
+// the slot generated from its trusted result; public fields are conveniences,
+// never transport authority.
+const assemblyProvenance = new WeakMap();
+
+function deepFreeze(value, seen = new WeakSet()) {
+  if (!value || typeof value !== "object" || seen.has(value)) return value;
+  seen.add(value);
+  for (const key of Reflect.ownKeys(value)) deepFreeze(value[key], seen);
+  return Object.freeze(value);
+}
+
+function copy(value) { return structuredClone(value); }
 
 function immutableInputs({ datasetPath = path.join(WAVE, "dataset.json"), registrationPath = path.join(WAVE, "slot-registration-v1.json") } = {}) {
   const dataset = readJson(datasetPath), registration = readJson(registrationPath);
@@ -86,7 +99,17 @@ async function assembleCondition({ fixture, inputs, config, condition, trustedQu
   const pair = assembleCase(inputs.dataset, fixture, result || { status: "neutral-control" });
   const built = promptFor(pair, condition, transcript);
   leakGuard({ ...built, condition, fixture, trusted_result: result, pair });
-  return Object.freeze({ condition, case_id: fixture.id, fixture, snapshot, query: fixture.query, trusted_result: condition === "P0" ? null : result, pair, inputs, ...built, proof_calls: condition === "P1" ? 1 : 0, config: immutableConfig });
+  const assembly = deepFreeze({
+    condition, case_id: fixture.id, fixture: copy(fixture), snapshot: copy(snapshot), query: fixture.query,
+    trusted_result: condition === "P0" ? null : copy(result), pair: copy(pair), inputs: copy(inputs),
+    ...built, proof_calls: condition === "P1" ? 1 : 0, config: copy(immutableConfig),
+  });
+  assemblyProvenance.set(assembly, Object.freeze({
+    condition, case_id: fixture.id, fixture, snapshot, query: fixture.query, trusted_result: result,
+    pair, inputs, config: immutableConfig, prompt: built.prompt, slotStart: built.slotStart,
+    slotEnd: built.slotEnd, expectedSlot: built.prompt.slice(built.slotStart, built.slotEnd),
+  }));
+  return assembly;
 }
 
 function measuredUsage(usage) {
@@ -97,10 +120,23 @@ function measuredUsage(usage) {
 async function executeWithInjectedProvider(assembled, provider) {
   if (!provider || typeof provider.complete !== "function") throw new Error("an injected provider is required; no default provider exists");
   // The sentinel runs immediately before the only caller-controlled transport.
-  leakGuard(assembled);
-  const response = await provider.complete({ prompt: assembled.prompt, condition: assembled.condition, case_id: assembled.case_id });
+  const provenance = assemblyProvenance.get(assembled);
+  if (!provenance) throw new Error("unsealed or reconstructed assembly rejected before provider call");
+  if (assembled.condition !== provenance.condition || assembled.case_id !== provenance.case_id ||
+      assembled.prompt !== provenance.prompt || assembled.slotStart !== provenance.slotStart ||
+      assembled.slotEnd !== provenance.slotEnd || assembled.prompt.slice(assembled.slotStart, assembled.slotEnd) !== provenance.expectedSlot) {
+    throw new Error("sealed assembly provenance mismatch rejected before provider call");
+  }
+  if (provenance.condition === "P0" && provenance.expectedSlot !== provenance.pair.p0Slot) {
+    throw new Error("P0 neutral control provenance mismatch rejected before provider call");
+  }
+  if ((provenance.condition === "P1" || provenance.condition === "PX") && provenance.expectedSlot !== provenance.pair.p1Slot) {
+    throw new Error("P1/PX trusted serialization provenance mismatch rejected before provider call");
+  }
+  leakGuard({ prompt: provenance.prompt, condition: provenance.condition, slotStart: provenance.slotStart, slotEnd: provenance.slotEnd, fixture: provenance.fixture, trusted_result: provenance.trusted_result, pair: provenance.pair });
+  const response = await provider.complete({ prompt: provenance.prompt, condition: provenance.condition, case_id: provenance.case_id });
   const usage = measuredUsage(response && response.usage);
-  return Object.freeze({ raw: String(response.raw ?? ""), answer: String(response.answer ?? ""), usage, retry_policy: assembled.config.retry_policy, equality_digest: equalityDigest({ config: assembled.config, inputs: assembled.inputs, snapshot: assembled.snapshot, query: assembled.query, slotBytes: assembled.pair.declaredSlotBytes, measuredE: usage.effective_context_budget }) });
+  return Object.freeze({ raw: String(response.raw ?? ""), answer: String(response.answer ?? ""), usage, retry_policy: provenance.config.retry_policy, equality_digest: equalityDigest({ config: provenance.config, inputs: provenance.inputs, snapshot: provenance.snapshot, query: provenance.query, slotBytes: provenance.pair.declaredSlotBytes, measuredE: usage.effective_context_budget }) });
 }
 
 function resultEnvelope({ assembled, response, scorer_outcome }) {

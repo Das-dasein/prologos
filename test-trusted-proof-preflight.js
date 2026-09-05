@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const {
-  assembleCondition, executeWithInjectedProvider, immutableInputs, rejectUnequalBeforeScoring,
+  assembleCondition, executeWithInjectedProvider, immutableInputs, leakGuard, rejectUnequalBeforeScoring,
   resultEnvelope, scoreHiddenContract, validateLiveGate, writeArtifact,
 } = require("./trusted-proof-preflight");
 
@@ -31,14 +31,23 @@ async function main() {
   const fakeProvider = { complete: async ({ prompt }) => { providerCalls += 1; return { raw: "fake raw", answer: "orion is affected; cite turn(12), turn(31), and turn(33); rule turn(32)", usage: { input_tokens: 17, output_tokens: 3, total_tokens: 20, effective_context_budget: 20 } }; } };
   const r0 = await executeWithInjectedProvider(p0, fakeProvider), r1 = await executeWithInjectedProvider(p1, fakeProvider);
   assert.equal(providerCalls, 2); assert.equal(r0.equality_digest, r1.equality_digest);
+  assert.equal(Object.isFrozen(p1), true); assert.equal(Object.isFrozen(p1.pair), true);
+  assert.throws(() => { p1.pair.p1Slot = fixture.hidden_answer_contract.allowed.padEnd(p1.pair.p1Slot.length, "~"); }, TypeError);
+  assert.equal(providerCalls, 2, "sealed nested mutation must not reach transport");
+  const forgedSlot = fixture.hidden_answer_contract.allowed.padEnd(p1.pair.p1Slot.length, "~");
+  const lookalike = { ...p1, prompt: `${p1.prompt.slice(0, p1.slotStart)}${forgedSlot}${p1.prompt.slice(p1.slotEnd)}`, pair: { ...p1.pair, p1Slot: forgedSlot } };
+  await assert.rejects(executeWithInjectedProvider(lookalike, fakeProvider), /unsealed or reconstructed assembly rejected before provider call/);
+  assert.equal(providerCalls, 2, "reconstructed forged P1 must abort before provider call");
   assert.doesNotThrow(() => rejectUnequalBeforeScoring([{ condition: "P0", ...r0 }, { condition: "P1", ...r1 }]));
   const unequal = { ...r1, usage: { ...r1.usage, effective_context_budget: 21 } };
   assert.throws(() => rejectUnequalBeforeScoring([{ condition: "P0", ...r0 }, { condition: "P1", ...unequal }]), /unequal measured E rejected before scoring/);
   const leaked = { ...p0, prompt: `${p0.prompt}${fixture.hidden_answer_contract.allowed}`, slotStart: p0.slotStart, slotEnd: p0.slotEnd };
-  await assert.rejects(executeWithInjectedProvider(leaked, fakeProvider), /oracle leakage rejected before provider call/);
+  assert.throws(() => leakGuard(leaked), /oracle leakage rejected before provider call/);
+  await assert.rejects(executeWithInjectedProvider(leaked, fakeProvider), /unsealed or reconstructed assembly rejected before provider call/);
   assert.equal(providerCalls, 2, "leakage must abort before provider call");
   const p1OutsideSlotLeak = { ...p1, prompt: `${p1.prompt}${fixture.hidden_answer_contract.allowed}`, slotStart: p1.slotStart, slotEnd: p1.slotEnd };
-  await assert.rejects(executeWithInjectedProvider(p1OutsideSlotLeak, fakeProvider), /oracle leakage rejected before provider call/);
+  assert.throws(() => leakGuard(p1OutsideSlotLeak), /oracle leakage rejected before provider call/);
+  await assert.rejects(executeWithInjectedProvider(p1OutsideSlotLeak, fakeProvider), /unsealed or reconstructed assembly rejected before provider call/);
   assert.equal(providerCalls, 2, "P1 outside-slot leakage must abort before provider call");
   const missingRetry = { ...config }; delete missingRetry.retry_policy;
   await assert.rejects(assembleCondition({ fixture, inputs, config: missingRetry, condition: "P0" }), /config.retry_policy must be non-empty text/);
