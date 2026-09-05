@@ -6,6 +6,7 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { canonicalJson } = require("./ontology-registry");
 
 const ROOT = __dirname;
 const DATASET = path.join(ROOT, ".cdr/datasets/dialogues-pilot-v1.jsonl");
@@ -15,6 +16,7 @@ const CATEGORIES = ["stable recall", "explicit correction/supersession", "tempor
 function fail(message) { const error = new Error(message); error.code = "MATRIX_CONTRACT"; throw error; }
 function read() { return fs.readFileSync(DATASET, "utf8").trim().split(/\r?\n/).map(line => JSON.parse(line)); }
 function sha256() { return crypto.createHash("sha256").update(fs.readFileSync(DATASET)).digest("hex"); }
+function digest(value) { return crypto.createHash("sha256").update(canonicalJson(value)).digest("hex"); }
 function score(records) {
   if (sha256() !== SHA256) fail("dialogues dataset SHA-256 mismatch");
   if (records.length !== 12) fail(`expected 12 cases, got ${records.length}`);
@@ -59,6 +61,11 @@ function scoreCandidateArtifact(file) {
     const condition = entry.artifact;
     if (!condition || condition.condition !== entry.condition || condition.schema_version !== "prolog-memory-pilot-v2" || condition.artifact_kind !== "condition" || condition.case_count !== 12 || !Array.isArray(condition.records) || condition.records.length !== 12 || condition.records.some(record => !Array.isArray(record.turn_outputs)) ) fail(`candidate ${entry.condition} condition artifact is incomplete`);
     if (condition.records.some(record => !record.answer_request || !record.answer || !record.memory_context || !record.memory_context.sha256 || !record.answer_request.raw_output_ref || record.answer_request.usage == null)) fail(`candidate ${entry.condition} is missing answer/raw/context evidence`);
+    if (entry.artifact_sha256 !== digest(condition)) fail(`candidate ${entry.condition} artifact hash mismatch`);
+    for (const key of ["source_commit", "dataset_sha256", "oracle_sha256", "config_sha256", "trusted_memory_sha256", "trusted_domain_sha256"]) {
+      if (condition[key] !== artifact[key]) fail(`candidate ${entry.condition} ${key} mismatch`);
+    }
+    if (JSON.stringify(condition.prompt_provenance) !== JSON.stringify(artifact.prompt_provenance)) fail(`candidate ${entry.condition} prompt provenance mismatch`);
   }
   return { schema_version: "prolog-memory-evaluation-matrix-v2", dataset_sha256: artifact.dataset_sha256, oracle_sha256: artifact.oracle_sha256, measured_effective_context_budget_tokens: artifact.measured_effective_context_budget_tokens, matrixB: Object.fromEntries(artifact.conditions.map(entry => [entry.condition, entry.matrixB[entry.condition]])), evidence_boundary: artifact.evidence_boundary };
 }
