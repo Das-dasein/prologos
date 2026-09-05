@@ -1,6 +1,9 @@
 "use strict";
 const assert = require("node:assert/strict");
-const { contentVerdict, normalizeFact, sameContent, answerResult } = require("./offline-eval-v3");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { contentVerdict, normalizeFact, sameContent, answerResult, metric, resolveRunBinding, validateRawManifest } = require("./offline-eval-v3");
 function fact(args) { return normalizeFact({ relation: "lives_in", arguments: args, polarity: "positive", valid_from: null, valid_to: null }, 1); }
 assert.equal(sameContent(fact(["user", "samara"]), fact(["user", "samara"])), true);
 assert.equal(sameContent(fact(["user", "samara"]), fact(["user", "samara"])), true, "runtime id is intentionally absent from content matching");
@@ -14,4 +17,13 @@ const expected = { expected: "user lives in samara", source_claim_ids: ["c"], so
 const answer = { answer: { text: "Samara", provenance_claim_ids: ["runtime-id"], source_turns: [1], intervals: [[10000101,"inf"]] } };
 assert.equal(answerResult({case_id:"stable-01"}, answer, expected).provenance.status, "pass");
 assert.equal(answerResult({case_id:"stable-01"}, {answer:{text:"Samara"}}, expected).provenance.status, "unknown");
+assert.equal(metric(0, 0).coverage, null, "undefined coverage is null");
+assert.throws(() => resolveRunBinding({}, { run: "other-run" }, "frozen-run"), /manifest run identity mismatch/);
+assert.throws(() => resolveRunBinding({ run_id: "other-run" }, { run: "frozen-run" }, "frozen-run"), /aggregate run identity mismatch/);
+const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "offline-eval-v3-"));
+const rawPath = path.join(fixtureDir, "raw/missing.json");
+const rawManifest = { run: "frozen-run", files: [{ path: "raw/missing.json", sha256: "0".repeat(64) }] };
+const rawCheck = validateRawManifest(rawManifest, fixtureDir, { conditions: [{ artifact: { records: [{ turn_outputs: [{ raw_output_ref: { kind: "file", path: "raw/missing.json", sha256: "0".repeat(64) } }] }] } }] });
+assert.equal(rawCheck.status, "indeterminate", "missing raw is explicit indeterminate");
+assert.deepEqual(rawCheck.missing, ["raw/missing.json"]);
 console.log("offline-eval-v3 sentinels: PASS");

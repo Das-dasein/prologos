@@ -19,9 +19,18 @@ node offline-eval-v3.js \
   --dataset=.cdr/datasets/dialogues-pilot-v1.jsonl \
   --oracle=.cdr/results/prolog-memory-eval-v0/answer-oracle-v1.json \
   --raw-manifest=reports/live-20260905-152059/manifest.json \
+  --expected-run-id=20260905-152059 \
   --source-snapshot=offline-eval-v3.js \
   --output=reports/live-20260905-152059/replay-v3.json
 ```
+
+The evaluator binds the aggregate and manifest to an expected run identity.
+Relabelling `manifest.run` is rejected; when a future aggregate carries its own
+`run_id`, it must agree with the expected identity. If a referenced raw file is
+missing, the replay is emitted with `replay_status: indeterminate` and
+`raw_integrity.status: indeterminate`; it is never silently counted as a pass.
+Undefined metric coverage (zero denominator) is `null`, distinct from zero
+coverage with eligible observations.
 
 The artifact is versioned as `offline-eval-v3` and marks itself
 `post_hoc_computed_historical_replay`. Every case retains evidence references,

@@ -16,6 +16,7 @@ const DEFAULTS = {
   oracle: path.join(ROOT, ".cdr/results/prolog-memory-eval-v0/answer-oracle-v1.json"),
   rawManifest: path.join(ROOT, "reports/live-20260905-152059/manifest.json"),
   output: path.join(ROOT, "reports/live-20260905-152059/replay-v3.json")
+  ,expectedRunId: "20260905-152059"
 };
 
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
@@ -60,7 +61,7 @@ function sameContent(a, b) {
 
 function metric(numerator, denominator, eligible = denominator, unknown = 0) {
   return { numerator, denominator, eligible_count: eligible, unknown_count: unknown,
-    coverage: denominator ? eligible / denominator : 0, rate: denominator ? numerator / denominator : null };
+    coverage: denominator ? eligible / denominator : null, rate: denominator ? numerator / denominator : null };
 }
 function verdict(status, reason, evidence = []) { return { status, reason, evidence_refs: evidence }; }
 
@@ -152,14 +153,27 @@ function validateRawManifest(manifest, baseDir, aggregate) {
     if (!fs.existsSync(file)) { missing.push(mapped.path); continue; }
     if (fileHash(file) !== mapped.sha256 || (ref.sha256 && ref.sha256 !== mapped.sha256)) bad.push(mapped.path);
   }
-  return { referenced: refs.length, manifest_entries: entries.size, missing: [...new Set(missing)].sort(), hash_mismatches: [...new Set(bad)].sort() };
+  const missingUnique = [...new Set(missing)].sort();
+  const badUnique = [...new Set(bad)].sort();
+  return { referenced: refs.length, manifest_entries: entries.size, missing: missingUnique, hash_mismatches: badUnique,
+    status: badUnique.length ? "invalid" : missingUnique.length ? "indeterminate" : "valid" };
+}
+
+function resolveRunBinding(aggregate, manifest, expectedRunId) {
+  const aggregateRunId = aggregate && (aggregate.run_id || (aggregate.run_binding && aggregate.run_binding.expected_run_id));
+  const expected = expectedRunId || aggregateRunId;
+  if (!expected) fail("missing expected run identity: provide --expected-run-id or aggregate.run_id");
+  if (aggregateRunId && aggregateRunId !== expected) fail(`aggregate run identity mismatch: expected=${expected}, aggregate=${aggregateRunId}`);
+  if (manifest.run !== expected) fail(`manifest run identity mismatch: expected=${expected}, manifest=${manifest.run}`);
+  return { expected_run_id: expected, aggregate_run_id: aggregateRunId || null, manifest_run_id: manifest.run, verified: true };
 }
 
 function evaluate(options) {
   for (const file of [options.aggregate, options.dataset, options.oracle, options.rawManifest, options.sourceSnapshot]) if (!fs.existsSync(file)) fail(`missing input: ${file}`);
   const aggregate = readJson(options.aggregate); const dataset = readJsonl(options.dataset); const answerOracle = readJson(options.oracle); const manifest = readJson(options.rawManifest);
+  const runBinding = resolveRunBinding(aggregate, manifest, options.expectedRunId);
   const hashes = { aggregate_sha256: fileHash(options.aggregate), dataset_sha256: fileHash(options.dataset), oracle_sha256: fileHash(options.oracle), raw_manifest_sha256: fileHash(options.rawManifest) };
-  const raw = validateRawManifest(manifest, path.dirname(options.rawManifest), aggregate); if (raw.missing.length || raw.hash_mismatches.length) fail(`raw manifest integrity failure: missing=${raw.missing.length}, hash_mismatches=${raw.hash_mismatches.length}`);
+  const raw = validateRawManifest(manifest, path.dirname(options.rawManifest), aggregate); if (raw.hash_mismatches.length) fail(`raw manifest integrity failure: missing=${raw.missing.length}, hash_mismatches=${raw.hash_mismatches.length}`);
   const byId = new Map(dataset.map(item => [item.case_id, item])); const conditions = [];
   for (const entry of aggregate.conditions || []) {
     if (!CONDITIONS.includes(entry.condition) || !entry.artifact || !Array.isArray(entry.artifact.records)) fail("aggregate has invalid condition artifact");
@@ -169,10 +183,12 @@ function evaluate(options) {
     const count = status => all.filter(x => x.status === status).length;
     conditions.push({ condition: entry.condition, case_count: cases.length, cases, summary: { content: { pass: cases.filter(c => c.answer.content.status === "pass").length, fail: cases.filter(c => c.answer.content.status === "fail").length, unknown: cases.filter(c => c.answer.content.status === "unknown").length }, provenance: { pass: cases.filter(c => c.answer.provenance.status === "pass").length, fail: cases.filter(c => c.answer.provenance.status === "fail").length, unknown: cases.filter(c => c.answer.provenance.status === "unknown").length }, stale_or_contradictory: { pass: cases.filter(c => c.answer.stale_or_contradictory.status === "pass").length, fail: cases.filter(c => c.answer.stale_or_contradictory.status === "fail").length, unknown: cases.filter(c => c.answer.stale_or_contradictory.status === "unknown").length }, extraction_unknown: cases.reduce((n, c) => n + c.extraction.unknown_count, 0), rubric_status_counts: { pass: count("pass"), fail: count("fail"), unknown: count("unknown") } } });
   }
-  return { schema_version: VERSION, artifact_kind: "offline_replay", evaluator_version: VERSION, run_id: manifest.run, evidence_boundary: "post_hoc_computed_historical_replay", input_hashes: hashes, source_snapshot: { path: path.relative(ROOT, options.sourceSnapshot), sha256: fileHash(options.sourceSnapshot) }, frozen_inputs: { aggregate: path.relative(ROOT, options.aggregate), dataset: path.relative(ROOT, options.dataset), oracle: path.relative(ROOT, options.oracle), raw_manifest: path.relative(ROOT, options.rawManifest), raw_integrity: raw }, historical_metadata: { source_commit_claimed: aggregate.source_commit || null, executed_source_identity: "unknown", legacy_scores_retained: true }, conditions, limits: ["No model/provider/network call was made.", "Free text content is evaluated by a deterministic case rubric; this is not an LLM judge.", "Missing answer provenance remains unknown and is not reconstructed from context.", "This post-hoc replay cannot establish a model or Prolog superiority claim."] };
+  return { schema_version: VERSION, artifact_kind: "offline_replay", evaluator_version: VERSION, run_id: runBinding.expected_run_id,
+    run_binding: runBinding, replay_status: raw.status === "indeterminate" ? "indeterminate" : "computed",
+    evidence_boundary: "post_hoc_computed_historical_replay", input_hashes: hashes, source_snapshot: { path: path.relative(ROOT, options.sourceSnapshot), sha256: fileHash(options.sourceSnapshot) }, frozen_inputs: { aggregate: path.relative(ROOT, options.aggregate), dataset: path.relative(ROOT, options.dataset), oracle: path.relative(ROOT, options.oracle), raw_manifest: path.relative(ROOT, options.rawManifest), raw_integrity: raw }, historical_metadata: { source_commit_claimed: aggregate.source_commit || null, executed_source_identity: "unknown", legacy_scores_retained: true }, conditions, limits: ["No model/provider/network call was made.", "Free text content is evaluated by a deterministic case rubric; this is not an LLM judge.", "Missing answer provenance remains unknown and is not reconstructed from context.", "Missing raw evidence makes the replay indeterminate and is never counted as a pass.", "This post-hoc replay cannot establish a model or Prolog superiority claim."] };
 }
 
 function arg(argv, name, fallback) { const prefix = `--${name}=`; const inline = argv.find(x => x.startsWith(prefix)); return inline ? inline.slice(prefix.length) : fallback; }
-if (require.main === module) { try { const argv = process.argv.slice(2); const options = { aggregate: arg(argv, "aggregate", DEFAULTS.aggregate), dataset: arg(argv, "dataset", DEFAULTS.dataset), oracle: arg(argv, "oracle", DEFAULTS.oracle), rawManifest: arg(argv, "raw-manifest", DEFAULTS.rawManifest), sourceSnapshot: arg(argv, "source-snapshot", __filename), output: arg(argv, "output", DEFAULTS.output) }; fs.writeFileSync(options.output, `${JSON.stringify(evaluate(options), null, 2)}\n`); console.log(`✓ Wrote ${options.output}`); } catch (error) { console.error(`✗ ${error.code || "OFFLINE_EVAL"}: ${error.message}`); process.exitCode = 1; } }
+if (require.main === module) { try { const argv = process.argv.slice(2); const options = { aggregate: arg(argv, "aggregate", DEFAULTS.aggregate), dataset: arg(argv, "dataset", DEFAULTS.dataset), oracle: arg(argv, "oracle", DEFAULTS.oracle), rawManifest: arg(argv, "raw-manifest", DEFAULTS.rawManifest), sourceSnapshot: arg(argv, "source-snapshot", __filename), output: arg(argv, "output", DEFAULTS.output), expectedRunId: arg(argv, "expected-run-id", DEFAULTS.expectedRunId) }; fs.writeFileSync(options.output, `${JSON.stringify(evaluate(options), null, 2)}\n`); console.log(`✓ Wrote ${options.output}`); } catch (error) { console.error(`✗ ${error.code || "OFFLINE_EVAL"}: ${error.message}`); process.exitCode = 1; } }
 
-module.exports = { VERSION, evaluate, extractionResult, answerResult, contentVerdict, normalizeFact, sameContent };
+module.exports = { VERSION, evaluate, extractionResult, answerResult, contentVerdict, normalizeFact, sameContent, metric, validateRawManifest, resolveRunBinding };
