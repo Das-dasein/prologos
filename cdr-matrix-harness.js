@@ -46,8 +46,23 @@ function score(records) {
   return { schema_version: "prolog-memory-evaluation-matrix-v1", dataset_sha256: SHA256, case_count: records.length, turn_count: records.reduce((n, r) => n + r.dialogue.length, 0), category_metrics, matrixB, status: "gold_contract_valid" };
 }
 
+function scoreCandidateArtifact(file) {
+  let artifact;
+  try { artifact = JSON.parse(fs.readFileSync(file, "utf8")); }
+  catch (error) { fail(`candidate artifact cannot be read: ${error.message}`); }
+  if (!artifact || artifact.schema_version !== "prolog-memory-pilot-v2" || artifact.artifact_kind !== "aggregate") fail("candidate must be a prolog-memory-pilot-v2 aggregate");
+  if (!Array.isArray(artifact.conditions) || artifact.conditions.length !== 4 || artifact.conditions.some(entry => !["B1", "B2", "B3", "B4"].includes(entry.condition))) fail("candidate must contain B1-B4 condition artifacts");
+  if (!Number.isInteger(artifact.measured_effective_context_budget_tokens) || artifact.conditions.some(entry => !entry.budget || entry.budget.equal !== true || entry.budget.configured_e !== artifact.measured_effective_context_budget_tokens)) fail("candidate effective budget is missing or unequal");
+  for (const entry of artifact.conditions) {
+    const condition = entry.artifact;
+    if (!condition || condition.schema_version !== "prolog-memory-pilot-v2" || condition.artifact_kind !== "condition" || condition.case_count !== 12 || !Array.isArray(condition.records) || condition.records.length !== 12) fail(`candidate ${entry.condition} condition artifact is incomplete`);
+    if (condition.records.some(record => !record.answer_request || !record.answer || !record.memory_context || !record.memory_context.sha256 || !record.answer_request.raw_output_ref || record.answer_request.usage == null)) fail(`candidate ${entry.condition} is missing answer/raw/context evidence`);
+  }
+  return { schema_version: "prolog-memory-evaluation-matrix-v2", dataset_sha256: artifact.dataset_sha256, oracle_sha256: artifact.oracle_sha256, measured_effective_context_budget_tokens: artifact.measured_effective_context_budget_tokens, matrixB: Object.fromEntries(artifact.conditions.map(entry => [entry.condition, entry.matrixB[entry.condition]])), evidence_boundary: artifact.evidence_boundary };
+}
+
 if (require.main === module) {
-  try { console.log(JSON.stringify(score(read()), null, 2)); }
+  try { const candidateIndex = process.argv.indexOf("--candidate"); console.log(JSON.stringify(candidateIndex >= 0 ? scoreCandidateArtifact(process.argv[candidateIndex + 1]) : score(read()), null, 2)); }
   catch (error) { console.error(`${error.code || "ERROR"}: ${error.message}`); process.exitCode = 1; }
 }
-module.exports = { score, SHA256 };
+module.exports = { score, scoreCandidateArtifact, SHA256 };
