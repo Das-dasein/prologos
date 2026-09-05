@@ -18,8 +18,9 @@ artifact, CDR receipt, provider, or live archive was used.
 `cognitive-memory.js` makes immutable snapshot/candidate objects; candidates
 remain `candidate` in run evidence and `admitCandidate` requires an explicit
 decision to produce a new snapshot. `cognitive-runner.pl` loads snapshot items
-and candidate source only in a fresh SWI process and returns a native
-multi-hop proof DAG or bounded unknown/missing-goal result. The focused fixture
+and candidate source only in a fresh SWI process and emits its native
+multi-hop proof DAG or bounded unknown/missing-goal JSON on stdout; there is
+no result file or candidate-writable output directory. The focused fixture
 also demonstrates a full-Prolog candidate with `member/2`, direct temporal
 polarity conflict with both source IDs, non-overlap, and revision removing the
 replaced item from active state.
@@ -35,29 +36,30 @@ fact-only ingestion remains a separate compatibility surface.
 derived through `r2` then `r1`, not stored as a fact; candidate status remains
 unadmitted; absence is `unknown`, not negation; and actual candidate execution
 is denied for `/etc/hosts`, an external `/tmp` write (the path remains absent),
-and a socket connection. It also proves that an unrelated
-`/opt/homebrew/.gitignore` file is denied while an unrestricted `member/2`
-candidate executes. The runner uses a macOS Seatbelt `sandbox-exec`
-**default-deny** profile, a fresh temporary directory, read-only input files,
-one disposable output directory, a 64 MiB SWI stack limit, wall timeout, and
-an inherited macOS `RLIMIT_FSIZE` (`/bin/sh` `ulimit -f`) before SWI starts.
-The latter bounds candidate-visible writes during execution; a 400,000-byte
-candidate write fails under `maxOutputBytes: 1024`. Its read grants are the
-specific SWI Cellar runtime directory, directly loaded dylib directories,
-system runtime libraries/devices, and declared inputs; it does not grant a
-package-manager root such as `/opt/homebrew`. It has no permissive fallback
-and fails closed when the macOS boundary is unavailable. Candidate source is
-never loaded into the Node host process.
+a split-file write attempt in its read-only working directory, and a socket
+connection. It also proves that an unrelated `/opt/homebrew/.gitignore` file
+is denied while an unrestricted `member/2` candidate executes. A candidate
+which writes 400,000 bytes to stdout fails when `maxOutputBytes` is 1024: Node
+counts the child stdout and stderr together and kills/rejects an over-limit
+run. The runner's stdout JSON is the only accepted result protocol; candidate
+file output has no grant whatsoever. The runner uses a macOS Seatbelt
+`sandbox-exec` **default-deny** profile, a fresh read-only input directory, a
+64 MiB SWI stack limit, and wall timeout. Its read grants are the specific SWI
+Cellar runtime directory, directly loaded dylib directories, system runtime
+libraries/devices, and declared inputs; it does not grant a package-manager
+root such as `/opt/homebrew`. It has no permissive fallback and fails closed
+when the macOS boundary is unavailable. Candidate source is never loaded into
+the Node host process.
 
 ## Debt
 
 The verified runtime boundary is macOS-specific: non-macOS hosts and a missing
-`/usr/bin/sandbox-exec` fail closed. The quota is macOS `RLIMIT_FSIZE`; it
-rounds a byte ceiling up to the kernel's 512-byte file block, so a request
-below one block cannot be represented exactly. Arbitrary full-Prolog candidate
-execution has a truthful `trace_unavailable` result when it cannot be
-reconstructed as a proof from accepted snapshot clauses; proof extraction for
-arbitrary meta-programmed code is deferred by design.
+`/usr/bin/sandbox-exec` fail closed. `maxOutputBytes` is an exact aggregate
+bound over bytes exposed on the child stdout/stderr pipes; it is not a general
+CPU, heap, or descriptor quota. Arbitrary full-Prolog candidate execution has
+a truthful `trace_unavailable` result when it cannot be reconstructed as a
+proof from accepted snapshot clauses; proof extraction for arbitrary
+meta-programmed code is deferred by design.
 
 ## CDD Trace
 

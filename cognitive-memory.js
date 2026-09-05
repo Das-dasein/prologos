@@ -3,7 +3,7 @@
 // Knowledge remains authored as Prolog source. This module owns immutable
 // lifecycle metadata and process isolation; it never parses/consults a delta.
 const crypto = require("node:crypto");
-const { execFile, execFileSync } = require("node:child_process");
+const { execFileSync, spawn } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -70,7 +70,7 @@ function runtimeReadRoots(swipl) {
   // the narrowest reproducible directory grants Seatbelt can express.
   return [...new Set(["/bin/sh", "/private/var/select/sh", swipl, fs.realpathSync(base), "/usr/lib", "/System/Library", "/dev", "/private/var/db/timezone", ...[...libraries].flatMap(file => [path.dirname(file), fs.existsSync(file) ? path.dirname(fs.realpathSync(file)) : file])])];
 }
-function profile({ inputDir, outputDir, runtimeRoots }) {
+function profile({ inputDir, runtimeRoots }) {
   const literal = value => `(literal ${JSON.stringify(value)})`;
   const subpath = value => `(subpath ${JSON.stringify(value)})`;
   const ancestors = value => {
@@ -84,22 +84,37 @@ function profile({ inputDir, outputDir, runtimeRoots }) {
     "(allow file-map-executable)",
     "(allow sysctl-read)",
     "(allow mach-lookup)",
-    `(allow file-read-metadata ${[...ancestors(outputDir), ...runtimeRoots.flatMap(ancestors)].join(" ")})`,
-    `(allow file-read* ${literal("/")} ${runtimeRoots.map(subpath).join(" ")} ${subpath(path.dirname(inputDir))} ${subpath(inputDir)} ${subpath(outputDir)})`,
-    `(allow file-write* ${subpath(outputDir)})`
+    `(allow file-read-metadata ${runtimeRoots.flatMap(ancestors).join(" ")})`,
+    `(allow file-read* ${literal("/")} ${runtimeRoots.map(subpath).join(" ")} ${subpath(path.dirname(inputDir))} ${subpath(inputDir)})`
   ].join(" ");
 }
-function execute(outputDir, runnerFile, snapshotFile, candidateFile, resultFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl) {
+function execute(inputDir, runnerFile, snapshotFile, candidateFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl) {
   return new Promise((resolve, reject) => {
     if (!Number.isSafeInteger(maxOutputBytes) || maxOutputBytes < 1) throw new Error("maxOutputBytes must be a positive integer");
-    // macOS ulimit -f is an inherited RLIMIT_FSIZE measured in 512-byte blocks.
-    // It applies while the candidate is running, including files it opens in
-    // outputDir; this is deliberately not a post-run size check or cleanup.
-    const fileBlocks = String(Math.ceil(maxOutputBytes / 512));
-    const args = ["-p", profile({ inputDir: path.dirname(runnerFile), outputDir, runtimeRoots }), "/bin/sh", "-c", "ulimit -f \"$1\"; shift; exec \"$@\"", "pam-fsize", fileBlocks, swipl, "--quiet", "--nosignals", "--stack_limit=64m", "-s", runnerFile, "--", snapshotFile, candidateFile, resultFile, goal, String(Math.max(1, Math.floor(timeoutMs / 1000)))];
-    execFile(SANDBOX, args, { cwd: outputDir, timeout: timeoutMs + 500, maxBuffer: maxOutputBytes, windowsHide: true }, (error, stdout, stderr) => {
-      if (error) return reject(new Error(`isolated Prolog run failed (exit ${error.code ?? "signal"}): ${stderr.trim() || stdout.trim() || error.message}`));
-      try { resolve(JSON.parse(fs.readFileSync(resultFile, "utf8"))); } catch (parseError) { reject(new Error(`isolated Prolog emitted invalid JSON: ${parseError.message}`)); }
+    // Candidate code receives no writable filesystem path. The trusted runner
+    // owns the only result protocol: one JSON object on its inherited stdout.
+    // Count stdout and stderr together, rather than giving each a maxBuffer.
+    const args = ["-p", profile({ inputDir: path.dirname(runnerFile), runtimeRoots }), swipl, "--quiet", "--nosignals", "--stack_limit=64m", "-s", runnerFile, "--", snapshotFile, candidateFile, goal, String(Math.max(1, Math.floor(timeoutMs / 1000)))];
+    const child = spawn(SANDBOX, args, { cwd: inputDir, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+    const stdout = [], stderr = []; let outputBytes = 0, exceeded = false, settled = false;
+    const finish = callback => value => { if (!settled) { settled = true; callback(value); } };
+    const fail = finish(reject), succeed = finish(resolve);
+    const collect = (target, chunk) => {
+      outputBytes += chunk.length;
+      if (outputBytes > maxOutputBytes) {
+        exceeded = true;
+        child.kill("SIGKILL");
+      } else target.push(chunk);
+    };
+    child.stdout.on("data", chunk => collect(stdout, chunk)); child.stderr.on("data", chunk => collect(stderr, chunk));
+    child.on("error", error => fail(new Error(`isolated Prolog run failed: ${error.message}`)));
+    const timer = setTimeout(() => { child.kill("SIGKILL"); }, timeoutMs + 500);
+    child.on("close", (code, signal) => {
+      clearTimeout(timer);
+      const visible = `${Buffer.concat(stderr).toString("utf8")}${Buffer.concat(stdout).toString("utf8")}`.trim();
+      if (exceeded) return fail(new Error(`isolated Prolog output exceeded maxOutputBytes (${maxOutputBytes})`));
+      if (code !== 0) return fail(new Error(`isolated Prolog run failed (exit ${code ?? signal ?? "signal"}): ${visible}`));
+      try { succeed(JSON.parse(Buffer.concat(stdout).toString("utf8").trim())); } catch (parseError) { fail(new Error(`isolated Prolog emitted invalid JSON: ${parseError.message}`)); }
     });
   });
 }
@@ -108,13 +123,13 @@ async function runThought({ snapshot, candidate, goal, timeoutMs = 1500, maxOutp
   if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw new Error("capability-empty runtime unavailable: macOS sandbox-exec is required");
   const swipl = executablePath(SWIPL), runtimeRoots = runtimeReadRoots(swipl);
   const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pam-thought-")));
-  const inputDir = path.join(dir, "input"), outputDir = path.join(dir, "output");
-  fs.mkdirSync(inputDir, { mode: 0o700 }); fs.mkdirSync(outputDir, { mode: 0o700 });
-  const snapshotFile = path.join(inputDir, "snapshot.pl"), candidateFile = path.join(inputDir, "candidate.pl"), runnerFile = path.join(inputDir, "runner.pl"), resultFile = path.join(outputDir, "result.json");
+  const inputDir = path.join(dir, "input");
+  fs.mkdirSync(inputDir, { mode: 0o700 });
+  const snapshotFile = path.join(inputDir, "snapshot.pl"), candidateFile = path.join(inputDir, "candidate.pl"), runnerFile = path.join(inputDir, "runner.pl");
   try {
-    fs.writeFileSync(snapshotFile, serializeSnapshot(snapshot), { mode: 0o444 }); fs.writeFileSync(candidateFile, candidate.program, { mode: 0o444 }); fs.copyFileSync(RUNNER, runnerFile); fs.writeFileSync(resultFile, "", { mode: 0o666 });
-    fs.chmodSync(snapshotFile, 0o444); fs.chmodSync(candidateFile, 0o444); fs.chmodSync(runnerFile, 0o444); fs.chmodSync(inputDir, 0o555); fs.chmodSync(resultFile, 0o666);
-    const result = await execute(outputDir, runnerFile, snapshotFile, candidateFile, resultFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl);
+    fs.writeFileSync(snapshotFile, serializeSnapshot(snapshot), { mode: 0o444 }); fs.writeFileSync(candidateFile, candidate.program, { mode: 0o444 }); fs.copyFileSync(RUNNER, runnerFile);
+    fs.chmodSync(snapshotFile, 0o444); fs.chmodSync(candidateFile, 0o444); fs.chmodSync(runnerFile, 0o444); fs.chmodSync(inputDir, 0o555);
+    const result = await execute(inputDir, runnerFile, snapshotFile, candidateFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl);
     return Object.freeze({ candidate: { id: candidate.id, status: "candidate", sha256: candidate.sha256, source: candidate.source }, snapshot: { id: snapshot.id, sha256: snapshot.sha256 }, runEvidence: Object.freeze({ runtime: "swi-prolog-isolated", timeoutMs, maxOutputBytes, result }) });
   } finally { fs.chmodSync(inputDir, 0o700); fs.rmSync(dir, { recursive: true, force: true }); }
 }

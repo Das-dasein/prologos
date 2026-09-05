@@ -3,11 +3,11 @@
 :- use_module(library(time)).
 :- initialization(main, main).
 main :-
-    current_prolog_flag(argv, [Snapshot, Candidate, ResultFile, GoalText, SecondsAtom]), atom_number(SecondsAtom, Seconds),
+    current_prolog_flag(argv, [Snapshot, Candidate, GoalText, SecondsAtom]), atom_number(SecondsAtom, Seconds),
     consult(Snapshot), load_snapshot_items, consult(Candidate), read_term_from_atom(GoalText, Goal, [variable_names(Names)]),
     catch((call_with_time_limit(Seconds, once(call(Goal))) -> Outcome = success ; Outcome = failure), E, Outcome = error(E)),
     result_for(Outcome, Goal, Names, Result),
-    setup_call_cleanup(open(ResultFile, write, Output), (json_write_dict(Output, Result), nl(Output)), close(Output)), halt.
+    json_write_dict(current_output, Result), nl, halt.
 result_for(error(error(existence_error(procedure, _), _)), Goal, _, _{status:unknown, missing:Missing}) :- term_string(Goal, Missing).
 result_for(error(E), _, _, _{status:error, error:Text}) :- term_string(E, Text).
 result_for(success, Goal, Names, Result) :-
