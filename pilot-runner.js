@@ -5,7 +5,8 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { Extraction } = require("./llm-schema");
+const { spawn } = require("node:child_process");
+const { Extraction, EXTRACTION_INSTRUCTIONS, createMemoryExtractionJsonSchema } = require("./llm-schema");
 const { ACTIVE_ONTOLOGY, canonicalJson } = require("./ontology-registry");
 const { consult, query } = require("./prolog-engine");
 const { createFakeProvider, sha256, PROMPT_TEMPLATE, PROMPT_TEMPLATE_NAME } = require("./live-extraction-harness");
@@ -47,6 +48,24 @@ function expectedAnswer(caseItem, condition, active, claims, answers) {
   const ids = new Set(active); return answers.filter(line => [...ids].some(id => line.includes(`Id=${id}`)) || !line.includes("Id="));
 }
 function normalizeAnswers(values) { return values.map(value => String(value).replace(/\s*=\s*/g, "=").replace(/,\s+/g, ",")).sort(); }
+function codexProvider(model) {
+  const codexSchema = path.join(require("node:os").tmpdir(), "prologos-memory-extraction-codex-schema.json");
+  const normalizeSchema = value => { if (Array.isArray(value)) return value.map(normalizeSchema); if (!value || typeof value !== "object") return value; const out = {}; for (const [key, child] of Object.entries(value)) { out[key] = child; if (key === "const" && !Object.prototype.hasOwnProperty.call(out, "type")) out.type = typeof child; } return Object.fromEntries(Object.entries(out).map(([key, child]) => [key, key === "properties" ? Object.fromEntries(Object.entries(child).map(([name, prop]) => [name, normalizeSchema(prop)])) : normalizeSchema(child)])); };
+  fs.writeFileSync(codexSchema, JSON.stringify(normalizeSchema(createMemoryExtractionJsonSchema())));
+  return { async extract({ prompt }) { return new Promise((resolve, reject) => {
+    const child = spawn(process.env.CODEX_BIN || "codex", ["exec", "--json", "--ephemeral", "--sandbox", "read-only", "--skip-git-repo-check", "--ignore-rules", "--output-schema", codexSchema, ...(model ? ["--model", model] : []), "-"], { cwd: process.cwd(), env: process.env, stdio: ["pipe", "pipe", "pipe"] });
+    let stdout = "", stderr = "", usage;
+    child.stdout.on("data", chunk => { stdout += chunk; }); child.stderr.on("data", chunk => { stderr += chunk; });
+    child.on("error", error => reject(error)); child.on("close", code => {
+      if (code !== 0) return reject(new Error(`Codex CLI exited with code ${code}: ${stderr.trim()}`));
+      const events = stdout.trim().split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+      const message = events.find(event => event.type === "item.completed" && event.item && event.item.type === "agent_message");
+      const completed = events.find(event => event.type === "turn.completed"); usage = completed && completed.usage;
+      if (!message || !usage) return reject(new Error("Codex JSON stream missing agent_message or usage"));
+      resolve({ output: JSON.parse(message.item.text), raw_output: stdout, usage: { input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.input_tokens + usage.output_tokens } });
+    }); child.stdin.end(`${EXTRACTION_INSTRUCTIONS}\n\nSTRICT OUTPUT CONTRACT: registry_identity must be an object {name, version, sha256}; each assertion must use exactly {polarity, relation, arguments, valid_from, valid_to, confidence}; do not use predicate, date, source_span, subject, object, or a string registry_identity.\n\n${prompt}\n\nReturn only valid memory-extraction-v2 JSON. Do not use tools.`);
+  }); } };
+}
 async function evaluateCase(caseItem, oracle, condition, extractions, usages = []) {
   const claims = [];
   for (let i = 0; i < extractions.length; i += 1) {
@@ -112,7 +131,7 @@ if (require.main === module) {
     const argv = process.argv.slice(2); const get = name => { const prefix = `--${name}=`; const inline = argv.find(token => token.startsWith(prefix)); if (inline) return inline.slice(prefix.length); const i = argv.indexOf(`--${name}`); return i < 0 ? undefined : argv[i + 1]; };
     const condition = get("condition") || "B1"; const configFile = get("config") || ".cdr/results/prolog-memory-eval-v0/pilot-config-v1.json"; const datasetFile = get("dataset") || ".cdr/datasets/dialogues-pilot-v1.jsonl"; const output = get("output");
     if (!output) fail("CLI", "--output is required");
-    const config = JSON.parse(fs.readFileSync(configFile, "utf8")); const dataset = readJsonl(datasetFile); const provider = config.provider === "fake" ? goldProvider(dataset) : { extract: async ({ prompt }) => require("./providers/openai-api").extractMemoryEvidence(prompt, { model: config.model }) };
+    const config = JSON.parse(fs.readFileSync(configFile, "utf8")); const dataset = readJsonl(datasetFile); const provider = config.provider === "fake" ? goldProvider(dataset) : config.provider === "codex" ? codexProvider(config.model) : { extract: async ({ prompt }) => require("./providers/openai-api").extractMemoryEvidence(prompt, { model: config.model }) };
     if (config.provider !== "fake" && get("allow-live-provider") !== "true") fail("LIVE_OPT_IN", "live provider requires --allow-live-provider=true");
     const result = await runPilot({ config, datasetFile, oracleFile: get("oracle") || ".cdr/results/prolog-memory-eval-v0/pilot-oracle.json", provider, condition, rawOutputDir: get("raw-output-dir") }); writeArtifact(output, result); console.log(`✓ Wrote ${output}`);
   })().catch(error => { console.error(`✗ ${error.code || "RUN"}: ${error.message}`); process.exitCode = 1; });
