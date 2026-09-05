@@ -1,0 +1,59 @@
+protocol_id: "cnos.cdd.cdr.receipt.v1"
+
+validation:
+  verdict: PASS
+  failed_predicates: []
+  warnings:
+    - "bounded CDS harness evidence only; no live provider result"
+    - "PAM-C1 through PAM-C4 remain hypothesized and are not transmitted"
+  provenance:
+    validator_identity: "gamma.cdr.bounded-closeout"
+    validator_version: "r3-structural"
+    checked_at: "2026-09-05T13:20:00+04:00"
+    input_refs:
+      contract_ref: ".cdr/waves/prolog-memory-eval-v0/cds-handoff-contract-v2.md"
+      receipt_ref: ".cdr/waves/prolog-memory-eval-v0/receipt-r3.yaml"
+      evidence_root_ref: "git:main@61fa7b59b313072abb88b44de1df5d9af2ab94e0"
+
+boundary_decision:
+  actor: "delta=gamma@prologos.cdd.cnos"
+  action: repair_dispatch
+  decided_at: "2026-09-05T13:20:00+04:00"
+
+transmissibility: not_transmissible
+
+protocol_gap_count: 0
+protocol_gap_refs: []
+
+evidence_refs:
+  claim:
+    - ".cdr/waves/prolog-memory-eval-v0/beta-review-r6.md#Explicit claim/evidence boundary"
+    - ".cdr/waves/prolog-memory-eval-v0/gamma-closeout-r3.md#Decision"
+  data:
+    - ".cdr/datasets/dialogues-pilot-v1.jsonl@sha256:ed9dd7f7ab4983266ab2df3a5ccb31a1f8b367163a09f2c57d2d096e8699d041"
+    - ".cdr/results/prolog-memory-eval-v0/answer-oracle-v1.json@sha256:aee569c01d79403b0b5d92de135238958c2e60c608a91b8ed495ffcd114e36f5"
+    - "memory.pl@sha256:e288f7433ccec811a233e1e4def34299648d2a0ed53076f2c9e95bb8c78106e4"
+    - "domain-rules.pl@sha256:74b56f8bb03d719d3bcc8729a913b4d9b6a9306c8f432294649514892d2a3773"
+  method:
+    - "pilot-runner.js@commit:586a8fff9f41c7e6a84822b2a1a46df7e5927f7e"
+    - ".cdr/results/prolog-memory-eval-v0/pilot-config-v2.json@canonical-sha256:16dd08f3788831b3a73eddea0c80ca58cdde9015c654dd787fed85c806a8f798"
+    - ".cdr/waves/prolog-memory-eval-v0/cds-handoff-contract-v2.md"
+  result:
+    - ".cdr/waves/prolog-memory-eval-v0/beta-review-r6.md#Reproduction record"
+    - ".cdr/waves/prolog-memory-eval-v0/gamma-closeout-r2.md#Verification record"
+    - ".cdr/waves/prolog-memory-eval-v0/gamma-closeout-r3.md#Verification record"
+    - "fake-aggregate@canonical-sha256:612a0775f6eb728e1ec85be20b68c2717805c3a8744cf88885abe83e38df83c0"
+
+claim_status: computed
+
+limitations:
+  - "Computed evidence covers harness execution, fake reproducibility, trusted-source integrity, and the bounded B5 gold ceiling."
+  - "No live Codex/OpenAI extraction or answering output was produced or reviewed."
+  - "B5 is gold_oracle symbolic evidence, not a user-facing baseline or final-answer comparison."
+  - "No selected strongest non-Prolog baseline, PAM-C1/C2/C3/C4 result, superiority, utility, causal, threshold, or significance claim is asserted."
+
+reproduction:
+  reviewer_rerun: true
+  command: "npm test; npm run test:pilot; npm run test:cdr-gold; npm run test:cdr-matrix; npm run pilot -- --condition all (twice); node cdr-matrix-harness.js --candidate AGGREGATE"
+  output_match: true
+  notes: "Independent beta R6 reran the producing checks and matched canonical fake aggregate SHA 612a0775...; gamma follow-up reran the suite, SWI-Prolog 10.0.2 smoke check, two fake aggregates, candidate reader, and pinned hash checks."
