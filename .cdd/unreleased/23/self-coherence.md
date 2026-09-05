@@ -35,25 +35,29 @@ fact-only ingestion remains a separate compatibility surface.
 derived through `r2` then `r1`, not stored as a fact; candidate status remains
 unadmitted; absence is `unknown`, not negation; and actual candidate execution
 is denied for `/etc/hosts`, an external `/tmp` write (the path remains absent),
-and a socket connection. It also executes the unrestricted `member/2`
-candidate. The runner uses a macOS Seatbelt `sandbox-exec` **default-deny**
-profile, a fresh temporary directory, read-only input files, one disposable
-output directory, a 64 MiB SWI stack limit, wall timeout, and output-byte
-limit. Its grants are the SWI/Homebrew runtime and signed dynamic dependencies,
-system runtime libraries/devices, declared inputs, and the disposable run
-directory; it has no permissive fallback and fails closed when the macOS
-boundary is unavailable. Candidate source is never loaded into the Node host
-process.
+and a socket connection. It also proves that an unrelated
+`/opt/homebrew/.gitignore` file is denied while an unrestricted `member/2`
+candidate executes. The runner uses a macOS Seatbelt `sandbox-exec`
+**default-deny** profile, a fresh temporary directory, read-only input files,
+one disposable output directory, a 64 MiB SWI stack limit, wall timeout, and
+an inherited macOS `RLIMIT_FSIZE` (`/bin/sh` `ulimit -f`) before SWI starts.
+The latter bounds candidate-visible writes during execution; a 400,000-byte
+candidate write fails under `maxOutputBytes: 1024`. Its read grants are the
+specific SWI Cellar runtime directory, directly loaded dylib directories,
+system runtime libraries/devices, and declared inputs; it does not grant a
+package-manager root such as `/opt/homebrew`. It has no permissive fallback
+and fails closed when the macOS boundary is unavailable. Candidate source is
+never loaded into the Node host process.
 
 ## Debt
 
 The verified runtime boundary is macOS-specific: non-macOS hosts and a missing
-`/usr/bin/sandbox-exec` fail closed. The Homebrew runtime prefix is read-only
-because its signed loader uses `opt`/`Cellar` indirections; it is runtime
-compatibility scope rather than candidate storage. Arbitrary full-Prolog
-candidate execution has a truthful `trace_unavailable` result when it cannot
-be reconstructed as a proof from accepted snapshot clauses; proof extraction
-for arbitrary meta-programmed code is deferred by design.
+`/usr/bin/sandbox-exec` fail closed. The quota is macOS `RLIMIT_FSIZE`; it
+rounds a byte ceiling up to the kernel's 512-byte file block, so a request
+below one block cannot be represented exactly. Arbitrary full-Prolog candidate
+execution has a truthful `trace_unavailable` result when it cannot be
+reconstructed as a proof from accepted snapshot clauses; proof extraction for
+arbitrary meta-programmed code is deferred by design.
 
 ## CDD Trace
 

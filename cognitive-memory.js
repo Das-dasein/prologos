@@ -63,13 +63,12 @@ function runtimeReadRoots(swipl) {
       if (!libraries.has(dependency)) pending.push(dependency);
     }
   }
-  // These are interpreter/runtime resources, not candidate authority.  The
-  // candidate receives neither a general host root nor a writable runtime path.
-  // Homebrew's signed loader follows its opt/Cellar indirections while loading
-  // SWI dependencies; sandbox-exec requires their common prefix, not merely
-  // the final dylib path.  This remains a read-only interpreter runtime root.
-  const homebrewPrefix = path.resolve(base, "../../../../..");
-  return [...new Set([swipl, fs.realpathSync(base), homebrewPrefix, "/usr/lib", "/System/Library", "/dev", "/private/var/db/timezone", ...[...libraries].flatMap(file => [path.dirname(file), fs.existsSync(file) ? path.dirname(fs.realpathSync(file)) : file])])];
+  // These are interpreter/runtime resources, not candidate authority.  In
+  // particular, do not collapse Homebrew's Cellar/opt paths to /opt/homebrew:
+  // that would make every installed package and Homebrew configuration readable.
+  // A SWI installation directory and each directly loaded dylib directory are
+  // the narrowest reproducible directory grants Seatbelt can express.
+  return [...new Set(["/bin/sh", "/private/var/select/sh", swipl, fs.realpathSync(base), "/usr/lib", "/System/Library", "/dev", "/private/var/db/timezone", ...[...libraries].flatMap(file => [path.dirname(file), fs.existsSync(file) ? path.dirname(fs.realpathSync(file)) : file])])];
 }
 function profile({ inputDir, outputDir, runtimeRoots }) {
   const literal = value => `(literal ${JSON.stringify(value)})`;
@@ -85,14 +84,19 @@ function profile({ inputDir, outputDir, runtimeRoots }) {
     "(allow file-map-executable)",
     "(allow sysctl-read)",
     "(allow mach-lookup)",
-    `(allow file-read-metadata ${ancestors(outputDir).join(" ")})`,
+    `(allow file-read-metadata ${[...ancestors(outputDir), ...runtimeRoots.flatMap(ancestors)].join(" ")})`,
     `(allow file-read* ${literal("/")} ${runtimeRoots.map(subpath).join(" ")} ${subpath(path.dirname(inputDir))} ${subpath(inputDir)} ${subpath(outputDir)})`,
     `(allow file-write* ${subpath(outputDir)})`
   ].join(" ");
 }
 function execute(outputDir, runnerFile, snapshotFile, candidateFile, resultFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl) {
   return new Promise((resolve, reject) => {
-    const args = ["-p", profile({ inputDir: path.dirname(runnerFile), outputDir, runtimeRoots }), swipl, "--quiet", "--nosignals", "--stack_limit=64m", "-s", runnerFile, "--", snapshotFile, candidateFile, resultFile, goal, String(Math.max(1, Math.floor(timeoutMs / 1000)))];
+    if (!Number.isSafeInteger(maxOutputBytes) || maxOutputBytes < 1) throw new Error("maxOutputBytes must be a positive integer");
+    // macOS ulimit -f is an inherited RLIMIT_FSIZE measured in 512-byte blocks.
+    // It applies while the candidate is running, including files it opens in
+    // outputDir; this is deliberately not a post-run size check or cleanup.
+    const fileBlocks = String(Math.ceil(maxOutputBytes / 512));
+    const args = ["-p", profile({ inputDir: path.dirname(runnerFile), outputDir, runtimeRoots }), "/bin/sh", "-c", "ulimit -f \"$1\"; shift; exec \"$@\"", "pam-fsize", fileBlocks, swipl, "--quiet", "--nosignals", "--stack_limit=64m", "-s", runnerFile, "--", snapshotFile, candidateFile, resultFile, goal, String(Math.max(1, Math.floor(timeoutMs / 1000)))];
     execFile(SANDBOX, args, { cwd: outputDir, timeout: timeoutMs + 500, maxBuffer: maxOutputBytes, windowsHide: true }, (error, stdout, stderr) => {
       if (error) return reject(new Error(`isolated Prolog run failed (exit ${error.code ?? "signal"}): ${stderr.trim() || stdout.trim() || error.message}`));
       try { resolve(JSON.parse(fs.readFileSync(resultFile, "utf8"))); } catch (parseError) { reject(new Error(`isolated Prolog emitted invalid JSON: ${parseError.message}`)); }
