@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex B4 exploratory pilot</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#0f172a; --surface:#172033; --surface2:#202b40; --fg:#e5edf8; --muted:#9fb0c7; --good:#55d49a; --bad:#ff8b8b; --line:#33445f; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { max-width:1100px; margin:0 auto; padding:32px 20px 56px; }
+    h1 { margin:0 0 6px; font-size:28px; }
+    h2 { margin:28px 0 12px; font-size:20px; }
+    .sub { color:var(--muted); margin:0 0 24px; }
+    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .metric { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px; }
+    .metric strong { display:block; font-size:25px; margin-top:4px; }
+    .metric span { color:var(--muted); font-size:13px; }
+    .bar { height:10px; background:var(--surface2); border-radius:8px; overflow:hidden; margin-top:14px; }
+    .bar i { display:block; height:100%; width:83.3333%; background:var(--good); }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:12px; }
+    table { border-collapse:collapse; width:100%; min-width:780px; background:var(--surface); }
+    th,td { padding:11px 13px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    tr:last-child td { border-bottom:0; }
+    .ok { color:var(--good); font-weight:650; }
+    .fail { color:var(--bad); font-weight:650; }
+    code { color:#c8d7ff; white-space:pre-wrap; word-break:break-word; }
+    details { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 13px; margin:8px 0; }
+    summary { cursor:pointer; font-weight:600; }
+    .meta { color:var(--muted); font-size:13px; margin-top:5px; }
+    @media (max-width:700px) { main{padding:22px 12px 40px} .metrics{grid-template-columns:1fr} h1{font-size:23px} }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Codex + Prolog: B4 exploratory pilot</h1>
+  <p class="sub">Модель <code>gpt-5.6-luna</code> · контекст 32 768 · 12 кейсов / 36 ходов · результат не является официальным B4 при бюджете 4 096</p>
+  <section class="metrics" aria-label="Итоговые метрики">
+    <div class="metric"><span>Точные ответы</span><strong>10 / 12</strong><div class="bar"><i></i></div></div>
+    <div class="metric"><span>Точность</span><strong>83,3%</strong></div>
+    <div class="metric"><span>Ошибки</span><strong class="fail">2</strong><span>stable-02, ambiguity-02</span></div>
+  </section>
+  <h2>Кейсы</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Кейс</th><th>Категория</th><th>Статус</th><th>Фактический ответ</th><th>Ожидаемый</th></tr></thead>
+    <tbody id="cases"></tbody>
+  </table></div>
+  <h2>Что именно произошло</h2>
+  <details open><summary>stable-02 — пропущено устойчивое утверждение</summary><div class="meta">Ожидалось: <code>Id=c_stable_02_a,Language=python,From=10000101,To=inf</code>. Модель не записала утверждение, поэтому Prolog вернул пустой ответ.</div></details>
+  <details open><summary>ambiguity-02 — ложная запись при неоднозначной кореференции</summary><div class="meta">Модель записала <code>uses(they,python)</code>, хотя oracle требует clarification/ignore. Prolog корректно показал активное утверждение, поэтому ошибка относится к решению LLM о записи, а не к выводу Prolog.</div></details>
+  <h2>Граница доказательства</h2>
+  <p class="sub">Это live exploratory run на сохранённых сырых ответах Codex CLI. Он показывает поведение связки на увеличенном контексте; не заменяет предзарегистрированный B4 и не доказывает обобщаемую точность.</p>
+</main>
+<script>
+const rows = [
+  ['stable-01','stable recall',1,'Id=c_stable_01_a,City=samara,From=10000101,To=inf','Id=c_stable_01_a,City=samara,From=10000101,To=inf'],
+  ['stable-02','stable recall',0,'','Id=c_stable_02_a,Language=python,From=10000101,To=inf'],
+  ['correction-01','explicit correction/supersession',1,'Id=c_correction_01_new,City=samara,From=10000101,To=inf','Id=c_correction_01_new,City=samara,From=10000101,To=inf'],
+  ['correction-02','explicit correction/supersession',1,'Project=borealis','Project=borealis'],
+  ['temporal-01','temporal change without contradiction',1,'Id=c_temporal_01_a,City=omsk,From=20200101,To=20221231','Id=c_temporal_01_a,City=omsk,From=20200101,To=20221231'],
+  ['temporal-02','temporal change without contradiction',1,'Id=c_temporal_02_b,Technology=python,From=20250101,To=20251231','Id=c_temporal_02_b,Technology=python,From=20250101,To=20251231'],
+  ['conflict-01','direct positive/negative conflict',1,'Id1=c_conflict_01_neg,Id2=c_conflict_01_pos','Id1=c_conflict_01_neg,Id2=c_conflict_01_pos'],
+  ['conflict-02','direct positive/negative conflict',1,'Id1=c_conflict_02_neg,Id2=c_conflict_02_pos','Id1=c_conflict_02_neg,Id2=c_conflict_02_pos'],
+  ['nonmemory-01','non-memory content',1,'',''], ['nonmemory-02','non-memory content',1,'',''],
+  ['ambiguity-01','alias/coreference ambiguity',1,'',''], ['ambiguity-02','alias/coreference ambiguity',0,'true','']
+];
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+document.getElementById('cases').innerHTML = rows.map(([id,cat,ok,actual,expected]) => `<tr><td><code>${id}</code></td><td>${cat}</td><td class="${ok?'ok':'fail'}">${ok?'PASS':'FAIL'}</td><td><code>${esc(actual||'∅')}</code></td><td><code>${esc(expected||'∅')}</code></td></tr>`).join('');
+</script>
+</body>
+</html>
