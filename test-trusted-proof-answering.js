@@ -9,7 +9,7 @@ const { prepareOpenAIAnsweringRun } = require("./trusted-proof-answering");
 
 async function main() {
   const inputs = immutableInputs(), fixture = inputs.dataset.cases[0];
-  const config = { source_commit: "f4b96bb52d43a1cf7f15ff229da40c7222110605", model: "fake-openai-model", base_prompt_sha256: ASSEMBLED_PROMPT_TEMPLATE_SHA256, wrapper_prompt_sha256: WRAPPER_TEMPLATE_SHA256, sampling: { temperature: 0 }, retry_policy: "none", dataset_sha256: inputs.dataset_sha256, slot_registration_file_sha256: inputs.registration_sha256, slot_registration_sha256: inputs.binding.slot_registration_sha256 };
+  const config = { source_commit: "f4b96bb52d43a1cf7f15ff229da40c7222110605", model: "fake-openai-model", base_prompt_sha256: ASSEMBLED_PROMPT_TEMPLATE_SHA256, wrapper_prompt_sha256: WRAPPER_TEMPLATE_SHA256, sampling: { temperature: 0, top_p: 1 }, retry_policy: "none", dataset_sha256: inputs.dataset_sha256, slot_registration_file_sha256: inputs.registration_sha256, slot_registration_sha256: inputs.binding.slot_registration_sha256 };
   const fakeTrusted = async () => ({ proof: { result: structuredClone(fixture.expected_result) } });
   const p0 = await assembleCondition({ fixture, inputs, config, condition: "P0", trustedQuery: fakeTrusted });
   const p1 = await assembleCondition({ fixture, inputs, config, condition: "P1", trustedQuery: fakeTrusted });
@@ -25,10 +25,23 @@ async function main() {
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "fake", allowLiveProvider: true, config, inputs, rawDirectory: raw, clientFactory }), /fixed provider/); assert.equal(clients, 0);
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: false, config, inputs, rawDirectory: raw, clientFactory }), /allow-live-provider/); assert.equal(clients, 0);
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config: { ...config, base_prompt_sha256: "0".repeat(64) }, inputs, rawDirectory: raw, clientFactory }), /wire template/); assert.equal(clients, 0);
+  for (const [name, sampling, error] of [
+    ["seed", { temperature: 0, top_p: 1, seed: 0 }, /exactly temperature and top_p/],
+    ["missing", { temperature: 0 }, /exactly temperature and top_p/],
+    ["extra", { temperature: 0, top_p: 1, frequency_penalty: 0 }, /exactly temperature and top_p/],
+    ["non-number", { temperature: "0", top_p: 1 }, /finite numbers/],
+    ["temperature-range", { temperature: 2.01, top_p: 1 }, /range \[0, 2\]/],
+    ["top-p-range", { temperature: 0, top_p: -0.01 }, /range \[0, 1\]/],
+  ]) {
+    const invalidRaw = path.join(root, `invalid-${name}`);
+    assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config: { ...config, sampling }, inputs, rawDirectory: invalidRaw, clientFactory }), error);
+    assert.equal(clients, 0, `${name}: invalid sampling never constructs a client`);
+    assert.equal(fs.existsSync(invalidRaw), false, `${name}: invalid sampling creates no local receipt/evidence root`);
+  }
   const run = prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: raw, clientFactory });
   assert.equal(clients, 0, "client stays lazy after all gates");
   const r0 = await run.run(p0);
-  assert.deepEqual(forwarded, { model: config.model, input: p0.prompt }, "sealed prompt is forwarded byte-for-byte with no wrapper/instructions");
+  assert.deepEqual(forwarded, { model: config.model, input: p0.prompt, temperature: config.sampling.temperature, top_p: config.sampling.top_p }, "sealed prompt and exact pinned sampling are forwarded with no wrapper/instructions");
   assert.equal(clients, 1); assert.equal(calls, 1); assert.equal(r0.response.usage.effective_context_budget, 41); assert.equal(r0.cdr_status, "not-a-cdr-receipt-v2");
   assert.equal(fs.readFileSync(r0.artifacts.prompt_file, "utf8"), p0.prompt);
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: raw, clientFactory }), /must not already exist/);

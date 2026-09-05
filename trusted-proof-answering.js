@@ -4,14 +4,14 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { executeWithInjectedProvider, requireImmutableConfig } = require("./trusted-proof-preflight");
-const { ASSEMBLED_PROMPT_TEMPLATE_SHA256, WRAPPER_TEMPLATE_SHA256, createOpenAIAnsweringProvider } = require("./providers/openai-answering");
+const { ASSEMBLED_PROMPT_TEMPLATE_SHA256, WRAPPER_TEMPLATE_SHA256, canonicalSampling, createOpenAIAnsweringProvider } = require("./providers/openai-answering");
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 
 function requireWireConfig(config, inputs) {
   const immutable = requireImmutableConfig(config, inputs);
   if (immutable.base_prompt_sha256 !== ASSEMBLED_PROMPT_TEMPLATE_SHA256) throw new Error("config.base_prompt_sha256 does not match sealed assembled-prompt wire template");
   if (immutable.wrapper_prompt_sha256 !== WRAPPER_TEMPLATE_SHA256) throw new Error("config.wrapper_prompt_sha256 does not match no-wrapper wire template");
-  return immutable;
+  return Object.freeze({ ...immutable, sampling: canonicalSampling(immutable.sampling) });
 }
 function requireFreshRawDirectory(rawDirectory) {
   if (typeof rawDirectory !== "string" || !path.isAbsolute(rawDirectory)) throw new Error("raw output directory must be a fresh absolute path");
