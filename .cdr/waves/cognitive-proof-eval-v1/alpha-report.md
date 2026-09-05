@@ -82,3 +82,20 @@ provider-reported usage to measure `E` request-by-request, record the full
 equality digest, retain reviewed raw artifacts, and enforce the live leakage
 sentinel before any call. Fresh independent CDR beta must reproduce this
 offline contract before CDS #28 can proceed.
+
+## Issue #29 R2: immutable slot-registration binding
+
+This α repair adds `slot-registration-v1.json`, a canonical
+`trusted-proof-evidence-slots-v1` object with every fixture's
+`case_id -> slot_bytes` mapping. Its SHA-256 is
+`4d05d2176f4e629370771925543d4670259e15b633c5ef3be47803c6c9bf9a46`.
+The deterministic validator derives the same map from the dataset and fails
+unless it equals the registration self-hash and both method/manifest bindings;
+its JSON result emits that hash.
+
+The focused test rejects a one-byte post-hoc slot change with a stale binding,
+a matching dataset-and-assembled-pair rewrite, a registration rehashed after
+the manifest binding, and missing or extra dataset mappings. This remains an
+offline byte-accounting repair, not a provider/model token result, live
+artifact, CDR receipt, effectiveness conclusion, or CDS #28 implementation.
+Fresh β remains owed.

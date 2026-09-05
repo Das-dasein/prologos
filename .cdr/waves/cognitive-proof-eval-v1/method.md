@@ -21,6 +21,13 @@ identifier, model/provider adapter, sampling policy, base answer prompt and
 wrapper hashes, retry policy, selected effective measured context budget `E`,
 and that case's fixed evidence-slot size.
 
+Slot registration SHA-256: 4d05d2176f4e629370771925543d4670259e15b633c5ef3be47803c6c9bf9a46
+`slot-registration-v1.json` is the immutable canonical registration object:
+its `trusted-proof-evidence-slots-v1` protocol version and every
+`case_id -> slot_bytes` entry are canonically serialized and hashed. The
+dataset-derived map, the registration's self-hash, and this method and manifest
+bindings must all match before assembly or scoring.
+
 | Condition | Answering-model material |
 | --- | --- |
 | P0 | normalized serialization of exactly that accepted snapshot and query, plus the pre-registered evidence slot filled only with the inert `~` control marker |

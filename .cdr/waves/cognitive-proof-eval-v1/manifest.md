@@ -5,6 +5,12 @@ Status: prospective offline preparation; no live run and no CDR receipt.
 Source implementation snapshot: `82bcc82fca8d8ebb2734e1006b754a6d4e31b4ac`.
 Dataset: `dataset.json`.
 Dataset.json SHA-256: 63d68d4decad2dcdadbfc1204c58cec2650a46a90442cb63889e3d7989e07e51
+Slot registration SHA-256: 4d05d2176f4e629370771925543d4670259e15b633c5ef3be47803c6c9bf9a46
+
+`slot-registration-v1.json` is the immutable canonical
+`trusted-proof-evidence-slots-v1` object. Its self-hash, this manifest binding,
+the method binding, and the canonical map derived from `dataset.json` must
+match exactly; missing or extra case mappings fail closed.
 
 The fixture contains 12 synthetic, sanitized cases: two each for multi-hop,
 unknown, revision, direct temporal conflict, provenance disambiguation, and
