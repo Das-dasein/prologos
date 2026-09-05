@@ -121,3 +121,15 @@ rejected, unavailable, or missing case contributes to neither rate nor claim.
 Any incomplete intake is `INDETERMINATE`; an integrity-valid intake is still
 not a result until fresh CDR beta audits local evidence. The committed fixture
 is `synthetic_non_result`, has no raw file, and demonstrates parser/gates only.
+
+## Actual assembled-prompt binding amendment (issue #35)
+
+`receipt-intake-v2` is a separate format and never upgrades or reinterprets a
+v1 envelope. It additionally pins
+`actual-assembled-prompt-digest-registry-v1.json`, a self-hashing registry
+rebuilt from the existing no-live sealed P0/P1 assembler for every case. A
+candidate record binds its exact case/condition digest in `prompt_sha256` and
+a separate local prompt artifact under `--raw-root`; intake hashes that file
+and requires artifact SHA = record SHA = registered P0/P1 SHA. The registry
+contains digests and template identities only, never raw prompt bytes, oracle
+contracts, raw outputs, aggregation, or model/provider activity.
