@@ -2,8 +2,24 @@
 
 Changelog:
 
+- v0.1.2 — prospective PAM evaluation v2 amendment: the next comparative
+  run may select an effective context budget above 4096, but must measure and
+  preserve exact equality across B1–B4. Previously inspected B4 evidence is
+  not retro-validated.
 - v0.1.1 — made the falsifier, privacy boundary, and role exits explicit.
 - v0.1.0 — initial project binding.
+
+## Prospective v2 amendment
+
+The operator's 2026-09-05 amendment applies only to a future unexecuted
+comparative run. The absolute `max_context_tokens=4096` ceiling is removed for
+that run. Before model outputs are inspected, the CDS harness must select an
+effective context budget `E`, measure it for every extraction, summary, and
+answer request, and verify exact equality of the measured B1, B2, B3, and B4
+budgets. A configuration label without per-request measurement is not
+evidence. This amendment changes no threshold, claim ID, baseline-selection
+rule, or claim meaning, and does not retro-validate the already inspected B4
+artifact.
 
 ## Purpose
 

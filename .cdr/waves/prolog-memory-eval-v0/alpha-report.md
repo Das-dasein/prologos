@@ -41,3 +41,14 @@ fields. No private `data/memory.pl` content was read or copied. The unresolved
 question is whether the current runtime can execute the supersession oracle
 without an additional, separately pinned harness; that is a bounded execution
 limitation for β to reproduce, not a positive architecture claim.
+
+## Historical mapping correction
+
+The claim labels in the preceding historical production record predate the
+canonical ledger mapping and are retained verbatim as provenance. They must
+not be used as the current PAM mapping. The authoritative meanings and
+statuses are in `.cdr/claims/open-claims.md` and the R2 repair report:
+PAM-C1 is the comparative Prolog usefulness claim, PAM-C2 is symbolic
+correctness from gold claims, PAM-C3 is extraction-error attribution, and
+PAM-C4 is explicit-correction repair-loop behavior. This append-only note
+records the correction without rewriting the historical research artifact.

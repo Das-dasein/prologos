@@ -34,14 +34,17 @@ works.
 
 Alpha must produce:
 
-- `.cdr/methods/prolog-memory-evaluation-v1.md`;
+- `.cdr/methods/prolog-memory-evaluation-v1.md` (historical preregistration)
+  and the prospective amendment `.cdr/methods/prolog-memory-evaluation-v2.md`;
 - `.cdr/datasets/dialogues-pilot-v1.jsonl` with exactly 12 synthetic dialogues;
 - `.cdr/datasets/dialogues-pilot-v1.manifest.md` with origin, license/use,
   schema, case taxonomy, and SHA-256;
 - `.cdr/results/prolog-memory-eval-v0/pilot-oracle.json` containing expected
   memory operations, active states, conflict states, and query answers;
-- `.cdr/waves/prolog-memory-eval-v0/alpha-report.md` mapping every design choice
-  to PAM-C1 through PAM-C4 and naming unresolved limitations.
+- `.cdr/waves/prolog-memory-eval-v0/alpha-report.md` (historical production
+  record) and the current repair report
+  `.cdr/waves/prolog-memory-eval-v0/alpha-repair-report-r2.md`, which maps
+  current matter to PAM-C1 through PAM-C4 and names unresolved limitations.
 
 The 12 cases must include two examples of each:
 
@@ -70,8 +73,9 @@ as local exploratory state that may contain personal information.
 
 - CDR doctrine: `usurobor/cnos@fb527e6c`,
   `src/packages/cnos.cdr/skills/cdr/CDR.md`.
-- Project method deliverable:
-  `.cdr/methods/prolog-memory-evaluation-v1.md`.
+- Project method deliverables: `.cdr/methods/prolog-memory-evaluation-v1.md`
+  (historical preregistration) and `.cdr/methods/prolog-memory-evaluation-v2.md`
+  (current prospective amendment).
 - Existing smoke command: `npm test`.
 
 Any software harness required beyond existing commands is out of this research
@@ -80,7 +84,8 @@ wave and must be produced as separately pinned CDS evidence.
 Repair binding: the CDR method may consume a CDS harness only through an
 immutable path plus commit/archive identifier. No such harness existed at
 R1; its absence is recorded as a method-executability limitation, not filled
-by this research session.
+by this research session. The v2 CDS contract is recorded at
+`.cdr/waves/prolog-memory-eval-v0/cds-handoff-contract-v2.md`.
 
 ## Diagnostic oracles
 

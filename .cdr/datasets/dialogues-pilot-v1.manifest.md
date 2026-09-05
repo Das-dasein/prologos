@@ -3,11 +3,18 @@
 Origin: authored by CDR α on 2026-09-03 as a synthetic, privacy-safe pilot.
 No user, employer, API, email, secret, or third-party personal data is used.
 
-Intended use: local evaluation of PAM-C1 symbolic correctness, PAM-C2
-extraction, PAM-C3 active/conflict reasoning, and PAM-C4 answer behavior.
+Intended use: local evaluation of the registered PAM claims: PAM-C1
+comparative Prolog usefulness, PAM-C2 symbolic correctness from gold claims,
+PAM-C3 extraction/error attribution after symbolic correctness, and PAM-C4
+explicit-correction repair-loop behavior. The dataset supports these claims'
+case coverage; it does not itself establish any of them.
 Redistribution: permitted as synthetic project evidence; not a claim about
 real users. The JSONL has exactly 12 records and exactly two records in each
 registered category.
+
+Claim-ID correction: this canonical manifest mapping was repaired on
+2026-09-05. The JSONL bytes and SHA-256 are unchanged; the prior shifted
+mapping remains only in the historical alpha report.
 
 Schema: one JSON object per line with `case_id`, `category`, `dialogue` (ordered
 `speaker`/`text` turns), `gold_operations` (turn-indexed `write`, `supersede`,
