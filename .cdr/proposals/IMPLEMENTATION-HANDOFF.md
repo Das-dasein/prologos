@@ -1,17 +1,29 @@
-# Offline evaluation v3 — handoff
+# Offline evaluation v3 — bounded repair handoff
 
 Branch: `chore/offline-eval-v3-handoff`.
 Contract: [evaluation-contract-repair-v3.md](evaluation-contract-repair-v3.md).
-Status: prepared for implementation; no v3 evaluator implemented and no independent beta verdict.
+Status: implementation completed on the local repair branch; publication and
+independent beta evidence packaging remain outstanding.
+
+The implementation is the bounded offline repair at commit `80ca1d4`.
+It produces `replay-v3-r2.json` and passes the focused sentinels, `npm test`,
+and `npm run test:pilot`. This handoff does not transmit a CDR claim and does
+not replace an independent beta review artifact.
 
 ## Start here
 
 1. Read the proposal and `.cdr/POLICY.md`.
 2. Verify the baseline with `npm test` and `npm run test:pilot` (fake providers; no live pilot).
 3. Verify SHA-256 of every file listed in `reports/live-20260905-152059/manifest.json` relative to that directory.
-4. Implement `offline-eval-v3.js` and its independent fixtures, following proposal acceptance sentinels. First repair fact matching and unknown/coverage semantics; then answer/provenance diagnostics.
-5. Replay frozen B1–B4 records to a NEW artifact; keep historical scores, text and hashes immutable. Use archived raw paths via manifest mapping, not original /tmp paths.
-6. Add an offline npm command, document it, update the dashboard only with versioned replay evidence. Request fresh independent beta review after pinning implementation.
+4. The evaluator and independent fixtures are implemented in `80ca1d4`; the
+   three β findings were repaired: run identity binding, zero-denominator
+   `null` coverage, and explicit `indeterminate` handling for missing raw.
+5. Replay frozen B1–B4 records to the versioned `replay-v3-r2.json`; historical
+   scores, text and hashes remain immutable. Archived raw paths are resolved
+   through the manifest, not the original `/tmp` paths.
+6. The offline npm command and documentation are present. Before publication,
+   obtain a fresh independent β artifact for the exact immutable repair commit;
+   this document is not that review.
 
 ## Boundaries
 
