@@ -39,3 +39,12 @@ CDR gold, annotation, matrix, and focused pilot gates pass. B5 remains
 
 The fake fixtures prove software behavior and reproducibility only; they do
 not prove live answer quality or PAM-C1--C4.
+
+## Self-check
+
+The implementation keeps extraction, context construction, Prolog, and answer
+effects explicit. Runtime claim IDs keep gold IDs out of model prompts while
+source claim IDs remain in records and fake provenance. All required claims in
+this report map to focused commands or code surfaces; no live provider or
+comparative pilot was run. No ambiguity is deferred to beta about v1/v2
+identity, B5 boundary, or the configured E gate.
