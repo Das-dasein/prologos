@@ -16,3 +16,26 @@ snapshot; existing code/test guidance was used instead. Affected peers are
 pilot config, and this self-coherence artifact; prospective CDR method,
 handoff, repair report, dataset, oracle, trusted files, dashboard, and
 historical `.cdd/unreleased/21` artifacts were treated as read-only.
+
+## ACs
+
+1. Distinct paths: `test-pilot-runner.js` asserts `recent_turns`,
+`rolling_summary`, `typed_claims_no_prolog`, and `typed_claims_plus_prolog`
+contexts, unequal hashes, 0 B3 Prolog calls, and 12 B4 calls.
+2. Final answers: the focused test instruments 36 extraction and 12 answer
+calls per B1-B4 and checks answer usage, raw refs, and answer records.
+3. Budget E: every condition has 72 measured extraction/summary/answer
+entries, all equal configured E=8192; an unequal-E fixture fails closed.
+4. v2 evidence: condition artifacts and aggregate retain v2 identity, hashes,
+config, prompts, raw refs, usage, contexts, claims, turns, and intervals;
+`scoreCandidateArtifact` consumes the aggregate and rejects incomplete shape.
+5. Scoring: records carry separate extraction and answer cells with explicit
+numerators/denominators; aggregate baseline remains `null` until a complete
+comparative run, while fake answers exercise the registered 12-case fixture.
+6. Safety/compatibility: focused tests cover leakage, missing raw output,
+trusted hash mismatch, unsafe query, and missing answer adapter; `npm test`,
+CDR gold, annotation, matrix, and focused pilot gates pass. B5 remains
+`gold_oracle`.
+
+The fake fixtures prove software behavior and reproducibility only; they do
+not prove live answer quality or PAM-C1--C4.
