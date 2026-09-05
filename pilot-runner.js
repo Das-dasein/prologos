@@ -70,7 +70,10 @@ async function evaluateCase(caseItem, oracle, condition, extractions, usages = [
   const claims = [];
   for (let i = 0; i < extractions.length; i += 1) {
     const op = caseItem.gold_operations.find(x => x.turn === i + 1 && x.kind === "write");
-    extractions[i].assertions.forEach((proposal, j) => claims.push({ id: op && j === 0 ? op.claim_id : `c_${caseItem.case_id}_${i + 1}_${j}`, proposal, turn: i + 1 }));
+    // Keep generated identifiers valid and unambiguous Prolog atoms.  A suffix
+    // beginning with an underscore followed by a digit can be tokenized as a
+    // variable by the embedded parser (for example `_2_0`).
+    extractions[i].assertions.forEach((proposal, j) => claims.push({ id: op && j === 0 ? op.claim_id : `c${caseItem.case_id.replace(/[^a-z0-9]/g, "")}t${i + 1}a${j}`, proposal, turn: i + 1 }));
   }
   const supersedes = caseItem.gold_operations.filter(x => x.kind === "supersede");
   const inactive = new Set(supersedes.map(x => x.old_claim_id));
