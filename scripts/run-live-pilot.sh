@@ -4,6 +4,13 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODEL_NAME="${1:-gpt-5.6-luna}"
 RUN_DIR="${2:-/tmp/prologos-live-$(date +%Y%m%d-%H%M%S)}"
+
+if [[ "$MODEL_NAME" == "-h" || "$MODEL_NAME" == "--help" ]]; then
+  echo "Usage: $0 [MODEL] [OUTPUT_DIR]"
+  echo "Example: $0 gpt-5.6-luna /tmp/prologos-live-run"
+  exit 0
+fi
+
 CONFIG_SOURCE="$ROOT_DIR/.cdr/results/prolog-memory-eval-v0/pilot-config-v2.json"
 DATASET_SOURCE="$ROOT_DIR/.cdr/datasets/dialogues-pilot-v1.jsonl"
 ORACLE_SOURCE="$ROOT_DIR/.cdr/results/prolog-memory-eval-v0/answer-oracle-v1.json"
