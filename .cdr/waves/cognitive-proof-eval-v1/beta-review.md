@@ -70,3 +70,75 @@ adequate prospective comparative protocol. It does not make the future
 equal-E, prompt-leakage, raw-retention, scoring, or live-answer gates
 executable; absence or failure of any of those future gates must remain
 `REVISE` or `INDETERMINATE`, never a positive PAM-C1 conclusion.
+
+## Issue #29 fresh beta: equal-budget repair
+
+Role: fresh independent CDR beta. Reviewed immutable alpha target
+`b48a457be489fa95420224a85e0df36644e6d8d7` on `cdr/29` against
+`.cdr/POLICY.md` and `gamma-equal-budget-repair.md`. The target's own delta is
+clean (`git diff --check b48a457^ b48a457`); the pre-existing gamma document
+has trailing whitespace when the whole branch is checked against `main`, which
+is outside this alpha delta.
+
+### Verdict
+
+**REVISE — the method repair is not adequate and does not unblock CDS #28.**
+The new code correctly establishes a useful *offline byte-equality* property
+for a supplied P0/P1 pair; it does not fail closed on post-registration slot
+changes. This is not a provider/model token claim, a CDR receipt, PAM claim,
+threshold result, or effectiveness conclusion.
+
+### Reproduction and coverage
+
+From the clean target, beta recomputed dataset SHA-256
+`63d68d4decad2dcdadbfc1204c58cec2650a46a90442cb63889e3d7989e07e51`,
+matching `manifest.md`. The following all passed:
+
+```text
+node .cdr/waves/cognitive-proof-eval-v1/validate-trusted-proof-eval-v1.js
+node .cdr/waves/cognitive-proof-eval-v1/validate-equal-budget-slots-v1.js
+node test-trusted-proof-equal-budget-v1.js
+npm run test:cognitive-memory
+npm test
+git diff --check b48a457^ b48a457
+```
+
+The symbolic oracle returned `offline-symbolic-ok` for all 12 cases, with two
+cases each for multi-hop, unknown, revision, temporal conflict, provenance,
+and untrusted-thought behavior. The equal-slot validator returned
+`offline-equal-budget-slot-ok` for the same 12 cases. The checked-in negative
+test rejects an overlong proof, mutation before the slot, an unequal P1 slot,
+and a literal `hidden_answer_contract` control leak. P0 is all `~`; P1 holds
+only the trusted result plus `~` padding; their material outside the slot is
+identical under `offline-utf8-byte-v1`.
+
+### Falsifier that failed
+
+Beta additionally changed only `evidence_slots.multi_hop_01` from `1024` to
+`1025` after registration, then reran `validateDataset`: it was **accepted**.
+Beta also changed a fully assembled pair's declared slot and both padded slots
+from 1024 to 1025 bytes: `validatePair` was **accepted**. Thus neither the
+dataset validator nor the pair validator binds the declared slot map or its
+dataset digest to an immutable pre-output commitment. A coherent post-hoc
+increase can make an otherwise overlong proof fit while preserving the local
+byte-equality calculation, directly violating gamma's no-post-output slot-size
+choice constraint.
+
+The control/oracle-leak attempt using the hidden answer text itself was
+rejected by P0's all-tilde grammar. That result does not cure the independent
+post-hoc-slot failure.
+
+### Required repair and retained boundary
+
+Before a method-only GO, the deterministic validator/test must pin and verify
+the pre-registered slot map (or a committed canonical digest that covers it),
+and reject every changed declared slot or assembled-pair slot size. The
+negative test must exercise that exact mutation. A later CDS/live harness must
+still use the pinned provider tokenizer or provider-reported per-request usage
+to establish equal measured `E`, preserve its equality digest and reviewed raw
+artifacts, and enforce a pre-call leakage sentinel. Those are future
+harness/live gates, not evidence produced here.
+
+No provider, live invocation, raw result, receipt, claim-status, PAM claim,
+CDS #28 code, or threshold was added or altered by the alpha target or this
+beta review.
