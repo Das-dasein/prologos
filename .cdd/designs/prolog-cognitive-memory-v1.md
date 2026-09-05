@@ -9,16 +9,17 @@ answers; it defines the system to be tested later.
 
 The system is an LLM with an enduring, executable Prolog model of its
 accumulated knowledge. The LLM interprets language and proposes changes to
-that model. Prolog evaluates accepted facts and rules. The result supplied to
-the LLM is a proof object: what followed, through which rules, from which
+that model. Prolog evaluates **accepted** facts and rules. The result supplied
+to the LLM is a proof object: what followed, through which rules, from which
 source assertions, and which relevant goals could not be established.
 
 The intended loop is:
 
 ```text
-dialogue -> LLM proposal -> parse and validate -> accepted Prolog memory
-        -> query -> proof / missing-goal explanation -> LLM answer or question
-        -> reflection may propose a revised fact or rule
+dialogue -> LLM full-Prolog thought candidate -> isolated untrusted run
+        -> candidate/transcript (hypothesis only)
+accepted Prolog memory -> trusted query -> proof / missing-goal explanation
+        -> LLM answer or question -> reflection may propose a new candidate
 ```
 
 The engine is not merely a key-value store. Its central functions are
@@ -35,7 +36,8 @@ disjunction, arithmetic, meta-programming and directives. We will learn which
 of those facilities need later policy boundaries by observing actual useful
 programs, rather than by guessing a tiny language up front.
 
-This does *not* give a thought program authority over the host. It is executed
+This does *not* give a thought program authority over the host or over a
+logical conclusion. It is executed
 as a frozen, capability-empty Prolog session: a fresh working directory,
 read-only memory snapshot, no network, no host-file authority, no durable
 database authority, and explicit CPU/time/memory/output limits. The system
@@ -69,6 +71,13 @@ becomes a new memory snapshot only through an explicit admission decision.
 The decision can initially be human or policy-driven. It is deliberately not
 confused with syntax acceptance.
 
+An arbitrary thought process cannot be its own proof authority. Full Prolog
+can execute `initialization/1`, redefine predicates, print arbitrary bytes or
+halt its process. Therefore its stdout/exit status is an **untrusted
+transcript**, never a proof result. A proof is produced only by a separate
+trusted query runtime which loads accepted snapshot material and no candidate
+source.
+
 ## Knowledge lifecycle
 
 Every accepted item has an immutable identity, its source span, status and
@@ -94,8 +103,13 @@ Each thought run starts from an immutable memory/program snapshot plus an
 explicit proposed source delta. It is executed by a fresh isolated Prolog
 runtime. The session may change its own ephemeral database and build auxiliary
 programs, but it cannot mutate the source snapshot, the host, or another run.
-The output is a new candidate snapshot/delta and run evidence. Admission is a
-separate policy step.
+Its output is an untrusted transcript plus candidate identity/run evidence;
+admission is a separate policy step.
+
+A different trusted query runtime loads only an accepted snapshot and a query.
+It owns its protocol and emits the proof DAG or bounded missing-goal report.
+It never loads the candidate delta, so a full-Prolog thought program cannot
+forge a trusted conclusion or terminate the proof controller.
 
 Thus the agent receives the language it needs for genuine reasoning, while
 the outer system retains temporal history, provenance and rollback. Revision
@@ -140,12 +154,13 @@ Failure to prove a goal is not proof of its negation.
 
 ## Reflection / self-construction
 
-Reflection receives a frozen memory snapshot and proof objects. It may write
-and execute a complete candidate Prolog delta in its isolated session,
-including a program that constructs another program. It must retain the
-source/support set and run evidence used to form the proposal. Counterexample
-search and consistency checks can reject or weaken a candidate, but do not turn
-an induced result into an admitted memory snapshot automatically.
+Reflection receives a frozen memory snapshot, trusted proof objects and any
+explicitly labelled untrusted thought transcript. It may write and execute a
+complete candidate Prolog delta in its isolated session, including a program
+that constructs another program. It must retain the source/support set and run
+evidence used to form the proposal. Counterexample search and consistency
+checks can reject or weaken a candidate, but do not turn an induced result into
+an admitted memory snapshot automatically.
 
 This is the initial self-building mechanism: the knowledge program evolves
 through auditable, reversible snapshots. Host sandbox configuration and the

@@ -17,8 +17,9 @@ This cycle builds the smallest executable cognitive layer:
 
 ```text
 frozen program/memory snapshot + full Prolog thought delta
-  -> capability-empty isolated Prolog session
-  -> candidate snapshot + proof/trace | bounded missing-goal report
+  -> capability-empty isolated Prolog session -> untrusted transcript/candidate
+accepted snapshot + query -> separate trusted Prolog runtime
+  -> proof DAG | bounded missing-goal report
 ```
 
 This is not an evaluator rewrite, a live provider run, or a claim that Prolog
@@ -39,7 +40,8 @@ self-construction scope.
 - frozen snapshot/candidate-delta lifecycle adapter;
 - capability-empty isolated full-Prolog runtime, never loading candidate text
   into the host process;
-- proof-DAG and missing-goal output types;
+- separate untrusted thought transcript and trusted proof-DAG/missing-goal
+  output types;
 - direct active temporal polarity conflict evidence;
 - fixtures, focused proof suite, project regression, and canonical
   `self-coherence.md`.
@@ -57,8 +59,8 @@ Compatibility peers to enumerate before closure:
 |---|---|
 | Isolation | full-Prolog constructs execute in the thought runtime while host file/network/durable-memory authority remains unavailable |
 | Snapshot lifecycle | candidate changes preserve immutable identity, source, run evidence and history; no candidate is admitted silently |
-| Execution | a multi-hop conclusion is derived in isolated Prolog, not precomputed in JavaScript |
-| Explanation | proof DAG names rule IDs, substitutions, fact IDs and source turns |
+| Trusted execution | a multi-hop conclusion is derived from an accepted snapshot in a trusted Prolog runtime, not precomputed in JavaScript or emitted by a candidate |
+| Explanation | trusted proof DAG names rule IDs, substitutions, fact IDs and source turns |
 | Failure | unproved queries return a bounded missing-goal report and never a negation claim |
 | Conflict | overlapping active polarities return both sources; non-overlap does not conflict |
 | Regression | focused suite, relevant full regression, trusted hashes and `git diff --check` pass |
@@ -68,6 +70,8 @@ Compatibility peers to enumerate before closure:
 - No provider invocation, live/raw run inspection, CDR receipt or PAM-C1 claim.
 - Never load a candidate into the host process or give it host/network/durable
   memory authority; run it only in a fresh bounded session.
+- Never accept candidate stdout, exit code or self-produced JSON as trusted
+  proof evidence. Trusted proof runtime loads accepted snapshot material only.
 - No automatic admission of induced candidate snapshots and no mutation of the
   outer sandbox/admission controller through a thought program.
 - Do not impose a bespoke parser, structural allowlist or artificial Prolog
