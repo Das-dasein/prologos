@@ -31,9 +31,12 @@ important only after the system has a distinct logical result to evaluate.
 ## Branch gate
 
 PR #24 contains the preflight and prior bounded evaluator work required as the
-base but must receive independent beta review before merge. The untracked
-partial raw directory `reports/live-20260905-225936/` is excluded from the PR
-and every future cycle artifact. After PR #24 merges, gamma refreshes
+base but must receive independent beta review before merge. The tracked
+`reports/live-20260905-152059/` directory is the immutable historical input of
+the bounded v3 frozen replay and remains hash-bound compatibility evidence; it
+is not output from issue #23. The untracked partial raw directory
+`reports/live-20260905-225936/` is excluded from the PR and every future cycle
+artifact. After PR #24 merges, gamma refreshes
 `origin/main`, creates `cycle/23`, then commits the scaffold below before
 dispatching fresh alpha.
 

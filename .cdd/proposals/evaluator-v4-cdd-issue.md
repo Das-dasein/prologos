@@ -37,6 +37,9 @@ different context construction.
 - Current offline evaluator v3 is a bounded replay diagnostic, not a valid
   assessment of the intended cognitive memory architecture.
 - No live output establishes PAM-C1 or usefulness of Prolog.
+- `reports/live-20260905-152059/` is a pre-existing immutable historical raw
+  archive required by the v3 frozen replay. It is retained as a versioned
+  diagnostic input, not as evidence produced by issue #23.
 
 ## Source of truth
 
@@ -69,6 +72,10 @@ Out of scope:
   priorities, negation-as-failure and unrestricted recursion;
 - autonomous acceptance of induced hypotheses;
 - a new paid LLM run, JSON evaluator v4, statistical conclusions or PAM-C1;
+- newly generated live or partial output, including
+  `reports/live-20260905-225936/`; the existing
+  `reports/live-20260905-152059/` frozen archive remains a compatibility input
+  to the separately bounded v3 replay;
 - long-context dataset authoring and blind free-text judging;
 - changing trusted kernel code through reflection.
 
@@ -129,8 +136,9 @@ non-overlap does not.
 
 Focused tests demonstrate the four canonical scenarios: multi-hop derivation,
 revision, time-aware conflict and rejected unsafe proposal. Existing
-regressions pass. No provider call, live artifact, CDR receipt or superiority
-claim enters the cycle.
+regressions pass. No provider call, newly generated live artifact, CDR receipt
+or superiority claim enters the cycle. The frozen v3 archive is hash-bound
+compatibility input only.
 
 ## Proof plan
 
