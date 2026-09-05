@@ -43,6 +43,11 @@ Model, provider, prompt version, context budget, sampling parameters, run time,
 and retry policy must be recorded. Results from configurations that differ on
 more than the memory mechanism cannot support a comparative claim.
 
+Prompt versions are recorded in `.cdr/prompts/manifest-v1.json`. A run must
+pin both the base turn-template hash and any provider-adapter wrapper hash;
+`prompt_sha256` alone is insufficient when an adapter adds instructions or an
+output contract around the base template.
+
 ## Data-use policy
 
 - Evaluation dialogues must be synthetic or explicitly sanitized.

@@ -15,6 +15,8 @@ const CONDITIONS = new Set(["B1", "B2", "B3", "B4", "B5"]);
 const QUERY_BAN = /(?:\bconsult\b|\bassert(?:z|a)?\b|\bretract\b|\babolish\b|\bcall\s*\(|;|->|\bhalt\b|\bmodule\b)/i;
 const PRIVATE = /(?:sk-[a-z0-9_-]{8,}|private[-_ ]marker|<private>|secret[-_ ]marker)/i;
 const GOLD_ID = /c_stable_01_[ab]/;
+const CODEX_STRICT_CONTRACT = "STRICT OUTPUT CONTRACT: registry_identity must be an object {name, version, sha256}; each assertion must use exactly {polarity, relation, arguments, valid_from, valid_to, confidence}; do not use predicate, date, source_span, subject, object, or a string registry_identity.";
+const CODEX_PROMPT_TEMPLATE = `${EXTRACTION_INSTRUCTIONS}\n\n${CODEX_STRICT_CONTRACT}\n\n${PROMPT_TEMPLATE}\n\nReturn only valid memory-extraction-v2 JSON. Do not use tools.`;
 
 function fail(code, message) { const e = new Error(message); e.code = code; throw e; }
 function readJsonl(file) { return fs.readFileSync(file, "utf8").trim().split(/\r?\n/).filter(Boolean).map((x, i) => { try { return JSON.parse(x); } catch (_) { fail("DATASET", `invalid JSONL at line ${i + 1}`); } }); }
@@ -63,7 +65,7 @@ function codexProvider(model) {
       const completed = events.find(event => event.type === "turn.completed"); usage = completed && completed.usage;
       if (!message || !usage) return reject(new Error("Codex JSON stream missing agent_message or usage"));
       resolve({ output: JSON.parse(message.item.text), raw_output: stdout, usage: { input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.input_tokens + usage.output_tokens } });
-    }); child.stdin.end(`${EXTRACTION_INSTRUCTIONS}\n\nSTRICT OUTPUT CONTRACT: registry_identity must be an object {name, version, sha256}; each assertion must use exactly {polarity, relation, arguments, valid_from, valid_to, confidence}; do not use predicate, date, source_span, subject, object, or a string registry_identity.\n\n${prompt}\n\nReturn only valid memory-extraction-v2 JSON. Do not use tools.`);
+    }); child.stdin.end(CODEX_PROMPT_TEMPLATE.replace("{{text}}", prompt));
   }); } };
 }
 async function evaluateCase(caseItem, oracle, condition, extractions, usages = []) {
@@ -123,7 +125,7 @@ async function runPilot({ config, datasetFile, oracleFile, provider, condition, 
   }
   if (hashFile(trustedMemoryPath) !== beforeMemory || hashFile(trustedDomainPath) !== beforeDomain) fail("TRUSTED_MEMORY_MUTATED", "trusted Prolog source changed during run");
   if (records.length !== dataset.length || records.some(x => x.status !== "ok")) fail("INCOMPLETE_OUTPUT", "not all cases produced output");
-  return { schema_version: "prolog-memory-pilot-v1", source_commit: config.source_commit, dataset_sha256: datasetHash, config_sha256: sha256(canonicalJson(config)), condition, model: config.model, prompt_template: PROMPT_TEMPLATE_NAME, prompt_sha256: config.prompt_sha256, trusted_memory_sha256: beforeMemory, trusted_domain_sha256: beforeDomain, case_count: records.length, records, matrixB: { [condition]: buildMatrix(records) }, evidence_boundary: condition === "B5" ? "gold_oracle" : (config.provider === "fake" ? "fake_determinism_only" : "hypothesized_computed_pending_cdr") };
+  return { schema_version: "prolog-memory-pilot-v1", source_commit: config.source_commit, dataset_sha256: datasetHash, config_sha256: sha256(canonicalJson(config)), condition, model: config.model, prompt_template: PROMPT_TEMPLATE_NAME, prompt_sha256: config.prompt_sha256, provider_prompt_template: config.provider === "codex" ? "codex-extraction-v1" : PROMPT_TEMPLATE_NAME, provider_prompt_sha256: config.provider === "codex" ? sha256(CODEX_PROMPT_TEMPLATE) : config.prompt_sha256, trusted_memory_sha256: beforeMemory, trusted_domain_sha256: beforeDomain, case_count: records.length, records, matrixB: { [condition]: buildMatrix(records) }, evidence_boundary: condition === "B5" ? "gold_oracle" : (config.provider === "fake" ? "fake_determinism_only" : "hypothesized_computed_pending_cdr") };
 }
 function writeArtifact(file, result) { fs.writeFileSync(path.resolve(file), `${canonicalJson(result)}\n`, { flag: "wx" }); }
 
