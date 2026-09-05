@@ -3,13 +3,13 @@
 // Knowledge remains authored as Prolog source. This module owns immutable
 // lifecycle metadata and process isolation; it never parses/consults a delta.
 const crypto = require("node:crypto");
-const { execFile } = require("node:child_process");
+const { execFile, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const RUNNER = path.join(__dirname, "cognitive-runner.pl");
 const SWIPL = process.env.SWIPL_BIN || "swipl";
-const SANDBOX = process.env.SANDBOX_EXEC || "/usr/bin/sandbox-exec";
+const SANDBOX = "/usr/bin/sandbox-exec";
 
 function digest(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
 function stable(value) {
@@ -38,16 +38,62 @@ function createCandidate({ id, program, source, support = [] }) {
   return Object.freeze({ ...body, sha256: digest(stable(body)) });
 }
 function serializeSnapshot(snapshot) { return snapshot.items.map(item => `pam_item(${JSON.stringify(item.id)}, ${JSON.stringify(item.source)}, ${JSON.stringify(item.program)}).`).join("\n") + "\n"; }
-function profile(dir, resultFile) {
-  const q = JSON.stringify(dir), output = JSON.stringify(resultFile);
-  // sandbox-exec grants normal runtime reads, then denies network and every
-  // durable write. The only writable location is this disposable run folder.
-  return `(version 1) (allow default) (deny network*) (deny file-write* (subpath \"/Users\") (subpath \"/Volumes\") (subpath \"/Library\")) (allow file-write* (subpath ${q}))`;
+function executablePath(command) {
+  if (path.isAbsolute(command)) return fs.realpathSync(command);
+  for (const entry of (process.env.PATH || "").split(path.delimiter)) {
+    const candidate = path.join(entry, command);
+    if (fs.existsSync(candidate)) return fs.realpathSync(candidate);
+  }
+  throw new Error(`cannot resolve Prolog runtime: ${command}`);
 }
-function execute(dir, runnerFile, snapshotFile, candidateFile, resultFile, goal, timeoutMs, maxOutputBytes) {
+function runtimeReadRoots(swipl) {
+  const variables = execFileSync(swipl, ["--dump-runtime-variables"], { encoding: "utf8" });
+  const base = /^PLBASE="([^"]+)";$/m.exec(variables)?.[1];
+  if (!base || !path.isAbsolute(base)) throw new Error("cannot determine SWI-Prolog runtime resources");
+  const shared = /^PLLIBSWIPL="([^"]+)";$/m.exec(variables)?.[1];
+  const libraries = new Set(), pending = [swipl, ...(shared && path.isAbsolute(shared) ? [shared] : [])];
+  while (pending.length) {
+    const binary = pending.pop();
+    if (libraries.has(binary)) continue;
+    libraries.add(binary);
+    if (!fs.existsSync(binary)) continue;
+    const dependencies = execFileSync("otool", ["-L", binary], { encoding: "utf8" }).split("\n").slice(1)
+      .map(line => line.trim().split(" (")[0]).filter(entry => path.isAbsolute(entry));
+    for (const dependency of dependencies) {
+      if (!libraries.has(dependency)) pending.push(dependency);
+    }
+  }
+  // These are interpreter/runtime resources, not candidate authority.  The
+  // candidate receives neither a general host root nor a writable runtime path.
+  // Homebrew's signed loader follows its opt/Cellar indirections while loading
+  // SWI dependencies; sandbox-exec requires their common prefix, not merely
+  // the final dylib path.  This remains a read-only interpreter runtime root.
+  const homebrewPrefix = path.resolve(base, "../../../../..");
+  return [...new Set([swipl, fs.realpathSync(base), homebrewPrefix, "/usr/lib", "/System/Library", "/dev", "/private/var/db/timezone", ...[...libraries].flatMap(file => [path.dirname(file), fs.existsSync(file) ? path.dirname(fs.realpathSync(file)) : file])])];
+}
+function profile({ inputDir, outputDir, runtimeRoots }) {
+  const literal = value => `(literal ${JSON.stringify(value)})`;
+  const subpath = value => `(subpath ${JSON.stringify(value)})`;
+  const ancestors = value => {
+    const found = []; let current = value;
+    while (true) { found.push(literal(current)); const parent = path.dirname(current); if (parent === current) return found; current = parent; }
+  };
+  return [
+    "(version 1)",
+    "(deny default)",
+    "(allow process*)",
+    "(allow file-map-executable)",
+    "(allow sysctl-read)",
+    "(allow mach-lookup)",
+    `(allow file-read-metadata ${ancestors(outputDir).join(" ")})`,
+    `(allow file-read* ${literal("/")} ${runtimeRoots.map(subpath).join(" ")} ${subpath(path.dirname(inputDir))} ${subpath(inputDir)} ${subpath(outputDir)})`,
+    `(allow file-write* ${subpath(outputDir)})`
+  ].join(" ");
+}
+function execute(outputDir, runnerFile, snapshotFile, candidateFile, resultFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl) {
   return new Promise((resolve, reject) => {
-    const args = ["-p", profile(dir, resultFile), SWIPL, "--quiet", "--nosignals", "--stack_limit=64m", "-s", runnerFile, "--", snapshotFile, candidateFile, resultFile, goal, String(Math.max(1, Math.floor(timeoutMs / 1000)))];
-    execFile(SANDBOX, args, { cwd: dir, timeout: timeoutMs + 500, maxBuffer: maxOutputBytes, windowsHide: true }, (error, stdout, stderr) => {
+    const args = ["-p", profile({ inputDir: path.dirname(runnerFile), outputDir, runtimeRoots }), swipl, "--quiet", "--nosignals", "--stack_limit=64m", "-s", runnerFile, "--", snapshotFile, candidateFile, resultFile, goal, String(Math.max(1, Math.floor(timeoutMs / 1000)))];
+    execFile(SANDBOX, args, { cwd: outputDir, timeout: timeoutMs + 500, maxBuffer: maxOutputBytes, windowsHide: true }, (error, stdout, stderr) => {
       if (error) return reject(new Error(`isolated Prolog run failed (exit ${error.code ?? "signal"}): ${stderr.trim() || stdout.trim() || error.message}`));
       try { resolve(JSON.parse(fs.readFileSync(resultFile, "utf8"))); } catch (parseError) { reject(new Error(`isolated Prolog emitted invalid JSON: ${parseError.message}`)); }
     });
@@ -55,15 +101,18 @@ function execute(dir, runnerFile, snapshotFile, candidateFile, resultFile, goal,
 }
 async function runThought({ snapshot, candidate, goal, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
   if (!snapshot || !candidate) throw new Error("snapshot and candidate are required"); text(goal, "query goal");
-  if (!fs.existsSync(SANDBOX)) throw new Error("capability-empty runtime requires sandbox-exec");
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pam-thought-"));
-  const snapshotFile = path.join(dir, "snapshot.pl"), candidateFile = path.join(dir, "candidate.pl"), runnerFile = path.join(dir, "runner.pl"), resultFile = path.join(dir, "result.json");
+  if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw new Error("capability-empty runtime unavailable: macOS sandbox-exec is required");
+  const swipl = executablePath(SWIPL), runtimeRoots = runtimeReadRoots(swipl);
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pam-thought-")));
+  const inputDir = path.join(dir, "input"), outputDir = path.join(dir, "output");
+  fs.mkdirSync(inputDir, { mode: 0o700 }); fs.mkdirSync(outputDir, { mode: 0o700 });
+  const snapshotFile = path.join(inputDir, "snapshot.pl"), candidateFile = path.join(inputDir, "candidate.pl"), runnerFile = path.join(inputDir, "runner.pl"), resultFile = path.join(outputDir, "result.json");
   try {
     fs.writeFileSync(snapshotFile, serializeSnapshot(snapshot), { mode: 0o444 }); fs.writeFileSync(candidateFile, candidate.program, { mode: 0o444 }); fs.copyFileSync(RUNNER, runnerFile); fs.writeFileSync(resultFile, "", { mode: 0o666 });
-    fs.chmodSync(snapshotFile, 0o444); fs.chmodSync(candidateFile, 0o444); fs.chmodSync(runnerFile, 0o444); fs.chmodSync(resultFile, 0o666);
-    const result = await execute(dir, runnerFile, snapshotFile, candidateFile, resultFile, goal, timeoutMs, maxOutputBytes);
+    fs.chmodSync(snapshotFile, 0o444); fs.chmodSync(candidateFile, 0o444); fs.chmodSync(runnerFile, 0o444); fs.chmodSync(inputDir, 0o555); fs.chmodSync(resultFile, 0o666);
+    const result = await execute(outputDir, runnerFile, snapshotFile, candidateFile, resultFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl);
     return Object.freeze({ candidate: { id: candidate.id, status: "candidate", sha256: candidate.sha256, source: candidate.source }, snapshot: { id: snapshot.id, sha256: snapshot.sha256 }, runEvidence: Object.freeze({ runtime: "swi-prolog-isolated", timeoutMs, maxOutputBytes, result }) });
-  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  } finally { fs.chmodSync(inputDir, 0o700); fs.rmSync(dir, { recursive: true, force: true }); }
 }
 function admitCandidate(snapshot, candidate, decision) {
   if (!decision || decision.admit !== true) throw new Error("candidate admission requires an explicit admit decision");

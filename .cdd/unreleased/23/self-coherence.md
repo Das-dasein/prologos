@@ -33,23 +33,27 @@ fact-only ingestion remains a separate compatibility surface.
 
 `npm run test:cognitive-memory` passes. The test verifies the conclusion is
 derived through `r2` then `r1`, not stored as a fact; candidate status remains
-unadmitted; absence is `unknown`, not negation; and an attempted write under
-`/Users/artem` returns a Prolog error. The runner uses macOS `sandbox-exec`, a
-fresh temporary directory, read-only input files, a 64 MiB SWI stack limit,
-wall timeout, and output-byte limit. Candidate source is never loaded into the
-Node host process.
+unadmitted; absence is `unknown`, not negation; and actual candidate execution
+is denied for `/etc/hosts`, an external `/tmp` write (the path remains absent),
+and a socket connection. It also executes the unrestricted `member/2`
+candidate. The runner uses a macOS Seatbelt `sandbox-exec` **default-deny**
+profile, a fresh temporary directory, read-only input files, one disposable
+output directory, a 64 MiB SWI stack limit, wall timeout, and output-byte
+limit. Its grants are the SWI/Homebrew runtime and signed dynamic dependencies,
+system runtime libraries/devices, declared inputs, and the disposable run
+directory; it has no permissive fallback and fails closed when the macOS
+boundary is unavailable. Candidate source is never loaded into the Node host
+process.
 
 ## Debt
 
-The current macOS profile blocks network and durable user/volume/library
-writes, but uses `allow default` for interpreter compatibility and therefore
-does not yet prove denial of every host filesystem read. It must not be called
-fully capability-empty until a stricter reproducible profile (or dedicated
-container/VM) is installed and tests demonstrate both host-read and network
-denial. Arbitrary full-Prolog candidate execution has a truthful
-`trace_unavailable` result when it cannot be reconstructed as a proof from
-accepted snapshot clauses; proof extraction for arbitrary meta-programmed code
-is deferred by design.
+The verified runtime boundary is macOS-specific: non-macOS hosts and a missing
+`/usr/bin/sandbox-exec` fail closed. The Homebrew runtime prefix is read-only
+because its signed loader uses `opt`/`Cellar` indirections; it is runtime
+compatibility scope rather than candidate storage. Arbitrary full-Prolog
+candidate execution has a truthful `trace_unavailable` result when it cannot
+be reconstructed as a proof from accepted snapshot clauses; proof extraction
+for arbitrary meta-programmed code is deferred by design.
 
 ## CDD Trace
 
