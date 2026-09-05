@@ -142,3 +142,63 @@ harness/live gates, not evidence produced here.
 No provider, live invocation, raw result, receipt, claim-status, PAM claim,
 CDS #28 code, or threshold was added or altered by the alpha target or this
 beta review.
+
+## Issue #29 R2 fresh beta: immutable slot-registration binding
+
+Role: fresh independent CDR beta. Reviewed the immutable alpha target
+`59a3aedfa57185c1f41b395d5e610f371955e681` against `.cdr/POLICY.md`,
+`method.md`, `manifest.md`, `status.md`, and both gamma repair records.
+
+### Verdict
+
+**GO — CDR method-repair adequacy only; CDS #28 is unblocked for its separate
+CDS preflight/harness work.** This GO establishes neither provider-token
+equality nor a live run, CDR receipt, PAM claim, threshold result, or
+effectiveness conclusion. The historical `prolog-memory-eval-v0` remains
+`REVISE`.
+
+### Independent reproduction and binding audit
+
+The exact R2 delta is whitespace-clean (`git diff --check 59a3aed^ 59a3aed`).
+The broad branch comparison still reports trailing whitespace in the earlier
+gamma markdown records; those lines predate this R2 alpha delta and are not a
+slot-registration or method failure.
+
+The symbolic validator returned `offline-symbolic-ok` for all 12 cases. The
+equal-slot validator returned `offline-equal-budget-slot-ok` for the same 12.
+The dataset SHA-256 recomputed to
+`63d68d4decad2dcdadbfc1204c58cec2650a46a90442cb63889e3d7989e07e51`.
+Coverage is exactly two cases each for multi-hop, unknown, revision, temporal
+conflict, provenance, and untrusted thought. The canonical dataset map and
+registration object both recomputed to
+`4d05d2176f4e629370771925543d4670259e15b633c5ef3be47803c6c9bf9a46`;
+the registration self-hash and the method/manifest bindings match it.
+
+The following passed from the immutable target:
+
+```text
+node .cdr/waves/cognitive-proof-eval-v1/validate-trusted-proof-eval-v1.js
+node .cdr/waves/cognitive-proof-eval-v1/validate-equal-budget-slots-v1.js
+node test-trusted-proof-equal-budget-v1.js
+npm run test:cognitive-memory
+npm test
+git diff --check 59a3aed^ 59a3aed
+```
+
+Beta independently attempted and observed rejection of: a one-byte dataset
+slot change with stale registration; a matching dataset-and-assembled-pair
+rewrite; a rehashed matching registration while method/manifest stayed stale;
+a changed registration against the original dataset; missing and extra
+mappings; an overlong proof; outside-slot mutation; unequal slot length; and
+an oracle/control leak. The validator's `offline-utf8-byte-v1` remains
+explicitly an offline byte-accounting abstraction, not a provider or model
+tokenizer claim.
+
+### Boundaries retained
+
+The R2 alpha delta and this review contain no provider/live/raw artifact,
+receipt, PAM claim, claim-status or threshold alteration, or CDS #28 code.
+The future CDS work must still measure actual P0/P1 `E` per request with the
+pinned provider/model mechanism, retain raw artifacts and equality digest, and
+abort before calls on prompt leakage. A later fresh CDR beta remains required
+for any live result or claim.
