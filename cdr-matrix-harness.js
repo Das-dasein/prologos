@@ -10,12 +10,17 @@ const { canonicalJson } = require("./ontology-registry");
 
 const ROOT = __dirname;
 const DATASET = path.join(ROOT, ".cdr/datasets/dialogues-pilot-v1.jsonl");
+const CONFIG = path.join(ROOT, ".cdr/results/prolog-memory-eval-v0/pilot-config-v2.json");
+const ORACLE = path.join(ROOT, ".cdr/results/prolog-memory-eval-v0/answer-oracle-v1.json");
+const TRUSTED_MEMORY = path.join(ROOT, "memory.pl");
+const TRUSTED_DOMAIN = path.join(ROOT, "domain-rules.pl");
 const SHA256 = "ed9dd7f7ab4983266ab2df3a5ccb31a1f8b367163a09f2c57d2d096e8699d041";
 const CATEGORIES = ["stable recall", "explicit correction/supersession", "temporal change without contradiction", "direct positive/negative conflict", "non-memory content", "alias/coreference ambiguity"];
 
 function fail(message) { const error = new Error(message); error.code = "MATRIX_CONTRACT"; throw error; }
 function read() { return fs.readFileSync(DATASET, "utf8").trim().split(/\r?\n/).map(line => JSON.parse(line)); }
-function sha256() { return crypto.createHash("sha256").update(fs.readFileSync(DATASET)).digest("hex"); }
+function hashFile(file) { return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
+function sha256() { return hashFile(DATASET); }
 function digest(value) { return crypto.createHash("sha256").update(canonicalJson(value)).digest("hex"); }
 function score(records) {
   if (sha256() !== SHA256) fail("dialogues dataset SHA-256 mismatch");
@@ -55,6 +60,11 @@ function scoreCandidateArtifact(file) {
   if (!artifact || artifact.schema_version !== "prolog-memory-pilot-v2" || artifact.artifact_kind !== "aggregate") fail("candidate must be a prolog-memory-pilot-v2 aggregate");
   if (!Array.isArray(artifact.conditions) || artifact.conditions.length !== 4 || artifact.conditions.some(entry => !["B1", "B2", "B3", "B4"].includes(entry.condition)) || new Set(artifact.conditions.map(entry => entry.condition)).size !== 4) fail("candidate must contain each B1-B4 condition exactly once");
   if (artifact.dataset_sha256 !== SHA256) fail("candidate dataset hash does not match pinned dataset");
+  if (![CONFIG, ORACLE, TRUSTED_MEMORY, TRUSTED_DOMAIN].every(file => fs.existsSync(file))) fail("candidate pinned input is missing");
+  let config;
+  try { config = JSON.parse(fs.readFileSync(CONFIG, "utf8")); } catch (error) { fail(`candidate config cannot be read: ${error.message}`); }
+  if (artifact.source_commit !== config.source_commit || artifact.config_sha256 !== digest(config) || artifact.oracle_sha256 !== hashFile(ORACLE) || artifact.trusted_memory_sha256 !== hashFile(TRUSTED_MEMORY) || artifact.trusted_domain_sha256 !== hashFile(TRUSTED_DOMAIN)) fail("candidate metadata does not match pinned inputs");
+  if (!artifact.prompt_provenance || artifact.prompt_provenance.extraction_prompt_sha256 !== config.extraction_prompt_sha256 || artifact.prompt_provenance.provider_adapter_prompt_sha256 !== config.provider_adapter_prompt_sha256 || artifact.prompt_provenance.answer_prompt_sha256 !== config.answer_prompt_sha256) fail("candidate prompt metadata does not match pinned config");
   if (typeof artifact.oracle_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(artifact.oracle_sha256) || typeof artifact.config_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(artifact.config_sha256) || typeof artifact.trusted_memory_sha256 !== "string" || typeof artifact.trusted_domain_sha256 !== "string" || !artifact.prompt_provenance) fail("candidate top-level provenance hashes are incomplete");
   if (!Number.isInteger(artifact.measured_effective_context_budget_tokens) || artifact.conditions.some(entry => !entry.budget || entry.budget.equal !== true || entry.budget.configured_e !== artifact.measured_effective_context_budget_tokens)) fail("candidate effective budget is missing or unequal");
   for (const entry of artifact.conditions) {
