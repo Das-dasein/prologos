@@ -22,9 +22,10 @@ a claim about model quality, Prolog usefulness, or PAM-C1.
   hash mismatch fixtures pass
 - provider, network and LLM-as-judge were not used
 
-β limitation: JSON Schema was checked structurally because no external Ajv or
-jsonschema validator is installed. This remains a bounded implementation
-limitation, not a research result.
+The original evaluator repair was checked structurally against its JSON Schema.
+The follow-up schema gate at `a0306c7` now validates the replay with the pinned
+`zod@4.5.4` `fromJSONSchema` path; fresh β approved that bounded gate in
+`beta-offline-eval-v3-schema-review.md`.
 
 ## Triage
 
@@ -33,7 +34,7 @@ limitation, not a research result.
 | Run relabel accepted | Repaired in α commit; β re-tested |
 | Zero denominator coverage | Repaired to `null`; β re-tested |
 | Missing raw semantics | Explicit `indeterminate`; hash mismatch still fails closed |
-| No external schema validator | Deferred project MCA; add pinned validator before wider distribution |
+| Executable replay schema gate | Repaired in follow-up `a0306c7`; fresh β approved |
 | LLM-as-judge | Deferred; no need for evaluator closure |
 
 ## Learning / ε observations
@@ -41,7 +42,7 @@ limitation, not a research result.
 - `observations`: replay contract bugs can make a green test suite overstate evidence integrity.
 - `process_deltas`: every β adversarial finding now requires a fixture before γ bounded closure.
 - `reusable_patterns`: keep historical artifact, repaired replay, raw manifest, and post-hoc analysis as separate immutable paths.
-- `followups`: pin an external JSON Schema validator; then open a separate runtime answer-v3/supersession MCA.
+- `followups`: provision CUE for typed receipt validation; then open a separate runtime answer-v3/supersession MCA.
 - `operator_burden`: one α repair and one fresh β re-audit; no model tokens consumed.
 
 ## Closure status
@@ -51,5 +52,6 @@ CDR research wave remains `REVISE`: its existing receipt/research boundary is
 unchanged, and a fresh future CDR cycle is required before any transmissible
 usefulness claim.
 
-Next MCA: pin a schema validator and run a separate answer-v3/supersession
-design cycle. No live run is scheduled.
+Next MCA: provision CUE for canonical receipt validation and prepare the
+separate CDR post-hoc diagnostic wave; answer-v3/supersession remains the next
+runtime design cycle. No live run is scheduled.

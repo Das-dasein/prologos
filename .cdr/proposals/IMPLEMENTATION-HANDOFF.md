@@ -2,8 +2,8 @@
 
 Branch: `chore/offline-eval-v3-handoff`.
 Contract: [evaluation-contract-repair-v3.md](evaluation-contract-repair-v3.md).
-Status: implementation completed on the local repair branch; publication and
-independent beta evidence packaging remain outstanding.
+Status: implementation and independent beta evidence are complete on the local
+repair branch; publication remains outstanding.
 
 The implementation is the bounded offline repair at commit `80ca1d4`.
 It produces `replay-v3-r2.json` and passes the focused sentinels, `npm test`,
@@ -21,12 +21,11 @@ not replace an independent beta review artifact.
 5. Replay frozen B1–B4 records to the versioned `replay-v3-r2.json`; historical
    scores, text and hashes remain immutable. Archived raw paths are resolved
    through the manifest, not the original `/tmp` paths.
-6. The offline npm command and documentation are present. Before publication,
-   obtain a fresh independent β artifact for the exact immutable repair commit;
-   this document is not that review.
+6. The offline npm command and documentation are present. Independent β review
+   of the repair is recorded in `beta-offline-eval-v3-review-r2.md`.
 7. Schema validation is available as `npm run test:offline-eval:schema` using
-   the existing pinned `zod@4.5.4` dependency; its own β review is separate
-   from the `80ca1d4` evaluator-repair verdict.
+   the existing pinned `zod@4.5.4` dependency; its independent β review is
+   recorded in `beta-offline-eval-v3-schema-review.md`.
 
 ## Boundaries
 
