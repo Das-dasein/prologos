@@ -11,6 +11,11 @@ npm test
 npm run demo
 ```
 
+The canonical runtime is SWI-Prolog (selected by default through
+`prolog-engine.js`). Set `PROLOG_ENGINE=tau` only for compatibility experiments
+with the legacy JavaScript interpreter. `SWIPL_BIN` may point to a specific SWI
+binary.
+
 ## Talk to the agent
 
 The default provider is Codex CLI, so a ChatGPT/Codex subscription can be used

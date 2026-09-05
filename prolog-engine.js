@@ -1,3 +1,8 @@
+// SWI-Prolog is the canonical runtime. Tau-Prolog remains available as an
+// explicit fallback for browser/compatibility experiments.
+if (process.env.PROLOG_ENGINE !== "tau") {
+  module.exports = require("./swipl-engine");
+} else {
 const pl = require("tau-prolog");
 
 function consult(program, limit = 20000) {
@@ -24,4 +29,4 @@ function query(session, goal) {
 }
 
 module.exports = { consult, query };
-
+}

@@ -6,7 +6,7 @@ const crypto = require("node:crypto");
 const execFileSync = require("node:child_process").execFileSync;
 const fs = require("node:fs");
 const path = require("node:path");
-const { consult, query } = require("./swipl-engine");
+const { consult, queryTerms: query } = require("./swipl-engine");
 
 const ROOT = __dirname;
 const DEFAULT_DATASET = path.join(ROOT, ".cdr/datasets/dialogues-pilot-v1.jsonl");

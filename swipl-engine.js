@@ -13,9 +13,9 @@ function consult(program) {
   return { file, dir };
 }
 
-function query(session, goal, timeout = 5000) {
+function query(session, goal, timeout = 5000, terms = false) {
   return new Promise((resolve, reject) => {
-    execFile(BINARY, ["-q", "-s", RUNNER, "--", session.file, goal],
+    execFile(BINARY, ["-q", "-s", RUNNER, "--", session.file, goal, ...(terms ? ["--terms"] : [])],
       { timeout, maxBuffer: 4 * 1024 * 1024, windowsHide: true },
       (error, stdout, stderr) => {
         if (error) {
@@ -31,4 +31,8 @@ function query(session, goal, timeout = 5000) {
   });
 }
 
-module.exports = { consult, query };
+function queryTerms(session, goal, timeout = 5000) {
+  return query(session, goal, timeout, true);
+}
+
+module.exports = { consult, query, queryTerms };
