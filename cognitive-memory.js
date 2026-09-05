@@ -7,7 +7,8 @@ const { execFileSync, spawn } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const RUNNER = path.join(__dirname, "cognitive-runner.pl");
+const THOUGHT_RUNNER = path.join(__dirname, "cognitive-runner.pl");
+const TRUSTED_QUERY_RUNNER = path.join(__dirname, "trusted-query-runner.pl");
 const SWIPL = process.env.SWIPL_BIN || "swipl";
 const SANDBOX = "/usr/bin/sandbox-exec";
 
@@ -88,13 +89,11 @@ function profile({ inputDir, runtimeRoots }) {
     `(allow file-read* ${literal("/")} ${runtimeRoots.map(subpath).join(" ")} ${subpath(path.dirname(inputDir))} ${subpath(inputDir)})`
   ].join(" ");
 }
-function execute(inputDir, runnerFile, snapshotFile, candidateFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl) {
+function executeProcess(inputDir, runnerFile, argsAfterRunner, timeoutMs, maxOutputBytes, runtimeRoots, swipl, trustedProtocol) {
   return new Promise((resolve, reject) => {
     if (!Number.isSafeInteger(maxOutputBytes) || maxOutputBytes < 1) throw new Error("maxOutputBytes must be a positive integer");
-    // Candidate code receives no writable filesystem path. The trusted runner
-    // owns the only result protocol: one JSON object on its inherited stdout.
-    // Count stdout and stderr together, rather than giving each a maxBuffer.
-    const args = ["-p", profile({ inputDir: path.dirname(runnerFile), runtimeRoots }), swipl, "--quiet", "--nosignals", "--stack_limit=64m", "-s", runnerFile, "--", snapshotFile, candidateFile, goal, String(Math.max(1, Math.floor(timeoutMs / 1000)))];
+    // No candidate receives a writable path. Count stdout and stderr together.
+    const args = ["-p", profile({ inputDir: path.dirname(runnerFile), runtimeRoots }), swipl, "--quiet", "--nosignals", "--stack_limit=64m", "-s", runnerFile, "--", ...argsAfterRunner, String(Math.max(1, Math.floor(timeoutMs / 1000)))];
     const child = spawn(SANDBOX, args, { cwd: inputDir, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
     const stdout = [], stderr = []; let outputBytes = 0, exceeded = false, settled = false;
     const finish = callback => value => { if (!settled) { settled = true; callback(value); } };
@@ -113,7 +112,10 @@ function execute(inputDir, runnerFile, snapshotFile, candidateFile, goal, timeou
       clearTimeout(timer);
       const visible = `${Buffer.concat(stderr).toString("utf8")}${Buffer.concat(stdout).toString("utf8")}`.trim();
       if (exceeded) return fail(new Error(`isolated Prolog output exceeded maxOutputBytes (${maxOutputBytes})`));
-      if (code !== 0) return fail(new Error(`isolated Prolog run failed (exit ${code ?? signal ?? "signal"}): ${visible}`));
+      // A thought candidate has full Prolog control of its own process, so its
+      // bytes and exit status are evidence only, never a result protocol.
+      if (!trustedProtocol) return succeed(Object.freeze({ transcript: visible, exitCode: code, signal: signal || null }));
+      if (code !== 0) return fail(new Error(`trusted Prolog query failed (exit ${code ?? signal ?? "signal"}): ${visible}`));
       try { succeed(JSON.parse(Buffer.concat(stdout).toString("utf8").trim())); } catch (parseError) { fail(new Error(`isolated Prolog emitted invalid JSON: ${parseError.message}`)); }
     });
   });
@@ -125,12 +127,27 @@ async function runThought({ snapshot, candidate, goal, timeoutMs = 1500, maxOutp
   const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pam-thought-")));
   const inputDir = path.join(dir, "input");
   fs.mkdirSync(inputDir, { mode: 0o700 });
-  const snapshotFile = path.join(inputDir, "snapshot.pl"), candidateFile = path.join(inputDir, "candidate.pl"), runnerFile = path.join(inputDir, "runner.pl");
+  const snapshotFile = path.join(inputDir, "snapshot.pl"), candidateFile = path.join(inputDir, "candidate.pl"), runnerFile = path.join(inputDir, "thought-runner.pl");
   try {
-    fs.writeFileSync(snapshotFile, serializeSnapshot(snapshot), { mode: 0o444 }); fs.writeFileSync(candidateFile, candidate.program, { mode: 0o444 }); fs.copyFileSync(RUNNER, runnerFile);
+    fs.writeFileSync(snapshotFile, serializeSnapshot(snapshot), { mode: 0o444 }); fs.writeFileSync(candidateFile, candidate.program, { mode: 0o444 }); fs.copyFileSync(THOUGHT_RUNNER, runnerFile);
     fs.chmodSync(snapshotFile, 0o444); fs.chmodSync(candidateFile, 0o444); fs.chmodSync(runnerFile, 0o444); fs.chmodSync(inputDir, 0o555);
-    const result = await execute(inputDir, runnerFile, snapshotFile, candidateFile, goal, timeoutMs, maxOutputBytes, runtimeRoots, swipl);
-    return Object.freeze({ candidate: { id: candidate.id, status: "candidate", sha256: candidate.sha256, source: candidate.source }, snapshot: { id: snapshot.id, sha256: snapshot.sha256 }, runEvidence: Object.freeze({ runtime: "swi-prolog-isolated", timeoutMs, maxOutputBytes, result }) });
+    const transcript = await executeProcess(inputDir, runnerFile, [snapshotFile, candidateFile, goal], timeoutMs, maxOutputBytes, runtimeRoots, swipl, false);
+    return Object.freeze({ candidate: { id: candidate.id, status: "candidate", sha256: candidate.sha256, source: candidate.source }, snapshot: { id: snapshot.id, sha256: snapshot.sha256 }, runEvidence: Object.freeze({ runtime: "swi-prolog-isolated", timeoutMs, maxOutputBytes, transcript, trust: "untrusted" }) });
+  } finally { fs.chmodSync(inputDir, 0o700); fs.rmSync(dir, { recursive: true, force: true }); }
+}
+async function runTrustedQuery({ snapshot, goal, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
+  if (!snapshot) throw new Error("snapshot is required"); text(goal, "query goal");
+  if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw new Error("capability-empty runtime unavailable: macOS sandbox-exec is required");
+  const swipl = executablePath(SWIPL), runtimeRoots = runtimeReadRoots(swipl);
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pam-query-")));
+  const inputDir = path.join(dir, "input");
+  fs.mkdirSync(inputDir, { mode: 0o700 });
+  const snapshotFile = path.join(inputDir, "snapshot.pl"), runnerFile = path.join(inputDir, "trusted-query-runner.pl");
+  try {
+    fs.writeFileSync(snapshotFile, serializeSnapshot(snapshot), { mode: 0o444 }); fs.copyFileSync(TRUSTED_QUERY_RUNNER, runnerFile);
+    fs.chmodSync(snapshotFile, 0o444); fs.chmodSync(runnerFile, 0o444); fs.chmodSync(inputDir, 0o555);
+    const result = await executeProcess(inputDir, runnerFile, [snapshotFile, goal], timeoutMs, maxOutputBytes, runtimeRoots, swipl, true);
+    return Object.freeze({ snapshot: { id: snapshot.id, sha256: snapshot.sha256 }, proof: Object.freeze({ runtime: "swi-prolog-trusted-query", timeoutMs, maxOutputBytes, result }) });
   } finally { fs.chmodSync(inputDir, 0o700); fs.rmSync(dir, { recursive: true, force: true }); }
 }
 function admitCandidate(snapshot, candidate, decision) {
@@ -145,4 +162,4 @@ function directConflicts(snapshot) {
   for (let i = 0; i < active.length; i += 1) for (let j = i + 1; j < active.length; j += 1) { const [left, right] = [active[i], active[j]]; if (left.proposition === right.proposition && left.polarity !== right.polarity && overlaps(left, right)) found.push({ type: "direct-polarity", proposition: left.proposition, left: { id: left.id, source: left.source }, right: { id: right.id, source: right.source } }); }
   return found;
 }
-module.exports = { createSnapshot, createCandidate, runThought, admitCandidate, activeItems, directConflicts };
+module.exports = { createSnapshot, createCandidate, runThought, runTrustedQuery, admitCandidate, activeItems, directConflicts };
