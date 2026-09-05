@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODEL_NAME="${1:-gpt-5.6-luna}"
 RUN_DIR="${2:-/tmp/prologos-live-$(date +%Y%m%d-%H%M%S)}"
+CONTEXT_BUDGET="${PILOT_CONTEXT_BUDGET:-32768}"
 
 if [[ "$MODEL_NAME" == "-h" || "$MODEL_NAME" == "--help" ]]; then
   echo "Usage: $0 [MODEL] [OUTPUT_DIR]"
@@ -25,10 +26,11 @@ if ! codex login status >/dev/null 2>&1; then
 fi
 
 mkdir -p "$RUN_DIR/raw"
-jq --arg model "$MODEL_NAME" '.provider = "codex" | .model = $model' \
+jq --arg model "$MODEL_NAME" --argjson budget "$CONTEXT_BUDGET" '.provider = "codex" | .model = $model | .effective_context_budget_tokens = $budget' \
   "$CONFIG_SOURCE" > "$RUN_DIR/config.json"
 
 echo "Running live B1-B4 pilot with model: $MODEL_NAME"
+echo "Effective context budget: $CONTEXT_BUDGET"
 echo "Artifacts: $RUN_DIR"
 
 (
@@ -41,7 +43,7 @@ echo "Artifacts: $RUN_DIR"
     --output "$RUN_DIR/aggregate.json" \
     --allow-live-provider=true \
     --raw-output-dir "$RUN_DIR/raw"
-  node cdr-matrix-harness.js --candidate "$RUN_DIR/aggregate.json"
+  node cdr-matrix-harness.js --candidate "$RUN_DIR/aggregate.json" --config "$RUN_DIR/config.json"
 )
 
 echo

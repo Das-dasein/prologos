@@ -53,16 +53,17 @@ function score(records) {
   return { schema_version: "prolog-memory-evaluation-matrix-v1", dataset_sha256: SHA256, case_count: records.length, turn_count: records.reduce((n, r) => n + r.dialogue.length, 0), category_metrics, matrixB, status: "gold_contract_valid" };
 }
 
-function scoreCandidateArtifact(file) {
+function scoreCandidateArtifact(file, options = {}) {
+  const configPath = options.configPath || CONFIG;
   let artifact;
   try { artifact = JSON.parse(fs.readFileSync(file, "utf8")); }
   catch (error) { fail(`candidate artifact cannot be read: ${error.message}`); }
   if (!artifact || artifact.schema_version !== "prolog-memory-pilot-v2" || artifact.artifact_kind !== "aggregate") fail("candidate must be a prolog-memory-pilot-v2 aggregate");
   if (!Array.isArray(artifact.conditions) || artifact.conditions.length !== 4 || artifact.conditions.some(entry => !["B1", "B2", "B3", "B4"].includes(entry.condition)) || new Set(artifact.conditions.map(entry => entry.condition)).size !== 4) fail("candidate must contain each B1-B4 condition exactly once");
   if (artifact.dataset_sha256 !== SHA256) fail("candidate dataset hash does not match pinned dataset");
-  if (![CONFIG, ORACLE, TRUSTED_MEMORY, TRUSTED_DOMAIN].every(file => fs.existsSync(file))) fail("candidate pinned input is missing");
+  if (![configPath, ORACLE, TRUSTED_MEMORY, TRUSTED_DOMAIN].every(file => fs.existsSync(file))) fail("candidate pinned input is missing");
   let config;
-  try { config = JSON.parse(fs.readFileSync(CONFIG, "utf8")); } catch (error) { fail(`candidate config cannot be read: ${error.message}`); }
+  try { config = JSON.parse(fs.readFileSync(configPath, "utf8")); } catch (error) { fail(`candidate config cannot be read: ${error.message}`); }
   if (artifact.source_commit !== config.source_commit || artifact.config_sha256 !== digest(config) || artifact.oracle_sha256 !== hashFile(ORACLE) || artifact.trusted_memory_sha256 !== hashFile(TRUSTED_MEMORY) || artifact.trusted_domain_sha256 !== hashFile(TRUSTED_DOMAIN)) fail("candidate metadata does not match pinned inputs");
   if (!artifact.prompt_provenance || artifact.prompt_provenance.extraction_prompt_sha256 !== config.extraction_prompt_sha256 || artifact.prompt_provenance.provider_adapter_prompt_sha256 !== config.provider_adapter_prompt_sha256 || artifact.prompt_provenance.answer_prompt_sha256 !== config.answer_prompt_sha256) fail("candidate prompt metadata does not match pinned config");
   if (typeof artifact.oracle_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(artifact.oracle_sha256) || typeof artifact.config_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(artifact.config_sha256) || typeof artifact.trusted_memory_sha256 !== "string" || typeof artifact.trusted_domain_sha256 !== "string" || !artifact.prompt_provenance) fail("candidate top-level provenance hashes are incomplete");
@@ -81,7 +82,7 @@ function scoreCandidateArtifact(file) {
 }
 
 if (require.main === module) {
-  try { const candidateIndex = process.argv.indexOf("--candidate"); console.log(JSON.stringify(candidateIndex >= 0 ? scoreCandidateArtifact(process.argv[candidateIndex + 1]) : score(read()), null, 2)); }
+  try { const candidateIndex = process.argv.indexOf("--candidate"); const configIndex = process.argv.indexOf("--config"); const configPath = configIndex >= 0 ? process.argv[configIndex + 1] : undefined; console.log(JSON.stringify(candidateIndex >= 0 ? scoreCandidateArtifact(process.argv[candidateIndex + 1], { configPath }) : score(read()), null, 2)); }
   catch (error) { console.error(`${error.code || "ERROR"}: ${error.message}`); process.exitCode = 1; }
 }
 module.exports = { score, scoreCandidateArtifact, SHA256 };
