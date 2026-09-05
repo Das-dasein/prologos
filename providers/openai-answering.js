@@ -10,7 +10,7 @@ const WRAPPER_TEMPLATE_SHA256 = sha256(WRAPPER_TEMPLATE);
 
 function nativeUsage(response) {
   const usage = response && response.usage;
-  if (!usage || !Number.isSafeInteger(usage.input_tokens) || !Number.isSafeInteger(usage.output_tokens) || !Number.isSafeInteger(usage.total_tokens) || usage.total_tokens !== usage.input_tokens + usage.output_tokens) throw new Error("OpenAI response usage must contain reconciling native integral input_tokens, output_tokens and total_tokens");
+  if (!usage || !Number.isSafeInteger(usage.input_tokens) || !Number.isSafeInteger(usage.output_tokens) || !Number.isSafeInteger(usage.total_tokens) || usage.input_tokens < 0 || usage.output_tokens < 0 || usage.total_tokens < 0 || usage.total_tokens !== usage.input_tokens + usage.output_tokens) throw new Error("OpenAI response usage must contain reconciling non-negative native integral input_tokens, output_tokens and total_tokens");
   return Object.freeze({ input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.total_tokens, effective_context_budget: usage.input_tokens });
 }
 function defaultClientFactory() { const OpenAI = require("openai"); return new OpenAI(); }
@@ -23,7 +23,9 @@ function createOpenAIAnsweringProvider({ config, clientFactory = defaultClientFa
     if (typeof prompt !== "string") throw new Error("sealed assembled prompt must be text");
     // No wrapper and no instructions: these are the only provider arguments.
     const response = await getClient().responses.create({ model: config.model, input: prompt });
-    if (!response || (response.model && response.model !== config.model)) throw new Error(`provider model ${response && response.model} does not match selected model ${config.model}`);
+    if (!response || !Object.prototype.hasOwnProperty.call(response, "model")) throw new Error("provider response must include model");
+    if (typeof response.model !== "string" || !response.model.trim()) throw new Error("provider response model must be non-empty text");
+    if (response.model !== config.model) throw new Error(`provider model ${response.model} does not match selected model ${config.model}`);
     return Object.freeze({ answer: String(response.output_text ?? ""), raw: JSON.stringify(response), usage: nativeUsage(response) });
   } });
 }

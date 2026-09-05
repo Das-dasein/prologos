@@ -16,6 +16,12 @@ async function main() {
   let clients = 0, calls = 0, forwarded;
   const clientFactory = () => { clients += 1; return { responses: { create: async request => { calls += 1; forwarded = request; return { model: config.model, output_text: "answer", usage: { input_tokens: 41, output_tokens: 6, total_tokens: 47 } }; } } }; };
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "trusted-proof-answering-")), raw = path.join(root, "fresh");
+  async function assertRejectedWithoutFinalMetadata(name, response, error) {
+    const rawDirectory = path.join(root, name);
+    const failed = prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory, clientFactory: () => ({ responses: { create: async () => response } }) });
+    await assert.rejects(failed.run(p0), error);
+    assert.equal(fs.existsSync(path.join(rawDirectory, "metadata.json")), false, `${name} must not write final metadata`);
+  }
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "fake", allowLiveProvider: true, config, inputs, rawDirectory: raw, clientFactory }), /fixed provider/); assert.equal(clients, 0);
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: false, config, inputs, rawDirectory: raw, clientFactory }), /allow-live-provider/); assert.equal(clients, 0);
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config: { ...config, base_prompt_sha256: "0".repeat(64) }, inputs, rawDirectory: raw, clientFactory }), /wire template/); assert.equal(clients, 0);
@@ -27,10 +33,13 @@ async function main() {
   assert.equal(fs.readFileSync(r0.artifacts.prompt_file, "utf8"), p0.prompt);
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: raw, clientFactory }), /must not already exist/);
   assert.throws(() => fs.writeFileSync(r0.artifacts.prompt_file, "changed", { flag: "wx" }), /EEXIST/);
-  const mismatch = prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: path.join(root, "mismatch"), clientFactory: () => ({ responses: { create: async () => ({ model: "wrong-model", output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }) } }) });
-  await assert.rejects(mismatch.run(p0), /provider model/);
-  const malformed = prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: path.join(root, "bad-usage"), clientFactory: () => ({ responses: { create: async () => ({ model: config.model, output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: 3 } }) } }) });
-  await assert.rejects(malformed.run(p0), /reconciling native integral/);
+  await assertRejectedWithoutFinalMetadata("absent-model", { output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }, /must include model/);
+  await assertRejectedWithoutFinalMetadata("blank-model", { model: " \t", output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }, /non-empty text/);
+  await assertRejectedWithoutFinalMetadata("mismatch", { model: "wrong-model", output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } }, /provider model/);
+  await assertRejectedWithoutFinalMetadata("bad-usage", { model: config.model, output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: 3 } }, /reconciling non-negative native integral/);
+  await assertRejectedWithoutFinalMetadata("negative-input", { model: config.model, output_text: "x", usage: { input_tokens: -1, output_tokens: 2, total_tokens: 1 } }, /reconciling non-negative native integral/);
+  await assertRejectedWithoutFinalMetadata("negative-output", { model: config.model, output_text: "x", usage: { input_tokens: 2, output_tokens: -1, total_tokens: 1 } }, /reconciling non-negative native integral/);
+  await assertRejectedWithoutFinalMetadata("negative-total", { model: config.model, output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: -2 } }, /reconciling non-negative native integral/);
   const p1run = prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: path.join(root, "p1"), clientFactory: () => ({ responses: { create: async () => ({ model: config.model, output_text: "answer", usage: { input_tokens: 42, output_tokens: 6, total_tokens: 48 } }) } }) });
   const r1 = await p1run.run(p1);
   assert.throws(() => rejectUnequalBeforeScoring([{ condition: "P0", ...r0.response }, { condition: "P1", ...r1.response }]), /unequal measured E/);
