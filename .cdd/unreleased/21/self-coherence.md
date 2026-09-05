@@ -58,3 +58,13 @@ independent CDR beta. The requested CDS implementation skill is absent from
 the supplied activation snapshot. Aggregate currently records a null baseline
 until all live B1-B3 scores are available; no historical artifact was
 rewritten.
+
+## CDD Trace
+
+Issue intake read GitHub #21 and the complete R2 clarification. Authority
+inputs were loaded before editing; affected peers were enumerated. The
+implementation changed `pilot-runner.js`, its focused tests, the v2 pinned
+config, and the candidate reader in `cdr-matrix-harness.js`. Focused fake
+tests, `npm test`, CDR gold, annotation, and matrix gates are the proof
+projection. The branch is ready for independent beta review; this artifact is
+not a beta or gamma verdict and no push or live comparative run occurred.
