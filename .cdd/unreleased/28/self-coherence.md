@@ -11,8 +11,11 @@ doubles, never provider-token measurements.
 
 - Immutable dataset and slot-registration bindings validate before assembly.
 - P0 builds from accepted snapshot/query and an all-`~` registered control
-  slot without calling `runTrustedQuery`; P1 calls it exactly once.  PX needs
-  an explicitly supplied P1 result and remains exploratory.
+  slot without calling the injected trusted-query boundary; P1 calls it exactly
+  once with that snapshot/query. The portable unit suite injects a deterministic
+  double returning the immutable fixture's expected trusted result, so it makes
+  no macOS sandbox, provider SDK, network, or live-provider call. PX needs an
+  explicitly supplied P1 result and remains exploratory.
 - The sentinel derives each immutable fixture's hidden allowed-answer and
   trusted-result serialization, rejects either outside the declared slot before
   the injected transport is called, and gives P0 no exception. P1/PX proof
@@ -39,4 +42,6 @@ doubles, never provider-token measurements.
 The actual provider adapter, provider-side tokenizer/usage implementation,
 human-operated live run, raw-live review and fresh CDR beta are deferred.  No
 test or CLI default calls a provider, and this work creates no CDR receipt or
-effectiveness claim.
+effectiveness claim. `runTrustedQuery` itself remains fail-closed and requires
+macOS `sandbox-exec`; its sandbox-capability integration coverage must run on
+macOS and is intentionally not represented as cross-platform CI support.

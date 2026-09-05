@@ -20,7 +20,15 @@ async function main() {
     slot_registration_sha256: inputs.binding.slot_registration_sha256,
   };
   let trustedCalls = 0, providerCalls = 0;
-  const fakeTrusted = async ({ snapshot, goal }) => { trustedCalls += 1; return require("./cognitive-memory").runTrustedQuery({ snapshot, goal }); };
+  // Deterministic unit double: the real trusted runtime is deliberately
+  // macOS/sandbox-exec-only and is covered separately as an integration debt.
+  // Keep this call-boundary assertion so P0/P1 provenance remains testable.
+  const fakeTrusted = async ({ snapshot, goal }) => {
+    trustedCalls += 1;
+    assert.equal(snapshot.sha256, require("./cognitive-memory").createSnapshot(fixture.accepted_snapshot).sha256);
+    assert.equal(goal, fixture.query);
+    return { proof: { result: structuredClone(fixture.expected_result) } };
+  };
   const p0 = await assembleCondition({ fixture, inputs, config, condition: "P0", trustedQuery: fakeTrusted });
   assert.equal(trustedCalls, 0, "P0 must not query trusted runtime");
   const p1 = await assembleCondition({ fixture, inputs, config, condition: "P1", trustedQuery: fakeTrusted });
