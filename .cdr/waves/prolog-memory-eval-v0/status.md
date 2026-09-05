@@ -1,9 +1,9 @@
 # Wave status: prolog-memory-eval-v0
 
-- Last updated: 2026-09-05 by fresh CDR alpha repair R2
+- Last updated: 2026-09-05 by gamma after fresh CDR alpha/beta offline diagnostic
 - State: `REVISE`
-- Gate verdict: not issued
-- Receipt: absent; no research claim is transmissible
+- Gate verdict: bounded diagnostic GO; research gate not issued
+- Receipt: `receipt-offline-eval-v3.yaml` recorded as computed and not transmissible
 
 | Stage | Actor requirement | State | Evidence |
 |---|---|---|---|
@@ -11,8 +11,8 @@
 | Pre-registration | gamma | complete | `manifest.md`, open-claim ledger |
 | Research production | fresh alpha | revision required | `alpha-repair-report-r2.md`, `prolog-memory-evaluation-v2.md`, and CDS handoff contract; B4 remains historical exploratory evidence |
 | Independent audit | fresh beta, not alpha | complete: REVISE | `beta-review.md`, `beta-review-r1.md`, `beta-review-r2.md` |
-| Receipt emission | gamma | blocked on alpha repair plus beta re-audit | `receipt.cue` or `receipt.yaml` |
-| Boundary decision | delta | blocked on receipt gates | not issued |
+| Receipt emission | gamma | complete for bounded offline diagnostic; research receipt remains non-transmissible | `receipt-offline-eval-v3.yaml` |
+| Boundary decision | delta | bounded repair dispatch; live-v2 gate still open | recorded in receipt |
 
 CDS candidate evidence now available for review:
 
@@ -53,3 +53,21 @@ Next priority after this review: extend the separately pinned CDS harness for
 the registered live conditions under the v2 contract. The v2 amendment is now
 recorded prospectively; a future beta must review its new matter independently.
 This R2 verdict does not pre-approve it.
+
+## Offline evaluator v3 diagnostic follow-up
+
+Fresh CDR α recomputed the immutable frozen replay at `replay-v3-r2.json` and
+recorded calibrated B1–B4 diagnostics in
+`alpha-offline-eval-v3-diagnostic.md` (commit `57a2293`). Fresh independent CDR
+β reproduced the hashes, raw-manifest integrity, all counts, and schema/sentinel
+checks, issuing **GO** for this bounded diagnostic in
+`beta-offline-eval-v3-diagnostic-review.md` (commit `83e73a3`).
+
+Gamma recorded `receipt-offline-eval-v3.yaml` with `claim_status: computed` and
+`transmissibility: not_transmissible`. This receipt covers replay integrity and
+deterministic diagnostics only. It does not reopen PAM-C1, causal attribution,
+superiority, baseline, significance, or product-usefulness claims.
+
+Next transition remains a separately authorized live-v2 CDS run with raw
+provider artifacts, measured equal context budgets, and a fresh independent CDR
+β review. The research wave therefore remains `REVISE`.

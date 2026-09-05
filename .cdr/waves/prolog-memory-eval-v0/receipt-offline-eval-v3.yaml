@@ -1,0 +1,57 @@
+protocol_id: "cnos.cdd.cdr.receipt.v1"
+
+validation:
+  verdict: PASS
+  failed_predicates: []
+  warnings:
+    - "bounded post-hoc frozen replay diagnostic only; no live provider result"
+    - "historical executed source identity is unknown"
+    - "PAM-C1 through PAM-C4 remain hypothesized and are not transmitted"
+  provenance:
+    validator_identity: "gamma.cdr.offline-eval-v3"
+    validator_version: "r1-structural"
+    checked_at: "2026-09-05T00:00:00+04:00"
+    input_refs:
+      - ".cdr/waves/prolog-memory-eval-v0/alpha-offline-eval-v3-diagnostic.md"
+      - ".cdr/waves/prolog-memory-eval-v0/beta-offline-eval-v3-diagnostic-review.md"
+      - "reports/live-20260905-152059/replay-v3-r2.json"
+
+boundary_decision:
+  actor: "delta=gamma@prologos.cdd.cnos"
+  action: repair_dispatch
+  decided_at: "2026-09-05T00:00:00+04:00"
+
+transmissibility: not_transmissible
+protocol_gap_count: 0
+protocol_gap_refs: []
+
+evidence_refs:
+  claim:
+    - ".cdr/waves/prolog-memory-eval-v0/alpha-offline-eval-v3-diagnostic.md"
+    - ".cdr/waves/prolog-memory-eval-v0/beta-offline-eval-v3-diagnostic-review.md"
+  data:
+    - "reports/live-20260905-152059/replay-v3-r2.json@sha256:d4653498eae6cedc2e0e0628a4d55c78c21e278deba6719f078b05092ad0c801"
+    - ".cdr/datasets/dialogues-pilot-v1.jsonl@sha256:ed9dd7f7ab4983266ab2df3a5ccb31a1f8b367163a09f2c57d2d096e8699d041"
+    - ".cdr/results/prolog-memory-eval-v0/answer-oracle-v1.json@sha256:aee569c01d79403b0b5d92de135238958c2e60c608a91b8ed495ffcd114e36f5"
+    - "reports/live-20260905-152059/aggregate.json@sha256:5bb56b77d060d73643b00e545c596e7fddc49c9d8ce97ac8189590f5b9c8d2cb"
+  method:
+    - "offline-eval-v3.js@commit:80ca1d44cfcfeeab3c6124bbebedae74ba688f6f"
+    - "offline-eval-v3.js@sha256:34803d238706979ee25a40be28b3e8de48daaef593a34962d6608e78ed094e47"
+  result:
+    - "alpha-offline-eval-v3-diagnostic.md#Computed B1-B4 diagnostics"
+    - "beta-offline-eval-v3-diagnostic-review.md#Independent recomputation"
+
+claim_status: computed
+
+limitations:
+  - "Frozen replay uses historical fake/offline provider artifacts and a deterministic rubric."
+  - "The replay is post-hoc and does not identify causal effects of Prolog or any memory mechanism."
+  - "Unknown provenance is not reconstructed; missing provider/network/retry evidence remains outside scope."
+  - "The 12-case pilot is not evidence for significance, generalization, superiority, utility, or product readiness."
+  - "A future live-v2 run with measured equal context budgets and fresh independent beta review is required."
+
+reproduction:
+  reviewer_rerun: true
+  command: "npm run test:offline-eval:v3; npm run test:offline-eval:schema"
+  output_match: true
+  notes: "Independent CDR beta reproduced evaluator, replay hash, all B1-B4 counts, and raw-manifest integrity (192 references)."
