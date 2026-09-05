@@ -15,28 +15,49 @@ for its 12 listed examples.
 
 ## Pre-registered conditions
 
-For every case, the live operator pins the same accepted-snapshot bytes,
-snapshot SHA-256, query bytes, answering model identifier, model/provider
-adapter, sampling policy, base answer prompt and wrapper hashes, retry policy,
-and selected effective measured context budget `E`.
+For every case, before any model output, the live operator pins the same
+accepted-snapshot bytes, snapshot SHA-256, query bytes, answering model
+identifier, model/provider adapter, sampling policy, base answer prompt and
+wrapper hashes, retry policy, selected effective measured context budget `E`,
+and that case's fixed evidence-slot size.
+
+Slot registration SHA-256: 4d05d2176f4e629370771925543d4670259e15b633c5ef3be47803c6c9bf9a46
+`slot-registration-v1.json` is the immutable canonical registration object:
+its `trusted-proof-evidence-slots-v1` protocol version and every
+`case_id -> slot_bytes` entry are canonically serialized and hashed. The
+dataset-derived map, the registration's self-hash, and this method and manifest
+bindings must all match before assembly or scoring.
 
 | Condition | Answering-model material |
 | --- | --- |
-| P0 | normalized serialization of exactly that accepted snapshot and query, with no proof and no thought transcript |
-| P1 | byte-identical P0 material plus only the `runTrustedQuery` proof DAG or bounded missing-goal result |
-| PX | P1 plus an explicitly labelled untrusted thought transcript; exploratory only, never a primary baseline |
+| P0 | normalized serialization of exactly that accepted snapshot and query, plus the pre-registered evidence slot filled only with the inert `~` control marker |
+| P1 | byte-identical P0 material except that the same slot contains the `runTrustedQuery` proof DAG or bounded missing-goal result followed by deterministic `~` padding |
+| PX | P1 plus separately labelled transcript capacity; exploratory only, never a primary baseline |
 
-The harness must assemble P0 once and derive P1 by append-only trusted proof
-context. It must record an equality digest for snapshot/query/model/prompt/
-sampling/budget fields in P0 and P1. It measures every request's `E` before
-scoring and rejects P0/P1 if the measured values differ. PX may differ only by
-its labelled transcript and cannot select or support the primary comparison.
+The slot grammar is fixed as `base(snapshot, query) + SLOT + suffix`, where
+`SLOT` has its case-specific declared size. P0 uses exactly `~` repeated to
+that size. P1 serializes only the trusted proof/missing result in that slot,
+then uses `~` for the remaining capacity. A trusted result that exceeds the
+slot makes the case `unavailable`; it is not truncated and cannot enter P0/P1
+scoring. The offline fixture uses `offline-utf8-byte-v1` (one UTF-8 byte is
+one accounting unit) solely to make this prospective contract deterministic;
+it is explicitly not a provider/model tokenizer or a live `E` measurement.
+
+The future harness must record an equality digest for snapshot/query/model/
+base-and-wrapper-prompt/sampling/slot-size/measured-`E` fields in P0 and P1.
+It measures every request's `E` before scoring and rejects P0/P1 if the
+measured values differ. It must also reject any mutation outside `SLOT`, an
+unequal slot, an overlong proof, or an oracle/control leak. The P0 control
+contains no oracle labels, answer contract, category, expected result, or
+semantic evidence. PX may differ only by its separately labelled transcript
+capacity and cannot select or support the primary comparison.
 
 The answer prompt states that accepted serialization and P1 proof/missing
 result are trusted, while PX transcript is untrusted. It must not contain
 `expected_result`, its SHA-256, `hidden_answer_contract`, category labels, or
-any oracle-only field. A future CDS leakage sentinel must parse every assembled
-model prompt and abort before a call when one appears.
+any oracle-only field. The offline slot validator rejects those fields in P0
+or P1 assembled material; a future CDS leakage sentinel must parse every live
+assembled model prompt and abort before a call when one appears.
 
 ## Scoring and falsifiers
 
@@ -61,6 +82,9 @@ the result `INDETERMINATE` or `REVISE`, not positive.
 and provenance. For each thought case, it runs a deliberately forged
 full-Prolog candidate in the isolated untrusted runner, then reruns the
 trusted query from the same immutable accepted snapshot; the forged transcript
-cannot change that result. This does not test a model's understanding, prompt
-assembly, context equality, or usefulness. Those are explicit future CDS/live
-and fresh-CDR-beta work.
+cannot change that result. `validate-equal-budget-slots-v1.js` also assembles
+all 12 P0/P1 pairs using the pre-registered slots and rejects overlong proofs,
+unequal slots, outside-slot mutation, and control or oracle leakage. These
+checks establish only the offline byte-accounting contract, not provider token
+equality or a model's understanding. Provider measurement, live prompt
+assembly and fresh CDR beta remain future work.
