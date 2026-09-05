@@ -1,13 +1,15 @@
-# γ close-out: offline evaluator v3 repair
+# γ triage: offline evaluator v3 repair
 
 Date: 2026-09-05. Scope: CDD engineering repair of the evaluator only.
 
-## Boundary decision
+## Boundary decision (pending independent beta evidence)
 
-Fresh β returned `GO` for the bounded offline evaluator v3 repair at commit
-`80ca1d44cfcfeeab3c6124bbebedae74ba688f6f`. The result is admissible as an
-engineering handoff for frozen-output replay. It is not a CDR receipt and does
-not transmit a claim about model quality, Prolog usefulness, or PAM-C1.
+The bounded offline evaluator v3 repair at commit
+`80ca1d44cfcfeeab3c6124bbebedae74ba688f6f` passes the recorded local checks,
+but this repository does not contain a standalone independent β review artifact
+for that commit. γ therefore cannot assert an engineering `GO` yet. The work
+is a review-ready handoff, not a closed cell and not a CDR receipt; it does not
+transmit a claim about model quality, Prolog usefulness, or PAM-C1.
 
 ## Evidence
 
@@ -45,9 +47,11 @@ limitation, not a research result.
 
 ## Closure status
 
-The bounded engineering repair is closed at `GO`. The CDR research wave remains
+The bounded engineering repair remains open pending a fresh independent β
+review artifact and its clean reproduction. The CDR research wave remains
 `REVISE`: its existing receipt/research boundary is unchanged, and a fresh
 future CDR cycle is required before any transmissible usefulness claim.
 
-Next MCA: pin a schema validator and run a separate answer-v3/supersession
-design cycle. No live run is scheduled.
+Next MCA: dispatch fresh independent β for `80ca1d4`; after that, pin a schema
+validator and run a separate answer-v3/supersession design cycle. No live run is
+scheduled.
