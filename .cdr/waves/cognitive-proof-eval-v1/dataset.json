@@ -3,6 +3,14 @@
   "origin": "synthetic, author-created and sanitized; no local memory, live output, personal data, secrets, or provider material",
   "redistribution": "repository research fixture",
   "intended_use": "prospective offline trusted-query oracle only; hidden_answer_contract is never a model-prompt field",
+  "evidence_slots": {
+    "multi_hop_01": 1024, "multi_hop_02": 1024,
+    "unknown_01": 1024, "unknown_02": 1024,
+    "revision_01": 1024, "revision_02": 1024,
+    "temporal_conflict_01": 1024, "temporal_conflict_02": 1024,
+    "provenance_01": 1024, "provenance_02": 1024,
+    "thought_01": 1024, "thought_02": 1024
+  },
   "cases": [
     {"id":"multi_hop_01","categories":["multi_hop"],"accepted_snapshot":{"id":"multi_hop_01","items":[{"id":"a1","program":"depends_on(orion, delta)","source":"turn(12)","status":"accepted"},{"id":"r1","program":"affected(X) :- vulnerable(X)","source":"turn(31)","status":"accepted"},{"id":"r2","program":"affected(X) :- depends_on(X, Y), affected(Y)","source":"turn(32)","status":"accepted"},{"id":"a2","program":"vulnerable(delta)","source":"turn(33)","status":"accepted"}]},"query":"affected(orion)","expected_result":{"status":"proved","bindings":"[]","proof":{"kind":"rule","goal":"affected(orion)","item_id":"r2","source":"turn(32)","children":[{"kind":"fact","goal":"depends_on(orion,delta)","item_id":"a1","source":"turn(12)"},{"kind":"rule","goal":"affected(delta)","item_id":"r1","source":"turn(31)","children":[{"kind":"fact","goal":"vulnerable(delta)","item_id":"a2","source":"turn(33)"}]}]}},"hidden_answer_contract":{"allowed":"orion is affected; cite turn(12), turn(31), and turn(33)","forbidden_in_prompt":true}},
     {"id":"multi_hop_02","categories":["multi_hop"],"accepted_snapshot":{"id":"multi_hop_02","items":[{"id":"a1","program":"manages(iris, atlas)","source":"turn(51)","status":"accepted"},{"id":"r1","program":"eligible(X) :- manages(X, Y), critical(Y)","source":"turn(52)","status":"accepted"},{"id":"a2","program":"critical(atlas)","source":"turn(53)","status":"accepted"}]},"query":"eligible(iris)","expected_result":{"status":"proved","bindings":"[]","proof":{"kind":"rule","goal":"eligible(iris)","item_id":"r1","source":"turn(52)","children":[{"kind":"fact","goal":"manages(iris,atlas)","item_id":"a1","source":"turn(51)"},{"kind":"fact","goal":"critical(atlas)","item_id":"a2","source":"turn(53)"}]}},"hidden_answer_contract":{"allowed":"iris is eligible; cite turns 51-53","forbidden_in_prompt":true}},
