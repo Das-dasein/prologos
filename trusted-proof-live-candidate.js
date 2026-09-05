@@ -69,6 +69,9 @@ async function collectCandidate({ config, root, allowLiveProvider, provider = "o
       }
       if (pair[0].usage.measured_effective_context_budget !== pair[1].usage.measured_effective_context_budget || ["run_binding_sha256", "snapshot_sha256", "query_sha256", "slot_bytes"].some(k => pair[0][k] !== pair[1][k])) throw new Error(`${fixture.id}: P0/P1 immutable binding or E mismatch`);
     }
+    if (!records.every(record => record && record.scorer && record.scorer.decision === "accepted")) {
+      throw new Error("candidate receipt unavailable: every local scorer decision must be accepted");
+    }
     const receipt = { schema_version: "cognitive-proof-eval-receipt-intake-v3", kind: "candidate_live_receipt", source_commit: registry.source_commit, dataset: registry.dataset, slot_registration: registry.slot_registration, trusted_proof_digest_registry: registry.trusted_proof_digest_registry, wire_prompt_digest_registry: { path: "wire-assembled-prompt-digest-registry-v3.json", sha256: registry.registry_sha256 }, run, records };
     const receiptFile = path.join(root, "candidate-receipt-v3.json"); fs.writeFileSync(receiptFile, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx", mode: 0o600 });
     const integrity = await validateEnvelope(receipt, { rawRoot: root });
