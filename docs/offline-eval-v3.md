@@ -1,0 +1,36 @@
+# Offline evaluator v3
+
+`offline-eval-v3.js` replays a frozen aggregate without importing a provider or
+calling a model. It reads the archived raw manifest only to verify the raw
+envelopes referenced by the aggregate. The historical aggregate, raw files,
+dataset, and oracle are never rewritten.
+
+Run the default frozen replay:
+
+```sh
+npm run eval:offline:v3
+```
+
+Explicit inputs are available for a clean-copy replay:
+
+```sh
+node offline-eval-v3.js \
+  --aggregate=reports/live-20260905-152059/aggregate.json \
+  --dataset=.cdr/datasets/dialogues-pilot-v1.jsonl \
+  --oracle=.cdr/results/prolog-memory-eval-v0/answer-oracle-v1.json \
+  --raw-manifest=reports/live-20260905-152059/manifest.json \
+  --source-snapshot=offline-eval-v3.js \
+  --output=reports/live-20260905-152059/replay-v3.json
+```
+
+The artifact is versioned as `offline-eval-v3` and marks itself
+`post_hoc_computed_historical_replay`. Every case retains evidence references,
+legacy string comparison, deterministic content rubric, provenance result, and
+stale/conflict result. Extraction uses one-to-one matching on source turn,
+relation, arguments, polarity, modality, and interval; claim IDs are links and
+are not correctness keys. Missing or unusable provenance is `unknown`.
+
+This is an engineering replay of already inspected outputs. The content rubric
+is deterministic and case-scoped; it is not an LLM judge. The artifact cannot
+support a claim that B4 improves model answers. A fresh beta must verify the
+inputs, fixtures, deterministic hashes, and cross-run rejection.
