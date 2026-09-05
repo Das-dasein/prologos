@@ -21,3 +21,9 @@ self-hash, method binding and manifest binding must match before a pair can
 validate. CDS #28 is now unblocked for its no-live preflight implementation;
 the eventual human-operated live run still needs measured provider equality
 and a fresh CDR beta before any effectiveness conclusion.
+
+Issue #32 adds only local deterministic receipt-intake preparation. Its
+synthetic non-result fixture validates shape and rejection paths, not a live
+artifact, aggregate, receipt, or effectiveness claim. Human operation retains
+raw outputs locally; a fresh beta must audit a complete candidate. State above
+is unchanged.

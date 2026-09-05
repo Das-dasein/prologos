@@ -99,3 +99,29 @@ the manifest binding, and missing or extra dataset mappings. This remains an
 offline byte-accounting repair, not a provider/model token result, live
 artifact, CDR receipt, effectiveness conclusion, or CDS #28 implementation.
 Fresh β remains owed.
+
+## Issue #32 — alpha local receipt-intake preparation
+
+Source start: `e5edd9c40d57ef4f46e9dcc2ef106ca1d1cd53ee`.
+
+Added `receipt-intake-v1.schema.json`, its explicitly synthetic
+`synthetic_non_result` envelope, deterministic stdlib-only validator, and
+local-intake specification. The validator binds the trusted v1 source/dataset/
+slot files and per-record snapshot/query/slot/proof/raw/usage/scorer fields.
+It does not import a provider SDK, access network, sandbox-exec, invoke a
+model, read a committed raw output, score answers, or produce a result.
+
+Exact validation commands:
+
+```sh
+npm run test:cdr-receipt-intake
+node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v1.js
+npm test
+```
+
+The focused self-test accepts only the synthetic non-result envelope and
+deterministically rejects missing P0/P1, duplicate record, wrong source
+binding, unequal `E`, oracle leakage, in-place overwrite, and a mismatching
+local raw SHA. The default fixture is not a provider result and is not
+aggregable. `prolog-memory-eval-v0` was not modified and remains `REVISE`.
+This is preparation only; no effectiveness conclusion or CDR receipt exists.

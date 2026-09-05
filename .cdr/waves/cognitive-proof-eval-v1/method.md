@@ -88,3 +88,27 @@ unequal slots, outside-slot mutation, and control or oracle leakage. These
 checks establish only the offline byte-accounting contract, not provider token
 equality or a model's understanding. Provider measurement, live prompt
 assembly and fresh CDR beta remain future work.
+
+## Local live-receipt intake amendment (issue #32)
+
+Before a human-operated live run can be examined, its operator submits a
+versioned `cognitive-proof-eval-receipt-intake-v1` envelope to local intake.
+It binds source commit, dataset and slot-registration hashes; model/adapter;
+base and wrapper prompt hashes; sampling; and retry policy. Every P0/P1 record
+also binds canonical snapshot/query hashes, registered slot size, P1
+trusted-proof hash, local raw reference and SHA-256, provider usage including
+measured `E`, and a scorer decision whose opaque contract hash cannot include
+hidden answer-contract text.
+
+Raw answers remain under the operator's local `--raw-root` and are hashed
+there; no raw answer or credential is committed. Before aggregation, the
+intake rejects absent/duplicate P0/P1 records, all immutable-binding changes,
+bad/missing raw files or hashes, proof-binding errors, unequal measured `E`,
+oracle/control leakage, and duplicate/overwritten records. A record has no
+`supersedes` path: it is append-only and never replaced in place.
+
+The denominator is exactly cases with one valid P0 and P1 after every gate; a
+rejected, unavailable, or missing case contributes to neither rate nor claim.
+Any incomplete intake is `INDETERMINATE`; an integrity-valid intake is still
+not a result until fresh CDR beta audits local evidence. The committed fixture
+is `synthetic_non_result`, has no raw file, and demonstrates parser/gates only.
