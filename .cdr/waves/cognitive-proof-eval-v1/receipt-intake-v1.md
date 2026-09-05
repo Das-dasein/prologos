@@ -6,7 +6,8 @@ an effectiveness score.
 
 `receipt-intake-v1.schema.json` gives the portable envelope shape; the paired
 deterministic validator is authoritative for closed-world bindings and gates.
-Each envelope binds the source commit, dataset and slot-registration hashes,
+Each envelope binds the source commit, dataset, slot-registration, and
+trusted-proof-digest-registry hashes,
 model, adapter, both prompt hashes, sampling and retry policy. Each record
 repeats that canonical run binding by SHA-256, then
 binds a dataset case's canonical snapshot/query hashes, registered slot size,
@@ -22,8 +23,9 @@ not aggregable.
 
 Candidate receipts must contain exactly one P0 and P1 record for every
 registered dataset case. The validator rejects absent or duplicate pairs,
-wrong source/dataset/slot/snapshot/query binding, changed paired run fields,
-wrong raw hash, unequal `E`, P0 proof or missing P1 proof, retry mismatch,
+wrong source/dataset/slot/snapshot/query/registry binding, changed paired run
+fields, wrong raw hash, unequal `E`, P0 proof or a P1 digest that does not
+exactly equal that case's canonical registry digest, retry mismatch,
 oracle/control leakage, duplicated raw references, and any `supersedes` value.
 Thus an accepted record is never replaced in place; corrections are a new
 operator submission and fresh audit, not mutation of an admitted receipt.

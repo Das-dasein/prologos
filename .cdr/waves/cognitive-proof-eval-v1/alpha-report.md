@@ -125,3 +125,24 @@ binding, unequal `E`, oracle leakage, in-place overwrite, and a mismatching
 local raw SHA. The default fixture is not a provider result and is not
 aggregable. `prolog-memory-eval-v0` was not modified and remains `REVISE`.
 This is preparation only; no effectiveness conclusion or CDR receipt exists.
+
+## Issue #32 R1 — canonical P1 proof-digest binding repair
+
+Starting from gamma repair target
+`a94c87ffd749e9fc85b3f8ec649b4e8ed19eaf52`, this alpha repair adds the
+versioned immutable `trusted-proof-digest-registry-v1.json`. Its canonical
+payload records the pinned source commit, dataset path/hash, and every
+`case_id -> SHA-256(canonical runTrustedQuery result)` binding; its self-hash
+is `a68d6a010b7225f42bedb447a209e50617cd26bf2a9a6ab40aa0d40b61ae42e4`.
+The trusted symbolic validator recomputes every digest from the pinned query
+result and rejects a changed/missing/extra registry mapping or binding.
+
+The receipt envelope and schema now bind this registry. The stdlib-only intake
+requires P0 proof `null` and requires every P1 proof digest to exactly equal
+the registered digest for its `case_id`; its synthetic non-result fixture is
+derived from that registry. Its focused self-test includes a rejection for a
+valid-format but wrong P1 digest (`"f".repeat(64)`).
+
+No provider, network, model, SDK, scorer, raw live output, aggregation,
+receipt, historical v0 change, or effectiveness claim was added. The repair
+remains local preparation pending fresh independent CDR beta.
