@@ -1,52 +1,38 @@
-# Beta review: cycle 28 R1 — trusted-proof preflight
+# Beta review: cycle 28 R2 — trusted-proof preflight
 
-Target reviewed: `8a8d2bcb64126bb82beb1ba54c2c39c7c6be8c04` (`cycle/28`).
+Target reviewed: `12916abeca57e62d62d01c8178578dcf94d0a300` (`cycle/28`).
 
-## Verdict: REQUEST CHANGES
+## Verdict: GO — harness behavior only
 
-The R1 repair correctly covers literal P0 and P1 outside-slot oracle-value
-injections and retry-policy identity in its ordinary assembly path. It does
-not establish the required invariant that P1 evidence is only the trusted
-serialization generated for the immutable fixture. The final transport
-sentinel trusts caller-controlled `assembled.pair.p1Slot` rather than deriving
-the permitted slot from immutable inputs and `trusted_result`.
+This is an engineering preflight verdict, not a CDR receipt, PAM claim, or
+live-run approval. The target seals the exact assembly object in a
+module-private `WeakMap`, recursively freezes its public graph, and uses the
+private provenance—not public `pair` metadata—to select the prompt passed to
+the injected transport. That blocks the R1 paired forged-slot bypass before
+the provider is called.
 
-## Reproduced blocker B-1: forged P1 slot reaches transport
+`WeakMap` is correctly bounded here: it establishes provenance for this
+harness's normal API path, but is not a security sandbox against arbitrary
+hostile JavaScript executing in the same Node process.
 
-In a clean archive of the target, build P1 using `assembleCondition`, then
-replace the substring in `[slotStart, slotEnd)` with
-`fixture.hidden_answer_contract.allowed` (padded to the original slot length)
-and replace `pair.p1Slot` with the same value. Calling
-`executeWithInjectedProvider` with a counting fake provider completes
-successfully and prints:
-
-```json
-{"provider_calls":1,"injected_slot_accepted":true}
-```
-
-`leakGuard` accepts the forged value because the P1/PX condition is only
-`slot === pair.p1Slot`; both fields come from the caller-controlled assembled
-object. This bypasses the asserted exact-generated-serialization boundary
-immediately before the sole transport call.
-
-Repair the transport-time guard to recompute or cryptographically bind the
-registered P1 slot from immutable dataset/registration, fixture, and the
-trusted result generated for the request. Add the hostile paired mutation
-above and assert zero provider calls. Do not relax P0, retry, no-live, or CDR
-boundaries.
-
-## Independently verified passes
+## Independent evidence
 
 | Check | Result |
 |---|---|
-| Exact target / scope | Clean archive of `8a8d2bc`; only harness, focused test, and alpha coherence change from base. No `.cdr/**` diff. |
-| Focused test | PASS: `node test-trusted-proof-preflight.js` |
-| Project suite | PASS after `npm ci --ignore-scripts`: `npm test` |
-| Default CLI | PASS: outputs `offline-preflight-only` with `provider_calls: 0` |
-| Live gate | PASS: `--allow-live-provider` without complete config rejects; no live invocation performed |
-| Ordinary hostile values | PASS: P0 allowed-answer and P1 outside-slot allowed-answer reject before fake provider; P0 proof calls 0 / P1 calls 1; missing retry rejects; changed retry changes digest and rejects before scoring. |
-| Equal-E / records | PASS: equal fake E gives equal digest; unequal E rejects before scoring; envelope/raw use exclusive write. |
-| No CDR claim mutation | PASS: no dataset, method, threshold, receipt, or PAM claim changed. |
+| Exact target and scope | PASS: HEAD is the stated SHA; parent diff is limited to the harness, its focused test, and alpha self-coherence. `git diff --check HEAD^ HEAD` passes. No `.cdr/**` mutation, receipt, PAM/live claim, merge, or issue closure appears in the target. |
+| Focused harness suite | PASS: `node test-trusted-proof-preflight.js`. |
+| Project suite | PASS: `npm test`. |
+| Default/no-live CLI | PASS: `node trusted-proof-preflight.js` emits `offline-preflight-only` and `provider_calls: 0`. `--allow-live-provider` without JSON config rejects; the supplied non-JSON manifest also rejects, and no adapter invocation exists. Static inspection finds no provider SDK or network transport in the harness/test. |
+| P0/P1/PX boundaries | PASS with a fresh fake trusted runtime: P0 makes zero trusted calls, P1 exactly one, and PX requires an explicit P1 result and labels its transcript `UNTRUSTED_EXPLORATORY_TRANSCRIPT`. |
+| Sealed hostile mutation | PASS: a direct nested `p1.pair.p1Slot` write throws on the frozen graph. A reconstructed P1 bearing a hidden-answer-padded forged slot and matching forged public pair rejects as `unsealed or reconstructed` before the counting fake provider; provider calls remain zero for the attack. A legitimate sealed P1 completes once. |
+| Leak/equality/records | PASS: actual oracle-value outside-slot attacks reject before fake transport; canonical retry-policy absence/mismatch rejects; fake equal measured E produces equal digest and unequal E rejects before scoring. Raw/envelope writes are exclusive and retain the required references. |
 
-No provider SDK, network request, live provider, CDR receipt, merge, or issue
-closure was invoked in this review. This is a beta engineering verdict only.
+The focused test also covers hidden-contract scoring, P0 neutral slot, slot-map
+binding, non-overwrite, and explicit live-gate construction. Fake usage values
+remain test doubles, not provider-token measurements.
+
+## Deferred work
+
+The real provider adapter/token measurement, human-operated run, live raw
+review, and a fresh CDR beta remain deferred. No provider was called in this
+review.
