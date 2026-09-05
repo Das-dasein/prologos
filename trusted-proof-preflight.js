@@ -23,23 +23,41 @@ function immutableInputs({ datasetPath = path.join(WAVE, "dataset.json"), regist
 }
 
 function requireText(value, label) { if (typeof value !== "string" || !value.trim()) throw new Error(`${label} must be non-empty text`); return value; }
+function canonicalRetryPolicy(value) {
+  requireText(value, "config.retry_policy");
+  if (value !== value.trim() || !/^[a-z0-9][a-z0-9._:-]*$/.test(value)) throw new Error("config.retry_policy must be canonical non-empty text");
+  return value;
+}
 function requireImmutableConfig(config, inputs) {
   if (!config || typeof config !== "object") throw new Error("immutable live config is required");
   for (const key of ["source_commit", "model", "base_prompt_sha256", "wrapper_prompt_sha256"]) requireText(config[key], `config.${key}`);
   if (!/^[0-9a-f]{40}$/.test(config.source_commit)) throw new Error("config.source_commit must be a 40-hex immutable commit");
   if (!config.sampling || typeof config.sampling !== "object") throw new Error("config.sampling is required");
+  const retry_policy = canonicalRetryPolicy(config.retry_policy);
   if (config.dataset_sha256 !== inputs.dataset_sha256 || config.slot_registration_file_sha256 !== inputs.registration_sha256 || config.slot_registration_sha256 !== inputs.binding.slot_registration_sha256) throw new Error("immutable config does not bind dataset/slot registration");
-  return Object.freeze({ ...config, sampling: Object.freeze({ ...config.sampling }) });
+  return Object.freeze({ ...config, retry_policy, sampling: Object.freeze({ ...config.sampling }) });
 }
 
-function leakGuard({ prompt, condition, slotStart, slotEnd }) {
+function oracleValues(fixture) {
+  if (!fixture || !fixture.hidden_answer_contract || typeof fixture.hidden_answer_contract.allowed !== "string") throw new Error("immutable fixture hidden answer contract is required for leak guard");
+  return [fixture.hidden_answer_contract.allowed, stable(fixture.expected_result)];
+}
+
+function leakGuard({ prompt, condition, slotStart, slotEnd, fixture, trusted_result, pair }) {
   requireText(prompt, "assembled prompt");
   const start = Number.isInteger(slotStart) ? slotStart : -1, end = Number.isInteger(slotEnd) ? slotEnd : -1;
   if (start < 0 || end < start || end > prompt.length) throw new Error("leak guard requires declared evidence-slot boundaries");
   for (const field of FORBIDDEN) if (prompt.includes(field)) throw new Error(`oracle leakage rejected before provider call: ${field}`);
   const slot = prompt.slice(start, end);
+  const outsideSlot = `${prompt.slice(0, start)}${prompt.slice(end)}`;
+  const values = oracleValues(fixture);
+  for (const value of values) {
+    if (outsideSlot.includes(value)) throw new Error("oracle leakage rejected before provider call: immutable oracle value outside declared slot");
+    if (condition === "P0" && slot.includes(value)) throw new Error("oracle leakage rejected before provider call: immutable oracle value in P0");
+  }
   if (condition === "P0" && !/^~+$/.test(slot)) throw new Error("P0 control slot must be neutral");
   if (condition !== "P1" && condition !== "PX" && !/^~+$/.test(slot)) throw new Error("only P1/PX may carry trusted evidence");
+  if ((condition === "P1" || condition === "PX") && (!pair || !trusted_result || slot !== pair.p1Slot)) throw new Error("P1/PX trusted evidence must be the exact trusted serialization in the declared slot");
   return true;
 }
 
@@ -53,11 +71,12 @@ function promptFor(pair, condition, transcript = null) {
 
 function equalityDigest({ config, inputs, snapshot, query, slotBytes, measuredE }) {
   if (!Number.isSafeInteger(measuredE) || measuredE < 0) throw new Error("measured effective E must be a non-negative integer from the injected provider/token counter");
-  return sha256(canonical({ source_commit: config.source_commit, dataset_sha256: inputs.dataset_sha256, slot_registration_sha256: inputs.binding.slot_registration_sha256, snapshot_sha256: snapshot.sha256, query_sha256: sha256(query), model: config.model, base_prompt_sha256: config.base_prompt_sha256, wrapper_prompt_sha256: config.wrapper_prompt_sha256, sampling: config.sampling, slot_bytes: slotBytes, measured_effective_e: measuredE }));
+  return sha256(canonical({ source_commit: config.source_commit, dataset_sha256: inputs.dataset_sha256, slot_registration_sha256: inputs.binding.slot_registration_sha256, snapshot_sha256: snapshot.sha256, query_sha256: sha256(query), model: config.model, base_prompt_sha256: config.base_prompt_sha256, wrapper_prompt_sha256: config.wrapper_prompt_sha256, sampling: config.sampling, retry_policy: canonicalRetryPolicy(config.retry_policy), slot_bytes: slotBytes, measured_effective_e: measuredE }));
 }
 
 async function assembleCondition({ fixture, inputs, config, condition, trustedQuery = runTrustedQuery, trustedResult, transcript }) {
   if (!["P0", "P1", "PX"].includes(condition)) throw new Error("condition must be P0, P1, or PX");
+  const immutableConfig = requireImmutableConfig(config, inputs);
   const snapshot = createSnapshot(fixture.accepted_snapshot);
   let result = trustedResult;
   // P0 must be constructible without touching the trusted-query runtime.
@@ -66,8 +85,8 @@ async function assembleCondition({ fixture, inputs, config, condition, trustedQu
   if ((condition === "P1" || condition === "PX") && !result) throw new Error(`${condition} requires an explicit trusted proof/missing result`);
   const pair = assembleCase(inputs.dataset, fixture, result || { status: "neutral-control" });
   const built = promptFor(pair, condition, transcript);
-  leakGuard({ ...built, condition });
-  return Object.freeze({ condition, case_id: fixture.id, snapshot, query: fixture.query, trusted_result: condition === "P0" ? null : result, pair, inputs, ...built, proof_calls: condition === "P1" ? 1 : 0, config });
+  leakGuard({ ...built, condition, fixture, trusted_result: result, pair });
+  return Object.freeze({ condition, case_id: fixture.id, fixture, snapshot, query: fixture.query, trusted_result: condition === "P0" ? null : result, pair, inputs, ...built, proof_calls: condition === "P1" ? 1 : 0, config: immutableConfig });
 }
 
 function measuredUsage(usage) {
@@ -81,11 +100,11 @@ async function executeWithInjectedProvider(assembled, provider) {
   leakGuard(assembled);
   const response = await provider.complete({ prompt: assembled.prompt, condition: assembled.condition, case_id: assembled.case_id });
   const usage = measuredUsage(response && response.usage);
-  return Object.freeze({ raw: String(response.raw ?? ""), answer: String(response.answer ?? ""), usage, equality_digest: equalityDigest({ config: assembled.config, inputs: assembled.inputs, snapshot: assembled.snapshot, query: assembled.query, slotBytes: assembled.pair.declaredSlotBytes, measuredE: usage.effective_context_budget }) });
+  return Object.freeze({ raw: String(response.raw ?? ""), answer: String(response.answer ?? ""), usage, retry_policy: assembled.config.retry_policy, equality_digest: equalityDigest({ config: assembled.config, inputs: assembled.inputs, snapshot: assembled.snapshot, query: assembled.query, slotBytes: assembled.pair.declaredSlotBytes, measuredE: usage.effective_context_budget }) });
 }
 
 function resultEnvelope({ assembled, response, scorer_outcome }) {
-  return Object.freeze({ schema_version: "trusted-proof-preflight-result-v1", condition: assembled.condition, case_id: assembled.case_id, prompt_sha256: sha256(assembled.prompt), snapshot_sha256: assembled.snapshot.sha256, query_sha256: sha256(assembled.query), trusted_proof_sha256: assembled.trusted_result ? sha256(canonical(assembled.trusted_result)) : null, usage: response.usage, equality_digest: response.equality_digest, scorer_outcome });
+  return Object.freeze({ schema_version: "trusted-proof-preflight-result-v1", condition: assembled.condition, case_id: assembled.case_id, prompt_sha256: sha256(assembled.prompt), snapshot_sha256: assembled.snapshot.sha256, query_sha256: sha256(assembled.query), trusted_proof_sha256: assembled.trusted_result ? sha256(canonical(assembled.trusted_result)) : null, usage: response.usage, retry_policy: response.retry_policy, equality_digest: response.equality_digest, scorer_outcome });
 }
 
 // Keep hidden contracts in the scorer only.  The result contains decisions,
@@ -102,6 +121,7 @@ function scoreHiddenContract({ answer, fixture, trustedResult }) {
 function rejectUnequalBeforeScoring(records) {
   const p0 = records.find(record => record.condition === "P0"), p1 = records.find(record => record.condition === "P1");
   if (!p0 || !p1) throw new Error("P0 and P1 records are required");
+  if (canonicalRetryPolicy(p0.retry_policy) !== canonicalRetryPolicy(p1.retry_policy)) throw new Error("retry policy mismatch rejected before scoring");
   if (p0.usage.effective_context_budget !== p1.usage.effective_context_budget) throw new Error("unequal measured E rejected before scoring");
   if (p0.equality_digest !== p1.equality_digest) throw new Error("P0/P1 equality digest mismatch rejected before scoring");
   return true;

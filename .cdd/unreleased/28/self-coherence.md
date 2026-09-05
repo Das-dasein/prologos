@@ -13,11 +13,15 @@ doubles, never provider-token measurements.
 - P0 builds from accepted snapshot/query and an all-`~` registered control
   slot without calling `runTrustedQuery`; P1 calls it exactly once.  PX needs
   an explicitly supplied P1 result and remains exploratory.
-- The sentinel rejects oracle-only fields before the injected transport is
-  called.  P1/PX proof content is permitted only inside the declared slot.
+- The sentinel derives each immutable fixture's hidden allowed-answer and
+  trusted-result serialization, rejects either outside the declared slot before
+  the injected transport is called, and gives P0 no exception. P1/PX proof
+  content is permitted only as the exact trusted serialization in that slot.
 - Equality digests bind source, dataset, registration, snapshot, query, model,
-  prompt hashes, sampling, slot size and measured `E`.  P0/P1 unequal `E` or a
-  differing digest rejects before hidden-contract scoring.
+  prompt hashes, sampling, canonical non-empty retry policy, slot size and
+  measured `E`. Retry-policy absence or mismatch, P0/P1 unequal `E`, or a
+  differing digest rejects before hidden-contract scoring; the retry policy is
+  also retained in each result envelope.
 - Artifact writes use exclusive creation for both raw and envelope files.
   Envelopes retain prompt/snapshot/query/proof references, fake/live usage,
   equality digest and scorer outcome, but no hidden contract text.
