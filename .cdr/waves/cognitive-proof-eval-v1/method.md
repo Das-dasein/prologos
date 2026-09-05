@@ -133,3 +133,12 @@ a separate local prompt artifact under `--raw-root`; intake hashes that file
 and requires artifact SHA = record SHA = registered P0/P1 SHA. The registry
 contains digests and template identities only, never raw prompt bytes, oracle
 contracts, raw outputs, aggregation, or model/provider activity.
+
+## Real answering-wire re-registration amendment (issue #38)
+
+`receipt-intake-v3` is separate from v1/v2 and accepts only the self-hashing
+v3 registry with PR #37's real `{{assembled_prompt}}` / `none` SHA-256 values,
+pinned transport source hashes and `sealed-assembled-prompt-byte-for-byte`
+input mode. It retains all prior candidate integrity gates, including exact
+P0/P1 digest and local artifact verification. This is prospective preparation:
+it invokes no provider or model and provides no receipt, aggregate, or claim.
