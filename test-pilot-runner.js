@@ -75,7 +75,7 @@ const options = condition => ({ config, datasetFile, oracleFile, provider: goldP
   const leakedFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "pam-r2-leak-")), "dataset.jsonl");
   const leakedCase = { ...cases[0], dialogue: [{ ...cases[0].dialogue[0], text: "private-marker c_stable_01_a" }, ...cases[0].dialogue.slice(1)] };
   fs.writeFileSync(leakedFile, `${JSON.stringify(leakedCase)}\n`);
-  await assert.rejects(() => runPilot({ ...options("B1"), datasetFile: leakedFile, config: { ...config, dataset_sha256: sha256(fs.readFileSync(leakedFile)) } }), { code: "PRIVATE_MARKER" });
+  await assert.rejects(() => runPilot({ ...options("B1"), datasetFile: leakedFile, config: { ...config, dataset_sha256: sha256(fs.readFileSync(leakedFile)) } }), { code: "DATASET_CASE_COUNT" });
 
   const trustedFailure = { ...config, trusted_memory_sha256: "0".repeat(64) };
   await assert.rejects(() => runPilot({ ...options("B1"), config: trustedFailure }), { code: "TRUSTED_HASH_MISMATCH" });

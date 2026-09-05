@@ -51,7 +51,8 @@ function scoreCandidateArtifact(file) {
   try { artifact = JSON.parse(fs.readFileSync(file, "utf8")); }
   catch (error) { fail(`candidate artifact cannot be read: ${error.message}`); }
   if (!artifact || artifact.schema_version !== "prolog-memory-pilot-v2" || artifact.artifact_kind !== "aggregate") fail("candidate must be a prolog-memory-pilot-v2 aggregate");
-  if (!Array.isArray(artifact.conditions) || artifact.conditions.length !== 4 || artifact.conditions.some(entry => !["B1", "B2", "B3", "B4"].includes(entry.condition))) fail("candidate must contain B1-B4 condition artifacts");
+  if (!Array.isArray(artifact.conditions) || artifact.conditions.length !== 4 || artifact.conditions.some(entry => !["B1", "B2", "B3", "B4"].includes(entry.condition)) || new Set(artifact.conditions.map(entry => entry.condition)).size !== 4) fail("candidate must contain each B1-B4 condition exactly once");
+  if (artifact.dataset_sha256 !== SHA256) fail("candidate dataset hash does not match pinned dataset");
   if (!Number.isInteger(artifact.measured_effective_context_budget_tokens) || artifact.conditions.some(entry => !entry.budget || entry.budget.equal !== true || entry.budget.configured_e !== artifact.measured_effective_context_budget_tokens)) fail("candidate effective budget is missing or unequal");
   for (const entry of artifact.conditions) {
     const condition = entry.artifact;
