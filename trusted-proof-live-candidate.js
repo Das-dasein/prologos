@@ -8,6 +8,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { assembleCondition, immutableInputs, scoreHiddenContract } = require("./trusted-proof-preflight");
 const { prepareOpenAIAnsweringRun } = require("./trusted-proof-answering");
+const { canonicalSampling } = require("./providers/openai-answering");
 const { validateEnvelope, trustedInputs } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v3");
 
 const WAVE = path.join(__dirname, ".cdr/waves/cognitive-proof-eval-v1");
@@ -25,9 +26,10 @@ function loadConfig(configPath) {
   return Object.freeze(readJson(configPath));
 }
 async function validateConfig(config, inputs) {
-  const registry = await trustedInputs();
   for (const key of ["source_commit", "model", "base_prompt_sha256", "wrapper_prompt_sha256", "dataset_sha256", "slot_registration_file_sha256", "slot_registration_sha256", "retry_policy"]) requireText(config[key], `config.${key}`);
   if (config.provider !== "openai-api") throw new Error("config.provider must be openai-api");
+  canonicalSampling(config.sampling);
+  const registry = await trustedInputs();
   if (config.source_commit !== registry.source_commit || config.dataset_sha256 !== inputs.dataset_sha256 || config.slot_registration_file_sha256 !== inputs.registration_sha256 || config.slot_registration_sha256 !== inputs.binding.slot_registration_sha256 || config.base_prompt_sha256 !== registry.wire_transport.template_identities.base_prompt_sha256 || config.wrapper_prompt_sha256 !== registry.wire_transport.template_identities.wrapper_prompt_sha256) throw new Error("config does not match CDR v3 registry and wire identities");
   return registry;
 }
