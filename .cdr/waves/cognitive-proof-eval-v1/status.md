@@ -35,3 +35,9 @@ trusted-query result. The local stdlib-only intake now binds that registry in
 the envelope, requires P0 `null`, and rejects a well-formed P1 digest unless it
 equals its case's digest. This is still preparation only: no provider/model
 call, raw live output, aggregate, receipt, or effectiveness claim exists.
+
+Issue #35 adds offline-only v2 actual assembled-prompt binding preparation.
+It preserves v1 without reinterpretation, self-hashes and locally recomputes
+the P0/P1 digest registry, and requires a candidate's raw-root prompt artifact
+to match the exact case/condition digest. No provider/model call, raw live
+artifact, aggregation, receipt, or effectiveness claim exists.
