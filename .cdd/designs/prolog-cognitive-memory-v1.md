@@ -25,9 +25,24 @@ The engine is not merely a key-value store. Its central functions are
 multi-step relational inference, explicit contradiction checks, revision of
 accepted knowledge, and explanation of conclusions.
 
-## Proposal language
+## Thought language and authority boundary
 
-The agent returns a **restricted Prolog proposal program**, not a JSON AST.
+The agent's thought language is **full Prolog**, not a JSON AST and not a
+small artificial Prolog subset. A system that is meant to learn how to reason
+in Prolog should first be able to use Prolog's actual expressive resources.
+The exploratory program may define predicates, use recursion, negation,
+disjunction, arithmetic, meta-programming and directives. We will learn which
+of those facilities need later policy boundaries by observing actual useful
+programs, rather than by guessing a tiny language up front.
+
+This does *not* give a thought program authority over the host. It is executed
+as a frozen, capability-empty Prolog session: a fresh working directory,
+read-only memory snapshot, no network, no host-file authority, no durable
+database authority, and explicit CPU/time/memory/output limits. The system
+does not `consult` a thought program into its own trusted process. It launches
+an isolated Prolog runtime whose only inputs and outputs are declared files or
+streams.
+
 JSON may remain a transport or persistence container outside the agent-facing
 language, but it is not the language in which knowledge is authored.
 
@@ -43,22 +58,16 @@ propose_rule(r1,
              source(turn(21)), explicit).
 ```
 
-The parser builds an internal AST. It accepts only the grammar below; it never
-consults the proposal as arbitrary executable Prolog.
+The runtime can parse source into native Prolog terms for attribution,
+instrumentation and source locations, but that term tree is an implementation
+detail, not a language gate. There is no bespoke grammar or structural
+allowlist in the exploratory phase.
 
-### v1 grammar
-
-- atoms, variables, compound terms and lists only where the registry permits;
-- facts and Horn clauses with a single head and conjunction-only body;
-- explicit `source/1`, `explicit | inferred | hypothesis` epistemic status;
-- rule identifiers and assertion identifiers;
-- no directives, modules, I/O, database mutation predicates, meta-calls,
-  foreign predicates, cut, negation-as-failure, disjunction, arithmetic or
-  unbounded recursion in v1.
-
-The grammar is intentionally small. It supports a useful logical core while
-keeping parsing, provenance and termination reviewable. New language features
-are versioned extensions rather than model improvisation.
+The only durable boundary is a versioned snapshot transition: a proposed
+program/change is stored with identity, source and observed run evidence; it
+becomes a new memory snapshot only through an explicit admission decision.
+The decision can initially be human or policy-driven. It is deliberately not
+confused with syntax acceptance.
 
 ## Knowledge lifecycle
 
@@ -81,15 +90,18 @@ consequences.
 
 ## Compilation and execution
 
-Accepted items are compiled into an isolated Prolog program with stable source
-identifiers. Query execution occurs in a fresh session so that proposals cannot
-mutate trusted memory. Revision edges and validity intervals determine which
-assertions are active for a query time.
-
-The current trusted rules may contain domain-independent operations such as
-active-state selection, temporal overlap and direct-polarity conflict. The
-agent may propose domain rules in the restricted grammar, but acceptance is a
+Each thought run starts from an immutable memory/program snapshot plus an
+explicit proposed source delta. It is executed by a fresh isolated Prolog
+runtime. The session may change its own ephemeral database and build auxiliary
+programs, but it cannot mutate the source snapshot, the host, or another run.
+The output is a new candidate snapshot/delta and run evidence. Admission is a
 separate policy step.
+
+Thus the agent receives the language it needs for genuine reasoning, while
+the outer system retains temporal history, provenance and rollback. Revision
+edges and validity intervals determine which admitted assertions are active at
+a query time. Current trusted rules may contain domain-independent operations
+such as active-state selection, temporal overlap and direct-polarity conflict.
 
 ## Proof objects
 
@@ -128,15 +140,16 @@ Failure to prove a goal is not proof of its negation.
 
 ## Reflection / self-construction
 
-Reflection receives a frozen memory snapshot and proof objects. It may propose
-facts, revisions and hypotheses in the same proposal language. It must retain
-the source or support set used to form the proposal. Counterexample search and
-consistency checks can reject or weaken a proposal, but do not turn an induced
-rule into an explicit fact.
+Reflection receives a frozen memory snapshot and proof objects. It may write
+and execute a complete candidate Prolog delta in its isolated session,
+including a program that constructs another program. It must retain the
+source/support set and run evidence used to form the proposal. Counterexample
+search and consistency checks can reject or weaken a candidate, but do not turn
+an induced result into an admitted memory snapshot automatically.
 
-This is the initial implementation of the self-building aspect: the knowledge
-program evolves through auditable proposals. Self-modification of the parser,
-validator or trusted inference kernel is outside v1.
+This is the initial self-building mechanism: the knowledge program evolves
+through auditable, reversible snapshots. Host sandbox configuration and the
+outer admission controller remain outside the self-modifying program.
 
 ## Evaluation implications
 
@@ -155,9 +168,9 @@ logical execution rather than merely a different memory serialization.
 
 ## Deferred choices
 
-- whether a future proposal language should use an s-expression syntax;
-- recursion, explicit negation, defeasible rules and rule priorities;
-- automatic acceptance criteria for induced hypotheses;
+- how observed full-Prolog use should inform future language/policy profiles;
+- automatic admission criteria for candidate snapshots and induced hypotheses;
+- proof extraction that remains useful for arbitrary meta-programmed code;
 - blind free-text evaluation and long-context holdout construction.
 
 These are not silently adopted by v1.
