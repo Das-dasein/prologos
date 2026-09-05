@@ -41,3 +41,8 @@ It preserves v1 without reinterpretation, self-hashes and locally recomputes
 the P0/P1 digest registry, and requires a candidate's raw-root prompt artifact
 to match the exact case/condition digest. No provider/model call, raw live
 artifact, aggregation, receipt, or effectiveness claim exists.
+
+Issue #38 adds a separate forward-only v3 registry for the future PR #37
+answering adapter. It binds real wire hashes, exact transport sources and
+byte-for-byte sealed input mode; it makes no provider/model call and changes
+no result, threshold, dataset, oracle, v0 status, or effectiveness claim.

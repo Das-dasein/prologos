@@ -8,6 +8,7 @@ Dataset.json SHA-256: 63d68d4decad2dcdadbfc1204c58cec2650a46a90442cb63889e3d7989
 Slot registration SHA-256: 4d05d2176f4e629370771925543d4670259e15b633c5ef3be47803c6c9bf9a46
 Trusted proof digest registry SHA-256: a68d6a010b7225f42bedb447a209e50617cd26bf2a9a6ab40aa0d40b61ae42e4
 Actual assembled prompt digest registry SHA-256: 198bcd6ab78bcee84c3b3333ba88c6f38e0362dd398ba7e083370a2db8da5e05
+Wire assembled prompt digest registry v3 SHA-256: b77606570d7ea951767a328d1676a312521f78bbc6231aa8e03614b9fa463ac5
 
 `slot-registration-v1.json` is the immutable canonical
 `trusted-proof-evidence-slots-v1` object. Its self-hash, this manifest binding,
@@ -24,6 +25,11 @@ raw model output or hidden answer contract.
 case-to-`P0`/`P1` SHA-256 registry rebuilt from the no-live sealed assembler.
 It pins source, dataset, slot and proof registries, and exact no-live template
 identities; it contains no prompt bytes or raw artifacts.
+
+`wire-assembled-prompt-digest-registry-v3.json` is the separate future adapter
+target. It rebuilds the same sealed P0/P1 digests but binds PR #37's immutable
+transport commit, source hashes, real exported wire identities and exact
+byte-for-byte input mode. It is preparation only, not a live receipt.
 
 The fixture contains 12 synthetic, sanitized cases: two each for multi-hop,
 unknown, revision, direct temporal conflict, provenance disambiguation, and
