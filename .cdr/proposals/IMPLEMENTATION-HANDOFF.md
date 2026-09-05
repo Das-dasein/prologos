@@ -24,6 +24,9 @@ not replace an independent beta review artifact.
 6. The offline npm command and documentation are present. Before publication,
    obtain a fresh independent β artifact for the exact immutable repair commit;
    this document is not that review.
+7. Schema validation is available as `npm run test:offline-eval:schema` using
+   the existing pinned `zod@4.5.4` dependency; its own β review is separate
+   from the `80ca1d4` evaluator-repair verdict.
 
 ## Boundaries
 

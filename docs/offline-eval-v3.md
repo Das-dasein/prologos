@@ -43,3 +43,13 @@ This is an engineering replay of already inspected outputs. The content rubric
 is deterministic and case-scoped; it is not an LLM judge. The artifact cannot
 support a claim that B4 improves model answers. A fresh beta must verify the
 inputs, fixtures, deterministic hashes, and cross-run rejection.
+
+Validate the replay artifact against the checked-in Draft 2020-12 schema with
+the existing pinned project dependency (`zod@4.5.4`):
+
+```sh
+npm run test:offline-eval:schema
+```
+
+The gate checks both a valid replay and rejection of an unexpected top-level
+field. It is an engineering schema check, not evidence for PAM-C1.
