@@ -11,7 +11,7 @@ const { scoreCandidateArtifact } = require("./cdr-matrix-harness");
 
 const datasetFile = ".cdr/datasets/dialogues-pilot-v1.jsonl";
 const oracleFile = ".cdr/results/prolog-memory-eval-v0/answer-oracle-v1.json";
-const baseConfig = JSON.parse(fs.readFileSync(".cdr/results/prolog-memory-eval-v0/pilot-config-v1.json"));
+const baseConfig = JSON.parse(fs.readFileSync(".cdr/results/prolog-memory-eval-v0/pilot-config-v2.json"));
 const cases = fs.readFileSync(datasetFile, "utf8").trim().split(/\r?\n/).map(JSON.parse);
 const config = { ...baseConfig, extraction_prompt_sha256: sha256(PROMPT_TEMPLATE), answer_prompt_sha256: sha256(ANSWER_PROMPT_TEMPLATE) };
 const options = condition => ({ config, datasetFile, oracleFile, provider: goldProvider(cases), condition });
