@@ -106,7 +106,9 @@ async function main() {
     fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "function_call", command: `/bin/zsh -lc ${brokerPath}` } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unsupported action/);
     const validItem = { id: "broker-1", type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` };
     writeLifecycle(validItem, { ...validItem, id: "broker-2" }); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /same item.id/);
-    writeLifecycle(validItem, { ...validItem, command: "/bin/zsh -lc /sealed/other.sh" }); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /exact same command payload/);
+    writeLifecycle(validItem, { ...validItem, command: "/bin/zsh -lc /sealed/other.sh" }); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or parameterized|same command identity/);
+    writeLifecycle({ ...validItem, status: "in_progress", exit_code: undefined }, { ...validItem, status: "completed", exit_code: 0, aggregated_output: "BROKER_RESULT: entailed" });
+    assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1, "runtime lifecycle fields may differ while command identity remains fixed");
     const brokerState = "/sealed", sealedProgram = `${brokerState}/sealed-program.pl`, brokerReceipt = `${brokerState}/broker-receipt.txt`;
     writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text: `${sealedProgram} ${brokerReceipt}` })}\n`);
     assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1, "current broker state files may be echoed beside the exact broker action");

@@ -232,23 +232,28 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   const startedItem = started[0].item;
   const completedItem = completedLifecycle[0].item;
   if (typeof startedItem.id !== "string" || startedItem.id.length === 0 || completedItem.id !== startedItem.id) throw new Error("P2 trace broker lifecycle events must share the same item.id");
-  const payload = item => {
-    const copy = { ...item };
-    delete copy.id;
-    return JSON.stringify(copy, Object.keys(copy).sort());
+  const validateCommandIdentity = (candidate) => {
+    const command = candidate && candidate.command;
+    const args = candidate && candidate.args;
+    const shellLine = typeof command === "string" && new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(command);
+    const argv = command === "/bin/zsh" && Array.isArray(args) && args.length === 2 && /^(?:-c|-lc)$/.test(args[0]) && args[1] === sealedBroker;
+    if (!shellLine && !argv) throw new Error("P2 trace contains a foreign or parameterized command; expected /bin/zsh -c|-lc with the sealed broker path");
+    const runtimeFields = new Set(["status", "exit_code", "aggregated_output"]);
+    for (const [key, value] of Object.entries(candidate || {})) {
+      if (key !== "id" && key !== "type" && key !== "command" && key !== "args" && !runtimeFields.has(key)) throw new Error("P2 trace contains unexpected command fields");
+      if (key === "args" && !argv && value !== undefined) throw new Error("P2 trace contains command arguments outside the sealed shell wrapper");
+    }
+    return JSON.stringify({ type: candidate.type, command, args: argv ? args : undefined });
   };
-  if (payload(startedItem) !== payload(completedItem)) throw new Error("P2 trace broker lifecycle events must have the exact same command payload");
+  const startedIdentity = validateCommandIdentity(startedItem);
+  const completedIdentity = validateCommandIdentity(completedItem);
+  if (startedIdentity !== completedIdentity) throw new Error("P2 trace broker lifecycle events must have the same command identity");
   const commandEvent = started[0];
   const item = startedItem;
   const command = item && item.command;
   const args = item && item.args;
   const shellLine = typeof command === "string" && new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(command);
   const argv = command === "/bin/zsh" && Array.isArray(args) && args.length === 2 && /^(?:-c|-lc)$/.test(args[0]) && args[1] === sealedBroker;
-  if (!shellLine && !argv) throw new Error("P2 trace contains a foreign or parameterized command; expected /bin/zsh -c|-lc with the sealed broker path");
-  for (const [key, value] of Object.entries(item || {})) {
-    if (key !== "id" && key !== "type" && key !== "command" && key !== "args") throw new Error("P2 trace contains unexpected command fields");
-    if (key === "args" && !argv && value !== undefined) throw new Error("P2 trace contains command arguments outside the sealed shell wrapper");
-  }
   // Codex may echo the broker's private state files in its command event or
   // completion metadata. Permit only those two files from this run's state;
   // every other absolute path is evidence of scope escape. This check is
