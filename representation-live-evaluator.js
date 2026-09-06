@@ -212,9 +212,6 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   try { events = lines.map(line => JSON.parse(line)); } catch { throw new Error("Codex JSONL trace is malformed"); }
   const sealedBroker = path.resolve(brokerPath);
   const brokerState = path.dirname(sealedBroker);
-  const allowedP2PathValue = value => value === sealedBroker || value === brokerState || new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(value);
-  const protectedPaths = [...new Set(prohibitedPaths.map(value => path.resolve(value)))];
-  for (const event of events) for (const value of stringLeaves(event)) if (!allowedP2PathValue(value)) for (const protectedPath of protectedPaths) if (value === protectedPath || value.includes(protectedPath)) throw new Error(`prohibited host path exposed in Codex JSONL: ${protectedPath}`);
   const calls = events.filter(event => /(?:command_execution|function_call|\btool\b)/i.test(JSON.stringify(event)));
   if (calls.length !== 1) throw new Error(`P2 trace must contain exactly one broker action, got ${calls.length}`);
   const commandEvent = calls[0];
@@ -228,6 +225,23 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   for (const [key, value] of Object.entries(item || {})) {
     if (key !== "type" && key !== "command" && key !== "args") throw new Error("P2 trace contains unexpected command fields");
     if (key === "args" && !argv && value !== undefined) throw new Error("P2 trace contains command arguments outside the sealed shell wrapper");
+  }
+  // Codex may echo the broker's private state files in its command event or
+  // completion metadata. Permit only those two files from this run's state;
+  // every other absolute path is evidence of scope escape. This check is
+  // deliberately after command validation so a foreign command remains a
+  // foreign-command failure, not a path-classification side effect.
+  const sealedProgram = path.join(brokerState, "sealed-program.pl");
+  const brokerReceipt = path.join(brokerState, "broker-receipt.txt");
+  const allowedP2PathValue = value => value === "/bin/zsh" || value === sealedBroker || value === brokerState || value === sealedProgram || value === brokerReceipt || new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(value);
+  const absolutePathLike = /(^|\s)\/(?:[^\s"']+)/;
+  const protectedPaths = [...new Set(prohibitedPaths.map(value => path.resolve(value)))];
+  for (const event of events) for (const value of stringLeaves(event)) {
+    if (allowedP2PathValue(value)) continue;
+    const pathTokens = value.match(/\/[^\s"']+/g) || [];
+    if (pathTokens.length && pathTokens.every(token => allowedP2PathValue(token))) continue;
+    for (const protectedPath of protectedPaths) if (value === protectedPath || value.includes(protectedPath)) throw new Error(`prohibited host path exposed in Codex JSONL: ${protectedPath}`);
+    if (absolutePathLike.test(value) && !allowedP2PathValue(value)) throw new Error(`P2 trace exposes a foreign or unexpected state path: ${value}`);
   }
   const completed = events.filter(event => event && event.type === "turn.completed");
   if (completed.length !== 1 || !completed[0].usage || typeof completed[0].usage !== "object") throw new Error("Codex JSONL must contain exactly one completed turn with native usage");
