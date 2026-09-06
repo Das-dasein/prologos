@@ -13,12 +13,12 @@ const SYSTEM_READ_ROOTS = Object.freeze(["/bin", "/usr/lib", "/System/Library", 
 function absoluteFile(value, label, { exists = true } = {}) {
   if (typeof value !== "string" || !path.isAbsolute(value)) throw Error(`${label} must be an absolute path`);
   if (exists && (!fs.existsSync(value) || !fs.statSync(value).isFile())) throw Error(`${label} must name an existing file`);
-  return path.resolve(value);
+  return exists ? fs.realpathSync(value) : path.resolve(value);
 }
 function absoluteDirectory(value, label, { exists = true } = {}) {
   if (typeof value !== "string" || !path.isAbsolute(value)) throw Error(`${label} must be an absolute path`);
   if (exists && (!fs.existsSync(value) || !fs.statSync(value).isDirectory())) throw Error(`${label} must name an existing directory`);
-  return path.resolve(value);
+  return exists ? fs.realpathSync(value) : path.resolve(value);
 }
 function sameOrWithin(parent, child) { return child === parent || child.startsWith(`${parent}${path.sep}`); }
 function quote(value) { return `(literal ${JSON.stringify(value)})`; }
@@ -30,20 +30,31 @@ function ancestors(value) {
 function rejectBroadRoot(value, label) {
   if (["/", "/Users", "/private", "/tmp", os.homedir()].includes(value)) throw Error(`${label} is too broad for the isolation profile`);
 }
-function declaredRuntimeRoots({ codexPath, extraRuntimeRoots = [] }) {
+function protectedEvidenceRoots() {
+  return Object.freeze([
+    path.resolve(__dirname),
+    path.resolve(__dirname, ".cdr", "waves", "cognitive-proof-eval-v1"),
+    path.resolve(os.homedir(), ".codex", "memories")
+  ]);
+}
+function rejectProtectedRoot(value, label) {
+  for (const protectedRoot of protectedEvidenceRoots()) if (sameOrWithin(protectedRoot, value) || sameOrWithin(value, protectedRoot)) throw Error(`${label} overlaps a prohibited repository or evidence root`);
+}
+function declaredRuntimeRoots({ codexPath }) {
   const codex = absoluteFile(codexPath, "codex_path");
-  if (!Array.isArray(extraRuntimeRoots)) throw Error("extra_runtime_roots must be an array");
-  const roots = [...SYSTEM_READ_ROOTS, path.dirname(codex), ...extraRuntimeRoots.map(root => absoluteDirectory(root, "runtime root"))];
-  for (const root of roots) rejectBroadRoot(root, "runtime root");
+  // Runtime roots are closed over implementation-discovered values. In
+  // particular, a caller cannot add another readable root to this profile.
+  const roots = [...SYSTEM_READ_ROOTS, path.dirname(codex)];
+  for (const root of roots) { rejectBroadRoot(root, "runtime root"); rejectProtectedRoot(root, "runtime root"); }
   return Object.freeze([...new Set(roots)]);
 }
-function createSeatbeltProfile({ runRoot, inputDir, outputDir, codexPath, authFile = null, extraRuntimeRoots = [] }) {
+function createSeatbeltProfile({ runRoot, inputDir, outputDir, codexPath, authFile = null }) {
   if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw Error("macOS sandbox-exec is required for v10 isolation preflight");
   const root = absoluteDirectory(runRoot, "run_root"), input = absoluteDirectory(inputDir, "sealed input directory"), output = absoluteDirectory(outputDir, "output directory");
   if (!sameOrWithin(root, input) || !sameOrWithin(root, output) || input === output) throw Error("sealed input and output must be distinct children of run_root");
   const codex = absoluteFile(codexPath, "codex_path");
   const auth = authFile === null ? null : absoluteFile(authFile, "auth_file");
-  const runtimeRoots = declaredRuntimeRoots({ codexPath: codex, extraRuntimeRoots });
+  const runtimeRoots = declaredRuntimeRoots({ codexPath: codex });
   // Metadata grants are only path traversal.  Content reads are restricted to
   // runtime, the sealed input, and (when unavoidable) one exact auth file.
   const metadata = [...new Set([...runtimeRoots.flatMap(ancestors), ...ancestors(root), ...(auth ? ancestors(auth) : [])])].join(" ");
@@ -70,7 +81,7 @@ function writeSealedInput(run, { prompt, schema }) {
   fs.chmodSync(promptFile, 0o400); fs.chmodSync(schemaFile, 0o400);
   return Object.freeze({ prompt_file: promptFile, schema_file: schemaFile });
 }
-function buildCodexInvocation({ run, sealed, codexPath, model, authFile, extraRuntimeRoots = [] }) {
+function buildCodexInvocation({ run, sealed, codexPath, model, authFile }) {
   if (!run || !sealed || typeof model !== "string" || !model.trim()) throw Error("run, sealed input and model are required");
   const codex = absoluteFile(codexPath, "codex_path");
   // Codex documents that --ignore-user-config still obtains auth from
@@ -78,7 +89,7 @@ function buildCodexInvocation({ run, sealed, codexPath, model, authFile, extraRu
   // auth.json rather than silently opening the user's whole .codex directory.
   const auth = absoluteFile(authFile, "auth_file");
   if (path.basename(auth) !== "auth.json") throw Error("auth_file must be the exact CODEX_HOME/auth.json file");
-  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath: codex, authFile: auth, extraRuntimeRoots });
+  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath: codex, authFile: auth });
   const finalOutput = path.join(run.output_dir, "final-output.txt"), stdout = path.join(run.output_dir, "codex-stdout.jsonl"), stderr = path.join(run.output_dir, "codex-stderr.txt");
   // `-C` has to be the fresh root: never the repository. `--ignore-user-config`
   // deliberately retains only Codex authentication (via CODEX_HOME), not host

@@ -17,12 +17,19 @@ try {
   for (const key of ["repository_read", "memory_read", "dataset_or_evaluator_read", "outside_write"]) assert.notEqual(report.checks[key].status, 0, `${key} must be denied`);
   assert.equal(report.checks.sealed_input_read.status, 0); assert.equal(report.checks.declared_output_write.status, 0);
   assert.equal(fs.existsSync(outside), false); assert.equal(fs.readFileSync(path.join(run.output_dir, "probe-output.txt"), "utf8"), "permitted");
+  // Mutation: the old API could add __dirname as a runtime root. The v10
+  // profile has no caller-provided runtime-root grant, so even a supplied
+  // ignored legacy field cannot make the repository readable; pointing the
+  // declared executable into the checkout fails closed as well.
+  const legacyExtra = api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath: "/bin/echo", extraRuntimeRoots: [__dirname] });
+  assert.notEqual(api.runSeatbeltProbe({ profile: legacyExtra, cwd: run.run_root, command: "/bin/cat", args: [repositoryFile] }).status, 0, "legacy runtime-root injection must not grant repo read");
+  assert.throws(() => api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath: repositoryFile }), /prohibited repository or evidence root/);
   const invocationRun = api.createFreshSealedRunRoot(parent), sealed = api.writeSealedInput(invocationRun, { prompt: "p", schema: "{}" });
   const authFile = make("auth.json", "not-a-real-credential");
   const invocation = api.buildCodexInvocation({ run: invocationRun, sealed, codexPath: "/bin/echo", model: "test-model", authFile });
   assert.equal(invocation.command, "/usr/bin/sandbox-exec");
   for (const token of ["-C", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--ephemeral"]) assert.ok(invocation.args.includes(token), `missing ${token}`);
-  assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocation.run_root); assert.equal(invocation.env.CODEX_HOME, host);
+  assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocation.run_root); assert.equal(invocation.env.CODEX_HOME, fs.realpathSync(host));
   assert.equal(invocation.args.includes(process.cwd()), false);
   assert.throws(() => api.buildCodexInvocation({ run: invocationRun, sealed, codexPath: "/bin/echo", model: "x", authFile: path.join(host, "missing-auth") }), /auth_file/);
   console.log("ok: Codex v10 Seatbelt preflight denies host reads/writes and emits no provider call");
