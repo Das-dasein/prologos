@@ -69,7 +69,7 @@ function createSeatbeltProfile({ runRoot, inputDir, outputDir, codexPath, authFi
   const tlsFiles = TLS_RUNTIME_FILES.filter(fs.existsSync).map(file => fs.realpathSync(file));
   // Metadata grants are only path traversal.  Content reads are restricted to
   // runtime, the sealed input, and (when unavoidable) one exact auth file.
-  const metadata = [...new Set([...runtimeRoots.flatMap(ancestors), ...tlsFiles.flatMap(ancestors), ...ancestors(root), ...(auth ? ancestors(auth) : [])])].join(" ");
+  const metadata = [...new Set([...runtimeRoots.flatMap(ancestors), ...CODEX_REQUIREMENTS_FILES.flatMap(ancestors), ...tlsFiles.flatMap(ancestors), ...ancestors(root), ...(auth ? ancestors(auth) : [])])].join(" ");
   // Seatbelt needs the root vnode readable to start a process. `(literal "/")`
   // is not a recursive grant; every child still requires one of the explicit
   // `subpath`/`literal` rules below.
