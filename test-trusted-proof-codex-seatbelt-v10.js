@@ -34,6 +34,11 @@ try {
   assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocation.run_root); assert.equal(invocation.env.CODEX_HOME, invocationRun.state_dir); assert.equal(invocation.env.HOME, invocationRun.state_dir); assert.equal(invocation.env.TMPDIR, path.join(invocationRun.state_dir, "tmp"));
   assert.equal(fs.readFileSync(invocation.private_auth_file, "utf8"), "not-a-real-credential"); assert.equal(fs.statSync(invocation.private_auth_file).mode & 0o777, 0o600);
   assert.equal(invocation.profile.includes(fs.realpathSync(host)), false, "host auth parent must not enter the profile");
+  const stagedSource = make("codex-host-binary", "sealed-startup-probe"); fs.chmodSync(stagedSource, 0o755);
+  const stagedRun = api.createFreshSealedRunRoot(parent), stagedInput = api.writeSealedInput(stagedRun, { prompt: "p", schema: "{}" });
+  const staged = api.buildCodexInvocation({ run: stagedRun, sealed: stagedInput, codexPath: stagedSource, model: "test-model", authFile });
+  assert.equal(staged.args[2], path.join(stagedRun.state_dir, "codex-bin"));
+  assert.equal(fs.statSync(staged.args[2]).mode & 0o777, 0o755, "host Codex binary must be staged executable");
   const escapedState = path.join(host, "escaped-state"); fs.mkdirSync(escapedState);
   assert.throws(() => api.buildCodexInvocation({ run: { ...invocationRun, state_dir: escapedState }, sealed, codexPath: "/bin/echo", model: "test-model", authFile }), /sealed input, output, and private state/);
   assert.equal(fs.existsSync(path.join(escapedState, "auth.json")), false, "invalid state must fail before copying auth outside sealed root");

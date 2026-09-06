@@ -111,13 +111,28 @@ function provisionPrivateCodexState(run, authFile) {
   fs.mkdirSync(temp, { mode: 0o700 });
   return Object.freeze({ auth_file: destination, temp_dir: temp });
 }
+function provisionPrivateCodexBinary(run, codexPath) {
+  const { state } = sealedDirectories(run);
+  const source = absoluteFile(codexPath, "codex_path");
+  // System executables already have a trusted code signature and are covered
+  // by the fixed runtime roots; copying them would invalidate that signature
+  // on macOS and make harmless local probes die with SIGKILL.
+  if (SYSTEM_READ_ROOTS.some(root => source === root || source.startsWith(`${root}${path.sep}`))) return source;
+  const destination = path.join(state, "codex-bin");
+  // The outer sandbox cannot traverse the user's package tree without opening
+  // the whole home directory. Copy the already-selected executable into the
+  // sealed root before entering Seatbelt, then execute only this private copy.
+  fs.copyFileSync(source, destination, fs.constants.COPYFILE_EXCL);
+  fs.chmodSync(destination, 0o755);
+  return destination;
+}
 function buildCodexInvocation({ run, sealed, codexPath, model, authFile, extraRuntimeFiles = [] }) {
   if (!run || !sealed || typeof model !== "string" || !model.trim()) throw Error("run, sealed input and model are required");
-  const codex = absoluteFile(codexPath, "codex_path");
   // Codex documents that --ignore-user-config still obtains auth from
   // CODEX_HOME. There is no auth-free live mode, so require one exact existing
   // auth.json rather than silently opening the user's whole .codex directory.
   const privateState = provisionPrivateCodexState(run, authFile);
+  const codex = provisionPrivateCodexBinary(run, codexPath);
   const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: codex, extraRuntimeFiles });
   const finalOutput = path.join(run.output_dir, "final-output.txt"), stdout = path.join(run.output_dir, "codex-stdout.jsonl"), stderr = path.join(run.output_dir, "codex-stderr.txt");
   // `-C` has to be the fresh root: never the repository. `--ignore-user-config`
@@ -150,8 +165,9 @@ function offlineProbeReport({ run, codexPath, repositoryFile, memoryFile, datase
   for (const [value, label] of [[repositoryFile, "repository file"], [memoryFile, "MEMORY file"], [datasetOrEvaluatorFile, "dataset/evaluator file"]]) absoluteFile(value, label);
   if (typeof outsideWriteFile !== "string" || !path.isAbsolute(outsideWriteFile) || sameOrWithin(run.run_root, path.resolve(outsideWriteFile))) throw Error("outside write target must be outside run_root");
   const sealed = writeSealedInput(run, { prompt: "sealed input", schema: "{\"type\":\"object\"}\n" });
-  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath });
-  const runtimeStart = runSeatbeltProbe({ profile, cwd: run.run_root, command: absoluteFile(codexPath, "codex_path"), args: ["--version"] });
+  const privateCodex = provisionPrivateCodexBinary(run, codexPath);
+  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: privateCodex });
+  const runtimeStart = runSeatbeltProbe({ profile, cwd: run.run_root, command: privateCodex, args: ["--version"] });
   const tlsReads = TLS_RUNTIME_FILES.filter(fs.existsSync).map(file => runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [fs.realpathSync(file)] }));
   const deniedRead = file => runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [file] });
   const allowedInput = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [sealed.prompt_file] });
@@ -168,4 +184,4 @@ function offlineProbeReport({ run, codexPath, repositoryFile, memoryFile, datase
   return Object.freeze({ status: "seatbelt-preflight-passed-no-provider-call-v10", checks });
 }
 
-module.exports = { SANDBOX, createFreshSealedRunRoot, writeSealedInput, provisionPrivateCodexState, createSeatbeltProfile, buildCodexInvocation, buildTraceAuditedInvocation, runSeatbeltProbe, offlineProbeReport };
+module.exports = { SANDBOX, createFreshSealedRunRoot, writeSealedInput, provisionPrivateCodexState, provisionPrivateCodexBinary, createSeatbeltProfile, buildCodexInvocation, buildTraceAuditedInvocation, runSeatbeltProbe, offlineProbeReport };
