@@ -17,21 +17,26 @@ try {
   for (const key of ["repository_read", "memory_read", "dataset_or_evaluator_read", "outside_write"]) assert.notEqual(report.checks[key].status, 0, `${key} must be denied`);
   assert.equal(report.checks.runtime_start.status, 0, "offline runtime startup must be permitted");
   assert.ok(report.checks.tls_runtime_read.every(check => check.status === 0), "declared TLS runtime files must be permitted");
-  assert.equal(report.checks.sealed_input_read.status, 0); assert.equal(report.checks.declared_output_write.status, 0);
+  assert.equal(report.checks.sealed_input_read.status, 0); assert.equal(report.checks.declared_output_write.status, 0); assert.equal(report.checks.private_state_write.status, 0);
   assert.equal(fs.existsSync(outside), false); assert.equal(fs.readFileSync(path.join(run.output_dir, "probe-output.txt"), "utf8"), "permitted");
   // Mutation: the old API could add __dirname as a runtime root. The v10
   // profile has no caller-provided runtime-root grant, so even a supplied
   // ignored legacy field cannot make the repository readable; pointing the
   // declared executable into the checkout fails closed as well.
-  const legacyExtra = api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath: "/bin/echo", extraRuntimeRoots: [__dirname] });
+  const legacyExtra = api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: "/bin/echo", extraRuntimeRoots: [__dirname] });
   assert.notEqual(api.runSeatbeltProbe({ profile: legacyExtra, cwd: run.run_root, command: "/bin/cat", args: [repositoryFile] }).status, 0, "legacy runtime-root injection must not grant repo read");
-  assert.throws(() => api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath: repositoryFile }), /prohibited repository or evidence root/);
+  assert.throws(() => api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: repositoryFile }), /prohibited repository or evidence root/);
   const invocationRun = api.createFreshSealedRunRoot(parent), sealed = api.writeSealedInput(invocationRun, { prompt: "p", schema: "{}" });
   const authFile = make("auth.json", "not-a-real-credential");
   const invocation = api.buildCodexInvocation({ run: invocationRun, sealed, codexPath: "/bin/echo", model: "test-model", authFile });
   assert.equal(invocation.command, "/usr/bin/sandbox-exec");
   for (const token of ["-C", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--ephemeral"]) assert.ok(invocation.args.includes(token), `missing ${token}`);
-  assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocation.run_root); assert.equal(invocation.env.CODEX_HOME, fs.realpathSync(host));
+  assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocation.run_root); assert.equal(invocation.env.CODEX_HOME, invocationRun.state_dir);
+  assert.equal(fs.readFileSync(invocation.private_auth_file, "utf8"), "not-a-real-credential"); assert.equal(fs.statSync(invocation.private_auth_file).mode & 0o777, 0o600);
+  assert.equal(invocation.profile.includes(fs.realpathSync(host)), false, "host auth parent must not enter the profile");
+  const escapedState = path.join(host, "escaped-state"); fs.mkdirSync(escapedState);
+  assert.throws(() => api.buildCodexInvocation({ run: { ...invocationRun, state_dir: escapedState }, sealed, codexPath: "/bin/echo", model: "test-model", authFile }), /sealed input, output, and private state/);
+  assert.equal(fs.existsSync(path.join(escapedState, "auth.json")), false, "invalid state must fail before copying auth outside sealed root");
   assert.equal(invocation.args.includes(process.cwd()), false);
   assert.match(invocation.profile, /\(allow network-outbound\)/);
   const metadataStart = invocation.profile.indexOf("(allow file-read-metadata ");
