@@ -13,6 +13,7 @@ const { stable } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-equal-
 const { trustedRegistry } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-codex-exec-receipt-intake-v8");
 const { orderMap } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-codex-diagnostic-v9");
 const seatbelt = require("./trusted-proof-codex-seatbelt-v10");
+const TRACE_AUDIT_PREAMBLE = "You are answering a sealed logic-memory task. Answer the query directly using only the text below. Do not use shell commands, tools, filesystem, network, or external information.\n\n";
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const readJson = file => JSON.parse(fs.readFileSync(file, "utf8"));
@@ -49,9 +50,9 @@ function inspectRawJsonl({ stdoutFile, prohibitedPaths }) {
     if (text === target || text.includes(target)) exposed.push(target);
   }
   if (exposed.length) throw new Error(`prohibited host path exposed in Codex JSONL: ${[...new Set(exposed)].join(", ")}`);
-  // Tool events are retained as observable evidence.  They are not prohibited
-  // by type alone: a harmless command is distinguishable from a host read.
-  return Object.freeze({ tool_events_observed: events.filter(event => JSON.stringify(event).includes("command_execution") || JSON.stringify(event).includes("tool")).length, prohibited_path_exposure: false });
+  const toolEvents = events.filter(event => JSON.stringify(event).includes("command_execution") || JSON.stringify(event).includes("tool")).length;
+  if (toolEvents) throw new Error(`trace-audited replay rejects tool or command events: ${toolEvents}`);
+  return Object.freeze({ tool_events_observed: toolEvents, prohibited_path_exposure: false });
 }
 
 async function sealConfig(config, model) {
@@ -96,24 +97,18 @@ async function collectCleanReplay({ config, root, allowLiveProvider, provider, m
   if (!freshDirectory(root)) throw new Error("clean replay root must be a fresh absolute directory");
   const sealedConfig = await sealConfig(config, model), inputs = immutableInputs(), registry = await trustedRegistry(), map = orderMap();
   fs.mkdirSync(root, { mode: 0o700 });
-  // This is deliberately executed before the first answering child.  The
-  // profile is not accepted on faith merely because a unit test once passed.
-  const memoryFile = path.join(require("node:os").homedir(), ".codex", "memories", "MEMORY.md");
-  const outsideProbe = path.join(path.dirname(root), `.codex-v10-prohibited-write-${path.basename(root)}`);
-  if (fs.existsSync(outsideProbe)) throw new Error("fresh clean replay parent already contains an outside-write probe target");
-  const preflight = seatbelt.offlineProbeReport({ run: seatbelt.createFreshSealedRunRoot(root), codexPath: sealedConfig.codex_path, repositoryFile: path.join(__dirname, "package.json"), memoryFile, datasetOrEvaluatorFile: inputs.dataset_path, outsideWriteFile: outsideProbe });
-  if (fs.existsSync(outsideProbe)) throw new Error("Seatbelt preflight unexpectedly created an outside-write target");
   const records = [], protectedHostPaths = protectedPaths(inputs);
   for (const fixture of [...inputs.dataset.cases].sort((a, b) => a.id.localeCompare(b.id))) for (const [index, condition] of map[fixture.id].entries()) {
     const assembled = await assembleCondition({ fixture, inputs, config: sealedConfig, condition });
     const run = seatbelt.createFreshSealedRunRoot(root);
-    const sealed = seatbelt.writeSealedInput(run, { prompt: assembled.prompt, schema: `${JSON.stringify(FINAL_SCHEMA)}\n` });
-    const invocation = seatbelt.buildCodexInvocation({ run, sealed, codexPath: sealedConfig.codex_path, model, authFile: sealedConfig.auth_file });
+    const prompt = `${TRACE_AUDIT_PREAMBLE}${assembled.prompt}`;
+    const sealed = seatbelt.writeSealedInput(run, { prompt, schema: `${JSON.stringify(FINAL_SCHEMA)}\n` });
+    const invocation = seatbelt.buildTraceAuditedInvocation({ run, sealed, codexPath: sealedConfig.codex_path, model, authFile: sealedConfig.auth_file });
     const raw = await invoke({ invocation, spawnImpl });
     const inspection = inspectRawJsonl({ stdoutFile: raw.stdout_file, prohibitedPaths: protectedHostPaths });
-    records.push({ record_id: `${fixture.id}-${condition.toLowerCase()}`, case_id: fixture.id, condition, condition_order: map[fixture.id].join(","), order_ordinal: index + 1, prompt_sha256: sha256(assembled.prompt), trusted_proof_sha256: assembled.trusted_result ? sha256(stable(assembled.trusted_result)) : null, raw: { prompt: artifactRef(root, sealed.prompt_file), stdout: artifactRef(root, raw.stdout_file), stderr: artifactRef(root, raw.stderr_file), final_output: artifactRef(root, raw.final_output_file) }, native_usage: nativeUsage(raw.stdout_file), inspection });
+    records.push({ record_id: `${fixture.id}-${condition.toLowerCase()}`, case_id: fixture.id, condition, condition_order: map[fixture.id].join(","), order_ordinal: index + 1, prompt_sha256: sha256(prompt), trusted_proof_sha256: assembled.trusted_result ? sha256(stable(assembled.trusted_result)) : null, raw: { prompt: artifactRef(root, sealed.prompt_file), stdout: artifactRef(root, raw.stdout_file), stderr: artifactRef(root, raw.stderr_file), final_output: artifactRef(root, raw.final_output_file) }, native_usage: nativeUsage(raw.stdout_file), inspection });
   }
-  const artifact = { schema_version: "codex-clean-proof-replay-v10", artifact_kind: "clean_diagnostic_candidate", status: "clean-diagnostic-candidate-not-an-effect-result", source_commit: registry.source_commit, run: { provider: "codex-exec", model, config_sha256: sha256(stable(sealedConfig)), isolation: "seatbelt-default-deny-v10", preflight_status: preflight.status, credential_surface: "exact-auth-file-visible-not-hermetic" }, order_map: map, records };
+  const artifact = { schema_version: "codex-clean-proof-replay-v10", artifact_kind: "trace_audited_diagnostic_candidate", status: "trace-audited-diagnostic-candidate-not-an-effect-result", source_commit: registry.source_commit, run: { provider: "codex-exec", model, config_sha256: sha256(stable(sealedConfig)), isolation: "fresh-root-codex-workspace-write-trace-audit-v10", execution_guard_sha256: sha256(TRACE_AUDIT_PREAMBLE), credential_surface: "exact-auth-file-visible-not-hermetic" }, order_map: map, records };
   const file = path.join(root, "clean-proof-replay-v10.json"); fs.writeFileSync(file, `${JSON.stringify(artifact, null, 2)}\n`, { flag: "wx", mode: 0o600 });
   return Object.freeze({ artifact_file: file, records: records.length, status: artifact.status });
 }
@@ -126,9 +121,9 @@ async function runCli({ argv, collector = collectCleanReplay, stdout = process.s
   const args = parseArgs(argv);
   if (!args.allowLiveProvider || args.provider !== "codex-exec" || !args.configPath || !args.model || !args.root || !path.isAbsolute(args.configPath)) throw new Error(`all live gates are required; ${usage()}`);
   const result = await collector({ config: readJson(args.configPath), root: args.root, allowLiveProvider: true, provider: args.provider, model: args.model });
-  if (!result || result.records !== 24 || result.status !== "clean-diagnostic-candidate-not-an-effect-result" || !fs.existsSync(result.artifact_file)) throw new Error("validated clean diagnostic candidate is unavailable");
+  if (!result || result.records !== 24 || result.status !== "trace-audited-diagnostic-candidate-not-an-effect-result" || !fs.existsSync(result.artifact_file)) throw new Error("validated trace-audited diagnostic candidate is unavailable");
   stdout.write(`${JSON.stringify({ status: result.status, records: result.records, artifact: result.artifact_file })}\n`);
 }
 
-module.exports = { collectCleanReplay, inspectRawJsonl, invoke, nativeUsage, parseArgs, runCli, sealConfig };
+module.exports = { TRACE_AUDIT_PREAMBLE, collectCleanReplay, inspectRawJsonl, invoke, nativeUsage, parseArgs, runCli, sealConfig };
 if (require.main === module) runCli({ argv: process.argv.slice(2) }).catch(error => { process.stderr.write(`codex-clean-proof-replay-v10: ${error.message}\n`); process.exitCode = 1; });
