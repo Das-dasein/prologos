@@ -11,11 +11,14 @@ checked after realpath resolution and rejected if it overlaps the repository,
 CDR evidence/dataset root, or user-memory root.
 
 The profile permits outbound provider networking, the one exact optional Codex
-policy lookup `/private/etc/codex/requirements.toml`, and only the fixed macOS
+policy lookups `/etc/codex/requirements.toml` and its exact macOS alias
+`/private/etc/codex/requirements.toml`, and only the fixed macOS
 TLS runtime files `/private/etc/ssl/openssl.cnf` and
 `/private/etc/ssl/cert.pem` when they exist; it never grants an `/etc`,
 `/private`, home, or repository tree. The policy lookup is allowed even when
-absent so Codex observes `ENOENT`, not a Seatbelt denial. Before any live
+absent so Codex observes `ENOENT`, not a Seatbelt denial. The two spellings
+are necessary because Codex `exec` uses `/etc` while Seatbelt may preserve the
+literal open path rather than resolving the symlink first. Before any live
 child, the offline preflight verifies that the resolved
 Codex executable can start with `--version` and that those declared TLS files
 are readable. The test also executes actual Seatbelt probes: host
