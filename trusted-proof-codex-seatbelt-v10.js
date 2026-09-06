@@ -105,7 +105,9 @@ function provisionPrivateCodexState(run, authFile) {
   const destination = path.join(state, "auth.json");
   fs.copyFileSync(auth, destination, fs.constants.COPYFILE_EXCL);
   fs.chmodSync(destination, 0o600);
-  return destination;
+  const temp = path.join(state, "tmp");
+  fs.mkdirSync(temp, { mode: 0o700 });
+  return Object.freeze({ auth_file: destination, temp_dir: temp });
 }
 function buildCodexInvocation({ run, sealed, codexPath, model, authFile }) {
   if (!run || !sealed || typeof model !== "string" || !model.trim()) throw Error("run, sealed input and model are required");
@@ -113,14 +115,16 @@ function buildCodexInvocation({ run, sealed, codexPath, model, authFile }) {
   // Codex documents that --ignore-user-config still obtains auth from
   // CODEX_HOME. There is no auth-free live mode, so require one exact existing
   // auth.json rather than silently opening the user's whole .codex directory.
-  const privateAuth = provisionPrivateCodexState(run, authFile);
+  const privateState = provisionPrivateCodexState(run, authFile);
   const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: codex });
   const finalOutput = path.join(run.output_dir, "final-output.txt"), stdout = path.join(run.output_dir, "codex-stdout.jsonl"), stderr = path.join(run.output_dir, "codex-stderr.txt");
   // `-C` has to be the fresh root: never the repository. `--ignore-user-config`
   // deliberately retains only Codex authentication (via CODEX_HOME), not host
   // configuration or project instructions. This function never executes it.
   const args = ["-p", profile, codex, "exec", "--json", "--ephemeral", "-C", run.run_root, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
-  return Object.freeze({ command: SANDBOX, args: Object.freeze(args), cwd: run.run_root, env: Object.freeze({ CODEX_HOME: run.state_dir }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateAuth, profile, run_root: run.run_root });
+  // Do not leave HOME/TMPDIR implicit: platform fallbacks can otherwise point
+  // back to the user's home despite CODEX_HOME being sealed.
+  return Object.freeze({ command: SANDBOX, args: Object.freeze(args), cwd: run.run_root, env: Object.freeze({ CODEX_HOME: run.state_dir, HOME: run.state_dir, TMPDIR: privateState.temp_dir }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateState.auth_file, profile, run_root: run.run_root });
 }
 function runSeatbeltProbe({ profile, cwd, command, args = [] }) {
   const result = spawnSync(SANDBOX, ["-p", profile, command, ...args], { cwd, encoding: "utf8" });

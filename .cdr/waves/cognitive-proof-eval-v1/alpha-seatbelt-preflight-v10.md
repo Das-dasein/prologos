@@ -33,7 +33,9 @@ so a future runtime must provide exactly `CODEX_HOME/auth.json`. At launch,
 exactly that file is copied with private permissions into the per-run `state`
 child and `CODEX_HOME` points there; the external home directory is never
 granted. The copied credential is never emitted, referenced by an artifact,
-or committed. This is an accepted credential-
+or committed. `HOME` and `TMPDIR` are also pinned to that sealed state and its
+private temporary child, so platform fallbacks cannot reopen the user's home.
+This is an accepted credential-
 surface limitation, not a scientific-quality boundary: an outer process
 sandbox cannot distinguish the Codex parent from inherited child processes,
 so this preflight makes no claim that tool children cannot read that exact
