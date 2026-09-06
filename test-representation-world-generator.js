@@ -30,7 +30,7 @@ async function main() {
   // adapter references.  Its two products differ only in representation.
   const assemblerSource = assemblePromptPair.toString();
   assert.doesNotMatch(assemblerSource, /oracle|runPrologOracle|require\s*\(/i);
-  assert.equal(pair.p0.replace(pair.p0.match(/Facts:\n[\s\S]*\nQuestion:/)[0].slice(0, -"Question:".length), "<REPRESENTATION>\n"), pair.p1.replace(pair.p1.match(/source\([\s\S]*\nQuestion:/)[0].slice(0, -"Question:".length), "<REPRESENTATION>\n"), "P0/P1 must have byte-identical non-representation text");
+  assert.equal(pair.p0.replace(rendering(pair.p0), "<REPRESENTATION>"), pair.p1.replace(rendering(pair.p1), "<REPRESENTATION>"), "P0/P1 must have byte-identical non-representation text");
   assert.match(pair.p0, /Facts:/); assert.doesNotMatch(pair.p1, /Facts:/);
   assert.match(pair.p0, new RegExp(ANSWER_INSTRUCTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(pair.p1, new RegExp(ANSWER_INSTRUCTION.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
@@ -57,11 +57,19 @@ async function main() {
       assert.doesNotMatch(prompt, /runTrustedQuery|runPrologOracle|SWI-Prolog/i, `${item.case_id} leaked solver capability`);
     }
 
+    // Semantic-equivalence regression: P1 must expose the meaningful query
+    // predicate that P0 names, rather than an opaque stage_N indirection.
+    const queryPredicate = item.formal_world.query.predicate;
+    assert.doesNotMatch(item.renderings.p1, /\bstage_\d+\s*\(/, `${item.case_id} P1 must not use opaque stage predicates`);
+    assert.match(item.renderings.p1, new RegExp(`\\b${queryPredicate}\\s*\\(`), `${item.case_id} P1 must name the queried predicate`);
+    assert.match(item.prompts.p0, new RegExp(`Question: Is [A-Z][a-z]+ ${queryPredicate}\\?`), `${item.case_id} P0 question must name the same predicate`);
+
     if (item.stratum.topology === "join") {
       const join = item.formal_world.rules[0];
       assert.equal(join.body.length, 2, `${item.case_id} join must be conjunctive`);
       assert.equal(join.body[0].args[0], join.body[1].args[0], `${item.case_id} join variables must be shared`);
       assert.match(item.renderings.p0, / and /, `${item.case_id} natural rendering must preserve conjunction`);
+      assert.match(item.renderings.p0, /If the same person has both a source trait and a marker trait, then that person is calm\./, `${item.case_id} P0 join must bind both premises to one person`);
     }
     if (item.oracle.label === "unknown") {
       assert.doesNotMatch(JSON.stringify(item.formal_world.facts), /not_|negative|false/i, `${item.case_id} unknown must not use a negative fact`);
@@ -77,6 +85,12 @@ async function main() {
   assert.equal(fs.readFileSync(output, "utf8"), stable(first));
   assert.match(written.sha256, /^[a-f0-9]{64}$/);
   console.log("representation-world-generator ok: 24 deterministic P0/P1 pairs, isolated prompt assembly, and independently recomputed SWI oracle");
+}
+
+function rendering(prompt) {
+  const match = prompt.match(/^You are given a finite rule world\.\n([\s\S]*)\nQuestion:/);
+  assert(match, "prompt must contain one delimited representation");
+  return match[1];
 }
 
 main().catch(error => { console.error(error.stack || error); process.exitCode = 1; });

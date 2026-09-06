@@ -37,7 +37,10 @@ function prologRule(item) { return `${prologTerm(item.head)} :- ${item.body.map(
 
 function predicateLexicon(depth) {
   const stages = ["calm", "focused", "prepared", "reliable", "ready"];
-  return stages.slice(0, depth).map((name, index) => ({ atom: `stage_${index + 1}`, adjective: name }));
+  // P1 exposes the same meaningful state predicates that P0 names in its
+  // rules and question.  Numbered stage atoms would require an extra mapping
+  // to make the two representations semantically comparable.
+  return stages.slice(0, depth).map(name => ({ atom: name, adjective: name }));
 }
 
 function caseIdentity({ depth, topology, expected, replica }) {
@@ -51,16 +54,16 @@ function sourceWorld({ seed, depth, topology, expected, replica }) {
   const stages = predicateLexicon(depth);
   const facts = [], rules = [];
   if (topology === "chain") {
-    facts.push(fact("source", expected === "entailed" ? subject : distractor));
+    facts.push(fact("source_trait", expected === "entailed" ? subject : distractor));
     for (let index = 0; index < depth; index += 1) {
-      const predecessor = index === 0 ? "source" : stages[index - 1].atom;
+      const predecessor = index === 0 ? "source_trait" : stages[index - 1].atom;
       rules.push(rule(term(stages[index].atom, "X"), [term(predecessor, "X")]));
     }
   } else {
     // The first rule is deliberately conjunctive: both antecedents use X.
-    facts.push(fact("source", subject));
-    facts.push(fact("marker", expected === "entailed" ? subject : distractor));
-    rules.push(rule(term(stages[0].atom, "X"), [term("source", "X"), term("marker", "X")]));
+    facts.push(fact("source_trait", subject));
+    facts.push(fact("marker_trait", expected === "entailed" ? subject : distractor));
+    rules.push(rule(term(stages[0].atom, "X"), [term("source_trait", "X"), term("marker_trait", "X")]));
     for (let index = 1; index < depth; index += 1) {
       rules.push(rule(term(stages[index].atom, "X"), [term(stages[index - 1].atom, "X")]));
     }
@@ -75,17 +78,24 @@ function sourceWorld({ seed, depth, topology, expected, replica }) {
 
 function noun(argument) { return argument[0].toUpperCase() + argument.slice(1); }
 function predicateDescription(predicate) {
-  if (predicate === "source") return "a source trait";
-  if (predicate === "marker") return "a marker trait";
-  const stage = /^stage_(\d+)$/.exec(predicate);
-  if (!stage) throw new Error(`unknown predicate: ${predicate}`);
-  return predicateLexicon(5)[Number(stage[1]) - 1].adjective;
+  if (predicate === "source_trait") return "a source trait";
+  if (predicate === "marker_trait") return "a marker trait";
+  if (!predicateLexicon(5).some(stage => stage.atom === predicate)) throw new Error(`unknown predicate: ${predicate}`);
+  return predicate;
 }
 
-function naturalFact(item) { return `${noun(item.args[0])} has ${predicateDescription(item.predicate)}.`; }
+function naturalProperty(predicate) {
+  const description = predicateDescription(predicate);
+  return predicate === "source_trait" || predicate === "marker_trait" ? `has ${description}` : `is ${description}`;
+}
+
+function naturalFact(item) { return `${noun(item.args[0])} ${naturalProperty(item.predicate)}.`; }
 function naturalRule(item) {
-  const antecedents = item.body.map(part => `someone has ${predicateDescription(part.predicate)}`).join(" and ");
-  return `If ${antecedents}, then that person is ${predicateDescription(item.head.predicate)}.`;
+  if (item.body.length === 2) {
+    const [left, right] = item.body;
+    return `If the same person has both ${predicateDescription(left.predicate)} and ${predicateDescription(right.predicate)}, then that person is ${predicateDescription(item.head.predicate)}.`;
+  }
+  return `If someone ${naturalProperty(item.body[0].predicate)}, then that person is ${predicateDescription(item.head.predicate)}.`;
 }
 
 function renderNatural(world) {
