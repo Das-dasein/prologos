@@ -33,7 +33,7 @@ function parseJsonl(stdout) {
   catch { throw new Error("Codex stdout must be machine-readable JSONL"); }
 }
 
-function createCodexExecAnsweringProvider({ config, rawDirectory, spawnImpl = childProcess.spawn, binary = process.env.CODEX_BIN || "codex" }) {
+function createCodexExecAnsweringProvider({ config, rawDirectory, spawnImpl = childProcess.spawn }) {
   requireText(config && config.model, "an explicit model");
   if (typeof spawnImpl !== "function") throw new Error("spawnImpl must be a function");
   if (typeof rawDirectory !== "string" || !path.isAbsolute(rawDirectory) || !fs.statSync(rawDirectory).isDirectory()) throw new Error("raw evidence directory must exist and be absolute");
@@ -48,7 +48,10 @@ function createCodexExecAnsweringProvider({ config, rawDirectory, spawnImpl = ch
     return new Promise((resolve, reject) => {
       let child, stdout = "", stderr = "", settled = false;
       const fail = error => { if (!settled) { settled = true; reject(error); } };
-      try { child = spawnImpl(binary, args, { cwd: process.cwd(), env: process.env, stdio: ["ignore", "pipe", "pipe"] }); }
+      // The executable is deliberately literal.  An injected spawn is an
+      // offline test seam, not authority to substitute a command or inherit
+      // a CODEX_BIN environment override.
+      try { child = spawnImpl("codex", args, { cwd: process.cwd(), env: process.env, stdio: ["ignore", "pipe", "pipe"] }); }
       catch (error) { fail(error); return; }
       if (!child || !child.stdout || !child.stderr || typeof child.on !== "function") { fail(new Error("Codex spawn must return a child process with stdout and stderr")); return; }
       child.stdout.on("data", chunk => { stdout += String(chunk); });
