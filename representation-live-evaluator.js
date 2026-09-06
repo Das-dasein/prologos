@@ -213,6 +213,16 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   if (calls.length !== 1) throw new Error(`P2 trace must contain exactly one broker action, got ${calls.length}`);
   const callText = stringLeaves(calls[0]).find(value => value === brokerPath || value.includes(brokerPath));
   if (!callText || callText !== brokerPath) throw new Error("P2 trace contains a foreign or parameterized command");
+  const hasNonEmptyBrokerArguments = value => {
+    if (Array.isArray(value)) return value.length > 0 || value.some(hasNonEmptyBrokerArguments);
+    if (!value || typeof value !== "object") return false;
+    for (const [key, child] of Object.entries(value)) {
+      if ((key === "args" || key === "arguments") && ((Array.isArray(child) && child.length > 0) || (typeof child === "string" && child.length > 0) || (child && typeof child === "object" && !Array.isArray(child) && Object.keys(child).length > 0))) return true;
+      if (hasNonEmptyBrokerArguments(child)) return true;
+    }
+    return false;
+  };
+  if (hasNonEmptyBrokerArguments(calls[0])) throw new Error("P2 trace contains non-empty broker arguments");
   const completed = events.filter(event => event && event.type === "turn.completed");
   if (completed.length !== 1 || !completed[0].usage || typeof completed[0].usage !== "object") throw new Error("Codex JSONL must contain exactly one completed turn with native usage");
   const usage = completed[0].usage;
@@ -224,7 +234,7 @@ function writeP2Broker(run, item, swiplPath) {
   const query = `${item.case.formal_world.query.predicate}(${item.case.formal_world.query.args.join(",")})`;
   const program = `${formalProgram(item.case.formal_world)}\n:- initialization(main).\nmain :- ((${query}) -> writeln('BROKER_RESULT: entailed') ; writeln('BROKER_RESULT: unknown')), halt.\n`;
   fs.writeFileSync(programFile, program, { flag: "wx", mode: 0o400 });
-  const script = `#!/bin/sh\nexec ${JSON.stringify(swiplPath)} --quiet --nosignals -s ${JSON.stringify(programFile)} > ${JSON.stringify(receiptFile)}\n`;
+  const script = `#!/bin/sh\nif [ "$#" -ne 0 ]; then exit 64; fi\nexec ${JSON.stringify(swiplPath)} --quiet --nosignals -s ${JSON.stringify(programFile)} > ${JSON.stringify(receiptFile)}\n`;
   fs.writeFileSync(brokerFile, script, { flag: "wx", mode: 0o700 }); fs.chmodSync(brokerFile, 0o700);
   return Object.freeze({ programFile, receiptFile, brokerFile });
 }
