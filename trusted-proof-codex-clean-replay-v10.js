@@ -13,7 +13,7 @@ const { stable } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-equal-
 const { trustedRegistry } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-codex-exec-receipt-intake-v8");
 const { orderMap } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-codex-diagnostic-v9");
 const seatbelt = require("./trusted-proof-codex-seatbelt-v10");
-const TRACE_AUDIT_PREAMBLE = "You are answering a sealed logic-memory task. Answer the query directly using only the text below. Do not use shell commands, tools, filesystem, network, or external information.\n\n";
+const TRACE_AUDIT_PREAMBLE = "You are answering a sealed logic-memory task. Answer the query directly using only the text below. State the conclusion in ordinary language, cite every supporting `turn(n)` source shown in the supplied text, and for an unresolved query name the missing goal rather than inferring negation. Do not use shell commands, tools, filesystem, network, or external information.\n\n";
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const readJson = file => JSON.parse(fs.readFileSync(file, "utf8"));
