@@ -68,9 +68,16 @@ async function main() {
       assert.ok(record.raw.stdout && record.raw.stderr && record.raw.final_output, "successful call retains all raw artifacts");
       assert.equal(record.raw_response.ref.includes("auth.json"), false, "credential is never an evidence artifact");
     }
-    const p2Config = { ...config, provider: "codex-trace-gated-p2" }, p2Input = { file: path.join(os.tmpdir(), "fake-p2-config.json"), config: api.validateConfig(p2Config, fixture.sha256), bytes: stable(p2Config), sha256: sha256(stable(p2Config)) };
-    const p2Seen = [], labels = api.counterbalancedPlan(fixture.fixture).filter(item => item.condition === "P0").map(item => item.case.oracle.label), p2 = await api.collectLive({ fixtureInput: fixture, configInput: p2Input, allowLiveProvider: true, provider: "codex-trace-gated-p2", model: config.model, rawRoot: path.join(parent, "p2"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeP2Spawn({ seen: p2Seen, labels }), preflight: () => ({ status: "fake-p2-preflight-no-provider-call" }) });
+    const p2Config = { ...config, provider: "codex-trace-gated-p2", model: "gpt-5.4-mini" }, p2Input = { file: path.join(os.tmpdir(), "fake-p2-config.json"), config: api.validateConfig(p2Config, fixture.sha256), bytes: stable(p2Config), sha256: sha256(stable(p2Config)) };
+    const p2Seen = [], labels = api.counterbalancedPlan(fixture.fixture).filter(item => item.condition === "P0").map(item => item.case.oracle.label), p2 = await api.collectLive({ fixtureInput: fixture, configInput: p2Input, allowLiveProvider: true, provider: "codex-trace-gated-p2", model: p2Config.model, rawRoot: path.join(parent, "p2"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeP2Spawn({ seen: p2Seen, labels }), preflight: () => ({ status: "fake-p2-preflight-no-provider-call" }) });
     assert.equal(p2Seen.length, 72); assert.equal(p2.aggregate.calls_recorded, 72); assert.deepEqual(Object.fromEntries(Object.entries(p2.aggregate.per_condition).map(([key, value]) => [key, value.denominator])), { P0: 24, P1: 24, P2: 24 });
+    assert.equal(fs.readFileSync(path.join(parent, "p2", "trace-gate-mode.json"), "utf8"), stable({ mode: "trace-gated-native-codex-sandbox", outer_seatbelt: false, p0_p1: "reject any tool_or_command JSONL event", p2: "require exactly one no-argument private broker event" }));
+    for (const call of p2Seen) {
+      assert.equal(call.command, "/bin/echo", "trace-gated transport must invoke Codex directly, without an outer Seatbelt");
+      assert.equal(call.args.includes(seatbelt.SANDBOX), false, "trace-gated transport must not wrap Codex in Seatbelt");
+      assert.equal(call.args[call.args.indexOf("--model") + 1], "gpt-5.4-mini");
+      assert.equal(call.args[call.args.indexOf("--sandbox") + 1], "workspace-write");
+    }
     assert.equal(p2.aggregate.per_condition.P2.correctness_count, 12); assert.equal(p2.aggregate.per_condition.P2.format_failure_count, 0); assert.equal(p2.aggregate.records.filter(record => record.condition === "P2").every(record => record.inspection.tool_events_observed === 1), true);
     const p2Trace = path.join(parent, "p2-trace.jsonl"), brokerPath = "/sealed/query-broker.sh", done = JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } });
     fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: brokerPath } })}\n${done}\n`); assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1);
