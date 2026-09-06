@@ -118,6 +118,19 @@ async function main() {
     }
     writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text: `${brokerState}/foreign-state.txt` })}\n`);
     assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unexpected state path/);
+    // macOS reports /tmp files through their canonical /private/tmp spelling;
+    // the parser must bind both spellings to the same existing broker object.
+    const canonicalParent = fs.mkdtempSync(path.join("/tmp", "representation-broker-path-"));
+    const canonicalBroker = path.join(canonicalParent, "query-broker.sh");
+    const aliasBroker = process.platform === "darwin" ? canonicalBroker.replace(/^\/tmp\//, "/private/tmp/") : canonicalBroker;
+    fs.writeFileSync(canonicalBroker, "#!/bin/sh\n", { mode: 0o700 });
+    const aliasItem = { id: "broker-canonical", type: "command_execution", command: `/bin/zsh -lc ${aliasBroker}` };
+    writeLifecycle(aliasItem);
+    assert.equal(api.parseP2CodexJsonl(p2Trace, [], canonicalBroker).inspection.tool_events_observed, 1, "existing /tmp broker aliases are canonicalized");
+    const distinctBroker = path.join(canonicalParent, "other.sh"); fs.writeFileSync(distinctBroker, "#!/bin/sh\n", { mode: 0o700 });
+    writeLifecycle({ ...aliasItem, command: `/bin/zsh -lc ${distinctBroker}` });
+    assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], canonicalBroker), /foreign or parameterized/);
+    fs.rmSync(canonicalParent, { recursive: true, force: true });
     const bad = await api.collectLive({ fixtureInput: fixture, configInput, allowLiveProvider: true, provider: "codex-seatbelt", model: config.model, rawRoot: path.join(parent, "invalid"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeSpawn({ invalid: true, seen: [] }), preflight: () => ({ status: "fake-preflight-no-provider-call" }) });
     assert.equal(bad.aggregate.invalid_or_missing_records.length, 48, "malformed JSONL makes every call a non-result");
     for (const record of bad.aggregate.records) assert.match(record.transport_error, /JSONL trace is malformed/);

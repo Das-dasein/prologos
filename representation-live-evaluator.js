@@ -210,7 +210,16 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   if (!lines.length) throw new Error("Codex JSONL trace is empty");
   let events;
   try { events = lines.map(line => JSON.parse(line)); } catch { throw new Error("Codex JSONL trace is malformed"); }
-  const sealedBroker = path.resolve(brokerPath);
+  // macOS exposes /tmp as a symlink to /private/tmp.  Codex may therefore
+  // report the same broker under either spelling; bind the comparison to the
+  // existing filesystem object, while retaining deterministic resolution for
+  // synthetic paths used by provider-free parser tests.
+  const requestedBroker = path.resolve(brokerPath);
+  const canonicalizeExistingPath = value => {
+    const resolved = path.resolve(value);
+    return fs.existsSync(resolved) ? fs.realpathSync(resolved) : resolved;
+  };
+  const sealedBroker = canonicalizeExistingPath(requestedBroker);
   const brokerState = path.dirname(sealedBroker);
   // A native command is emitted twice by Codex: item.started and
   // item.completed.  Treat that pair as one action only when the lifecycle
@@ -235,15 +244,16 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   const validateCommandIdentity = (candidate) => {
     const command = candidate && candidate.command;
     const args = candidate && candidate.args;
-    const shellLine = typeof command === "string" && new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(command);
-    const argv = command === "/bin/zsh" && Array.isArray(args) && args.length === 2 && /^(?:-c|-lc)$/.test(args[0]) && args[1] === sealedBroker;
+    const shellMatch = typeof command === "string" && command.match(/^\/bin\/zsh (-(?:c|lc)) (\/.*)$/);
+    const shellLine = Boolean(shellMatch) && canonicalizeExistingPath(shellMatch[2]) === sealedBroker;
+    const argv = command === "/bin/zsh" && Array.isArray(args) && args.length === 2 && /^(?:-c|-lc)$/.test(args[0]) && typeof args[1] === "string" && canonicalizeExistingPath(args[1]) === sealedBroker;
     if (!shellLine && !argv) throw new Error("P2 trace contains a foreign or parameterized command; expected /bin/zsh -c|-lc with the sealed broker path");
     const runtimeFields = new Set(["status", "exit_code", "aggregated_output"]);
     for (const [key, value] of Object.entries(candidate || {})) {
       if (key !== "id" && key !== "type" && key !== "command" && key !== "args" && !runtimeFields.has(key)) throw new Error("P2 trace contains unexpected command fields");
       if (key === "args" && !argv && value !== undefined) throw new Error("P2 trace contains command arguments outside the sealed shell wrapper");
     }
-    return JSON.stringify({ type: candidate.type, command, args: argv ? args : undefined });
+    return JSON.stringify({ type: candidate.type, command: shellLine ? `/bin/zsh ${shellMatch[1]} ${sealedBroker}` : command, args: argv ? [args[0], sealedBroker] : undefined });
   };
   const startedIdentity = validateCommandIdentity(startedItem);
   const completedIdentity = validateCommandIdentity(completedItem);
@@ -252,8 +262,9 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   const item = startedItem;
   const command = item && item.command;
   const args = item && item.args;
-  const shellLine = typeof command === "string" && new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(command);
-  const argv = command === "/bin/zsh" && Array.isArray(args) && args.length === 2 && /^(?:-c|-lc)$/.test(args[0]) && args[1] === sealedBroker;
+  const shellMatch = typeof command === "string" && command.match(/^\/bin\/zsh (-(?:c|lc)) (\/.*)$/);
+  const shellLine = Boolean(shellMatch) && canonicalizeExistingPath(shellMatch[2]) === sealedBroker;
+  const argv = command === "/bin/zsh" && Array.isArray(args) && args.length === 2 && /^(?:-c|-lc)$/.test(args[0]) && typeof args[1] === "string" && canonicalizeExistingPath(args[1]) === sealedBroker;
   // Codex may echo the broker's private state files in its command event or
   // completion metadata. Permit only those two files from this run's state;
   // every other absolute path is evidence of scope escape. This check is
@@ -261,7 +272,7 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   // foreign-command failure, not a path-classification side effect.
   const sealedProgram = path.join(brokerState, "sealed-program.pl");
   const brokerReceipt = path.join(brokerState, "broker-receipt.txt");
-  const allowedP2PathValue = value => value === sealedBroker || value === sealedProgram || value === brokerReceipt || new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(value);
+  const allowedP2PathValue = value => value === sealedBroker || value === requestedBroker || value === sealedProgram || value === brokerReceipt || (typeof value === "string" && (() => { const match = value.match(/^\/bin\/zsh (-(?:c|lc)) (\/.*)$/); return Boolean(match) && canonicalizeExistingPath(match[2]) === sealedBroker; })());
   const absolutePathLike = /(^|\s)\/(?:[^\s"']+)/;
   const protectedPaths = [...new Set(prohibitedPaths.map(value => path.resolve(value)))];
   // `/bin/zsh` and the broker state directory are admissible only as parts of
