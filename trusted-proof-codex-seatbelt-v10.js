@@ -1,0 +1,121 @@
+"use strict";
+
+// This is deliberately a *preflight*, not another answering adapter.  v10 is
+// not allowed to turn a host checkout into an answering workspace again.
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { spawnSync } = require("node:child_process");
+
+const SANDBOX = "/usr/bin/sandbox-exec";
+const SYSTEM_READ_ROOTS = Object.freeze(["/bin", "/usr/lib", "/System/Library", "/dev", "/private/var/db/timezone", "/private/var/select/sh"]);
+
+function absoluteFile(value, label, { exists = true } = {}) {
+  if (typeof value !== "string" || !path.isAbsolute(value)) throw Error(`${label} must be an absolute path`);
+  if (exists && (!fs.existsSync(value) || !fs.statSync(value).isFile())) throw Error(`${label} must name an existing file`);
+  return exists ? fs.realpathSync(value) : path.resolve(value);
+}
+function absoluteDirectory(value, label, { exists = true } = {}) {
+  if (typeof value !== "string" || !path.isAbsolute(value)) throw Error(`${label} must be an absolute path`);
+  if (exists && (!fs.existsSync(value) || !fs.statSync(value).isDirectory())) throw Error(`${label} must name an existing directory`);
+  return exists ? fs.realpathSync(value) : path.resolve(value);
+}
+function sameOrWithin(parent, child) { return child === parent || child.startsWith(`${parent}${path.sep}`); }
+function quote(value) { return `(literal ${JSON.stringify(value)})`; }
+function subpath(value) { return `(subpath ${JSON.stringify(value)})`; }
+function ancestors(value) {
+  const out = [];
+  for (let current = value;; current = path.dirname(current)) { out.push(quote(current)); if (path.dirname(current) === current) return out; }
+}
+function rejectBroadRoot(value, label) {
+  if (["/", "/Users", "/private", "/tmp", os.homedir()].includes(value)) throw Error(`${label} is too broad for the isolation profile`);
+}
+function protectedEvidenceRoots() {
+  return Object.freeze([
+    path.resolve(__dirname),
+    path.resolve(__dirname, ".cdr", "waves", "cognitive-proof-eval-v1"),
+    path.resolve(os.homedir(), ".codex", "memories")
+  ]);
+}
+function rejectProtectedRoot(value, label) {
+  for (const protectedRoot of protectedEvidenceRoots()) if (sameOrWithin(protectedRoot, value) || sameOrWithin(value, protectedRoot)) throw Error(`${label} overlaps a prohibited repository or evidence root`);
+}
+function declaredRuntimeRoots({ codexPath }) {
+  const codex = absoluteFile(codexPath, "codex_path");
+  // Runtime roots are closed over implementation-discovered values. In
+  // particular, a caller cannot add another readable root to this profile.
+  const roots = [...SYSTEM_READ_ROOTS, path.dirname(codex)];
+  for (const root of roots) { rejectBroadRoot(root, "runtime root"); rejectProtectedRoot(root, "runtime root"); }
+  return Object.freeze([...new Set(roots)]);
+}
+function createSeatbeltProfile({ runRoot, inputDir, outputDir, codexPath, authFile = null }) {
+  if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw Error("macOS sandbox-exec is required for v10 isolation preflight");
+  const root = absoluteDirectory(runRoot, "run_root"), input = absoluteDirectory(inputDir, "sealed input directory"), output = absoluteDirectory(outputDir, "output directory");
+  if (!sameOrWithin(root, input) || !sameOrWithin(root, output) || input === output) throw Error("sealed input and output must be distinct children of run_root");
+  const codex = absoluteFile(codexPath, "codex_path");
+  const auth = authFile === null ? null : absoluteFile(authFile, "auth_file");
+  const runtimeRoots = declaredRuntimeRoots({ codexPath: codex });
+  // Metadata grants are only path traversal.  Content reads are restricted to
+  // runtime, the sealed input, and (when unavoidable) one exact auth file.
+  const metadata = [...new Set([...runtimeRoots.flatMap(ancestors), ...ancestors(root), ...(auth ? ancestors(auth) : [])])].join(" ");
+  // Seatbelt needs the root vnode readable to start a process. `(literal "/")`
+  // is not a recursive grant; every child still requires one of the explicit
+  // `subpath`/`literal` rules below.
+  const reads = [quote("/"), runtimeRoots.map(subpath).join(" "), subpath(input), auth ? quote(auth) : ""].filter(Boolean).join(" ");
+  return [
+    "(version 1)", "(deny default)", "(allow process*)", "(allow file-map-executable)", "(allow sysctl-read)", "(allow mach-lookup)",
+    `(allow file-read-metadata ${metadata})`, `(allow file-read* ${reads})`, `(allow file-write* ${subpath(output)})`
+  ].join(" ");
+}
+function createFreshSealedRunRoot(parent) {
+  const base = absoluteDirectory(parent, "run parent");
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(base, "codex-v10-sealed-")));
+  const input = path.join(root, "input"), output = path.join(root, "output");
+  fs.mkdirSync(input, { mode: 0o700 }); fs.mkdirSync(output, { mode: 0o700 });
+  return Object.freeze({ run_root: root, input_dir: input, output_dir: output });
+}
+function writeSealedInput(run, { prompt, schema }) {
+  if (!run || typeof prompt !== "string" || !prompt.trim() || typeof schema !== "string" || !schema.trim()) throw Error("sealed prompt and output schema are required");
+  const promptFile = path.join(run.input_dir, "sealed-prompt.txt"), schemaFile = path.join(run.input_dir, "final-output.schema.json");
+  fs.writeFileSync(promptFile, prompt, { flag: "wx", mode: 0o400 }); fs.writeFileSync(schemaFile, schema, { flag: "wx", mode: 0o400 });
+  fs.chmodSync(promptFile, 0o400); fs.chmodSync(schemaFile, 0o400);
+  return Object.freeze({ prompt_file: promptFile, schema_file: schemaFile });
+}
+function buildCodexInvocation({ run, sealed, codexPath, model, authFile }) {
+  if (!run || !sealed || typeof model !== "string" || !model.trim()) throw Error("run, sealed input and model are required");
+  const codex = absoluteFile(codexPath, "codex_path");
+  // Codex documents that --ignore-user-config still obtains auth from
+  // CODEX_HOME. There is no auth-free live mode, so require one exact existing
+  // auth.json rather than silently opening the user's whole .codex directory.
+  const auth = absoluteFile(authFile, "auth_file");
+  if (path.basename(auth) !== "auth.json") throw Error("auth_file must be the exact CODEX_HOME/auth.json file");
+  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath: codex, authFile: auth });
+  const finalOutput = path.join(run.output_dir, "final-output.txt"), stdout = path.join(run.output_dir, "codex-stdout.jsonl"), stderr = path.join(run.output_dir, "codex-stderr.txt");
+  // `-C` has to be the fresh root: never the repository. `--ignore-user-config`
+  // deliberately retains only Codex authentication (via CODEX_HOME), not host
+  // configuration or project instructions. This function never executes it.
+  const args = ["-p", profile, codex, "exec", "--json", "--ephemeral", "-C", run.run_root, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
+  return Object.freeze({ command: SANDBOX, args: Object.freeze(args), cwd: run.run_root, env: Object.freeze({ CODEX_HOME: path.dirname(auth) }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, profile, run_root: run.run_root });
+}
+function runSeatbeltProbe({ profile, cwd, command, args = [] }) {
+  const result = spawnSync(SANDBOX, ["-p", profile, command, ...args], { cwd, encoding: "utf8" });
+  return Object.freeze({ status: result.status, signal: result.signal, stdout: result.stdout || "", stderr: result.stderr || "", error: result.error ? result.error.message : null });
+}
+function offlineProbeReport({ run, codexPath, repositoryFile, memoryFile, datasetOrEvaluatorFile, outsideWriteFile }) {
+  for (const [value, label] of [[repositoryFile, "repository file"], [memoryFile, "MEMORY file"], [datasetOrEvaluatorFile, "dataset/evaluator file"]]) absoluteFile(value, label);
+  if (typeof outsideWriteFile !== "string" || !path.isAbsolute(outsideWriteFile) || sameOrWithin(run.run_root, path.resolve(outsideWriteFile))) throw Error("outside write target must be outside run_root");
+  const sealed = writeSealedInput(run, { prompt: "sealed input", schema: "{\"type\":\"object\"}\n" });
+  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath });
+  const deniedRead = file => runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [file] });
+  const allowedInput = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [sealed.prompt_file] });
+  const outputTarget = path.join(run.output_dir, "probe-output.txt");
+  const allowedWrite = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/sh", args: ["-c", `printf permitted > ${JSON.stringify(outputTarget)}`] });
+  const deniedWrite = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/sh", args: ["-c", `printf forbidden > ${JSON.stringify(outsideWriteFile)}`] });
+  const checks = Object.freeze({ repository_read: deniedRead(repositoryFile), memory_read: deniedRead(memoryFile), dataset_or_evaluator_read: deniedRead(datasetOrEvaluatorFile), outside_write: deniedWrite, sealed_input_read: allowedInput, declared_output_write: allowedWrite });
+  const denied = check => check.status !== 0;
+  if (![checks.repository_read, checks.memory_read, checks.dataset_or_evaluator_read, checks.outside_write].every(denied)) throw Error("Seatbelt preflight did not deny every protected host access");
+  if (checks.sealed_input_read.status !== 0 || checks.declared_output_write.status !== 0 || !fs.existsSync(outputTarget)) throw Error("Seatbelt preflight did not permit declared isolated input/output");
+  return Object.freeze({ status: "seatbelt-preflight-passed-no-provider-call-v10", checks });
+}
+
+module.exports = { SANDBOX, createFreshSealedRunRoot, writeSealedInput, createSeatbeltProfile, buildCodexInvocation, runSeatbeltProbe, offlineProbeReport };
