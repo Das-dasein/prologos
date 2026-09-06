@@ -35,7 +35,7 @@ function fakeP2Spawn({ seen, labels }) {
     const child = new EventEmitter(); child.stdin = new PassThrough(); child.stdout = new PassThrough(); child.stderr = new PassThrough();
     process.nextTick(() => {
       const final = args[args.indexOf("--output-last-message") + 1];
-      const runRoot = path.dirname(options.cwd), state = path.join(runRoot, "state");
+      const state = options.env.CODEX_HOME;
       const broker = fs.readdirSync(state, { withFileTypes: true }).find(entry => entry.name === "query-broker.sh");
       const brokerPath = path.join(state, "query-broker.sh");
       const label = broker ? labels[p2Index++] : "entailed"; if (broker) fs.writeFileSync(path.join(state, "broker-receipt.txt"), `BROKER_RESULT: ${label}\n`);
@@ -68,8 +68,8 @@ async function main() {
       assert.ok(record.raw.stdout && record.raw.stderr && record.raw.final_output, "successful call retains all raw artifacts");
       assert.equal(record.raw_response.ref.includes("auth.json"), false, "credential is never an evidence artifact");
     }
-    const p2Config = { ...config, provider: "codex-seatbelt-p2" }, p2Input = { file: path.join(os.tmpdir(), "fake-p2-config.json"), config: api.validateConfig(p2Config, fixture.sha256), bytes: stable(p2Config), sha256: sha256(stable(p2Config)) };
-    const p2Seen = [], labels = api.counterbalancedPlan(fixture.fixture).filter(item => item.condition === "P0").map(item => item.case.oracle.label), p2 = await api.collectLive({ fixtureInput: fixture, configInput: p2Input, allowLiveProvider: true, provider: "codex-seatbelt-p2", model: config.model, rawRoot: path.join(parent, "p2"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeP2Spawn({ seen: p2Seen, labels }), preflight: () => ({ status: "fake-p2-preflight-no-provider-call" }) });
+    const p2Config = { ...config, provider: "codex-trace-gated-p2" }, p2Input = { file: path.join(os.tmpdir(), "fake-p2-config.json"), config: api.validateConfig(p2Config, fixture.sha256), bytes: stable(p2Config), sha256: sha256(stable(p2Config)) };
+    const p2Seen = [], labels = api.counterbalancedPlan(fixture.fixture).filter(item => item.condition === "P0").map(item => item.case.oracle.label), p2 = await api.collectLive({ fixtureInput: fixture, configInput: p2Input, allowLiveProvider: true, provider: "codex-trace-gated-p2", model: config.model, rawRoot: path.join(parent, "p2"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeP2Spawn({ seen: p2Seen, labels }), preflight: () => ({ status: "fake-p2-preflight-no-provider-call" }) });
     assert.equal(p2Seen.length, 72); assert.equal(p2.aggregate.calls_recorded, 72); assert.deepEqual(Object.fromEntries(Object.entries(p2.aggregate.per_condition).map(([key, value]) => [key, value.denominator])), { P0: 24, P1: 24, P2: 24 });
     assert.equal(p2.aggregate.per_condition.P2.correctness_count, 12); assert.equal(p2.aggregate.per_condition.P2.format_failure_count, 0); assert.equal(p2.aggregate.records.filter(record => record.condition === "P2").every(record => record.inspection.tool_events_observed === 1), true);
     const p2Trace = path.join(parent, "p2-trace.jsonl"), brokerPath = "/sealed/query-broker.sh", done = JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } });

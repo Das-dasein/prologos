@@ -73,7 +73,7 @@ function validateFixture(fixture) {
 function validateConfig(config, fixtureHash) {
   exactKeys(config, ["fixture_sha256", "model", "provider", "retry_policy", "sampling", "schema_version"], "config");
   if (config.schema_version !== CONFIG_SCHEMA_VERSION) throw new Error(`config.schema_version must be ${CONFIG_SCHEMA_VERSION}`);
-  if (!["openai-api", "codex-seatbelt", "codex-seatbelt-p2"].includes(config.provider)) throw new Error("config.provider must be openai-api, codex-seatbelt, or codex-seatbelt-p2");
+  if (!["openai-api", "codex-seatbelt", "codex-seatbelt-p2", "codex-trace-gated-p2"].includes(config.provider)) throw new Error("config.provider must be openai-api, codex-seatbelt, codex-seatbelt-p2, or codex-trace-gated-p2");
   requireText(config.model, "config.model");
   requireHash(config.fixture_sha256, "config.fixture_sha256");
   if (config.fixture_sha256 !== fixtureHash) throw new Error("config.fixture_sha256 does not bind the supplied fixture");
@@ -132,7 +132,7 @@ function assertLiveGates({ allowLiveProvider, model, rawRoot, provider }) {
   if (allowLiveProvider !== true) throw new Error("live collection requires --allow-live-provider");
   requireText(model, "--model");
   requireFreshRawRoot(rawRoot);
-  if (!["openai-api", "codex-seatbelt", "codex-seatbelt-p2"].includes(provider)) throw new Error("unsupported representation transport");
+  if (!["openai-api", "codex-seatbelt", "codex-seatbelt-p2", "codex-trace-gated-p2"].includes(provider)) throw new Error("unsupported representation transport");
 }
 function providerResult(value) {
   if (!value || typeof value !== "object" || typeof value.answer !== "string" || typeof value.raw !== "string" || !value.usage || typeof value.usage !== "object") throw new Error("provider must return text answer, raw text, and native usage");
@@ -320,11 +320,11 @@ async function collectCodexSeatbelt({ fixtureLoaded, configLoaded, config, model
   const aggregateArtifact = writeExclusive(path.join(rawRoot, "aggregate-not-a-cdr-receipt.json"), stable(result));
   return Object.freeze({ aggregate: result, aggregate_file: aggregateArtifact.file, raw_root: rawRoot });
 }
-async function collectCodexSeatbeltP2(options) {
+async function collectCodexSeatbeltP2(options, { traceGated = false } = {}) {
   const { fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight = codexSeatbeltPreflight, swiplPath } = options;
   const codex = absoluteExecutable(codexPath, "codex_path"), auth = exactAuthFile(authFile), swipl = resolveSwiplBinary(swiplPath);
   fs.mkdirSync(rawRoot, { mode: 0o700 });
-  writeExclusive(path.join(rawRoot, "seatbelt-preflight.json"), stable(preflight({ rawRoot, codexPath: codex, swiplPath: swipl })));
+  writeExclusive(path.join(rawRoot, traceGated ? "trace-gate-mode.json" : "seatbelt-preflight.json"), stable(traceGated ? { mode: "trace-gated-native-codex-sandbox", outer_seatbelt: false, p0_p1: "reject any tool_or_command JSONL event", p2: "require exactly one no-argument private broker event" } : preflight({ rawRoot, codexPath: codex, swiplPath: swipl })));
   const records = [];
   for (const item of counterbalancedPlan(fixtureLoaded.fixture).filter(entry => entry.condition === "P0")) for (const condition of THREE_CONDITION_ORDER) {
     const run = seatbelt.createFreshSealedRunRoot(rawRoot), broker = condition === "P2" ? writeP2Broker(run, item, swipl) : null;
@@ -332,7 +332,7 @@ async function collectCodexSeatbeltP2(options) {
     const sealed = seatbelt.writeSealedInput(run, { prompt, schema: stable(FINAL_ANSWER_SCHEMA) });
     let response = null, rawResponse, transportError = null, inspection = null;
     try {
-      const invocation = seatbelt.buildCodexInvocation({ run, sealed, codexPath: codex, model, authFile: auth, extraRuntimeFiles: condition === "P2" ? [swipl] : [] });
+      const invocation = traceGated ? seatbelt.buildTraceAuditedInvocation({ run, sealed, codexPath: codex, model, authFile: auth }) : seatbelt.buildCodexInvocation({ run, sealed, codexPath: codex, model, authFile: auth, extraRuntimeFiles: condition === "P2" ? [swipl] : [] });
       const raw = await invokeCodex({ invocation, spawnImpl });
       const paths = protectedCodexPaths({ fixtureFile: fixtureLoaded.file, configFile: configLoaded.file, authFile: auth, swiplPath: swipl, invocation });
       const parsed = condition === "P2" ? parseP2CodexJsonl(raw.stdout_file, paths, broker.brokerFile) : parseCodexJsonl(raw.stdout_file, paths);
@@ -342,7 +342,7 @@ async function collectCodexSeatbeltP2(options) {
       transportError = String(error && (error.stack || error.message) || error); const errorFile = path.join(run.output_dir, "collector-rejection.txt"); if (!fs.existsSync(errorFile)) writeExclusive(errorFile, transportError + "\n"); rawResponse = errorFile;
     }
     const score = scoreAnswer(response && response.answer, item.case.oracle.label);
-    const record = { record_id: `${item.case.case_id}-${condition.toLowerCase()}`, case_id: item.case.case_id, condition, counterbalanced_order: item.pair_order, fixture_sha256: fixtureLoaded.sha256, config_sha256: configLoaded.sha256, prompt_sha256: sha256(prompt), prompt: { ref: localRef(rawRoot, sealed.prompt_file), sha256: sha256(fs.readFileSync(sealed.prompt_file, "utf8")) }, raw_response: { ref: localRef(rawRoot, rawResponse), sha256: sha256(fs.readFileSync(rawResponse, "utf8")) }, provider: "codex-seatbelt-p2", model: config.model, sampling: config.sampling, retry_policy: config.retry_policy, usage: response ? response.usage : null, inspection, parsed_answer: score.parsed_answer, score, transport_error: transportError };
+    const record = { record_id: `${item.case.case_id}-${condition.toLowerCase()}`, case_id: item.case.case_id, condition, counterbalanced_order: item.pair_order, fixture_sha256: fixtureLoaded.sha256, config_sha256: configLoaded.sha256, prompt_sha256: sha256(prompt), prompt: { ref: localRef(rawRoot, sealed.prompt_file), sha256: sha256(fs.readFileSync(sealed.prompt_file, "utf8")) }, raw_response: { ref: localRef(rawRoot, rawResponse), sha256: sha256(fs.readFileSync(rawResponse, "utf8")) }, provider: traceGated ? "codex-trace-gated-p2" : "codex-seatbelt-p2", model: config.model, sampling: config.sampling, retry_policy: config.retry_policy, usage: response ? response.usage : null, inspection, parsed_answer: score.parsed_answer, score, transport_error: transportError };
     writeExclusive(path.join(run.output_dir, "record.json"), stable(record)); records.push(Object.freeze(record));
   }
   const result = aggregate(records, { file_sha256: fixtureLoaded.sha256, schema_version: fixtureLoaded.fixture.schema_version, case_count: fixtureLoaded.fixture.cases.length }, { file_sha256: configLoaded.sha256, schema_version: config.schema_version, provider: config.provider, model: config.model, sampling: config.sampling, retry_policy: config.retry_policy });
@@ -358,6 +358,7 @@ async function collectLive({ fixtureInput, configInput, allowLiveProvider, provi
   if (provider !== config.provider) throw new Error("selected provider must match config.provider");
   if (provider === "codex-seatbelt") return collectCodexSeatbelt({ fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight, swiplPath });
   if (provider === "codex-seatbelt-p2") return collectCodexSeatbeltP2({ fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight, swiplPath });
+  if (provider === "codex-trace-gated-p2") return collectCodexSeatbeltP2({ fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight, swiplPath }, { traceGated: true });
   if (typeof providerFactory !== "function") throw new Error("providerFactory must be a function");
   const plan = counterbalancedPlan(fixtureLoaded.fixture);
   fs.mkdirSync(rawRoot, { mode: 0o700 });
