@@ -9,6 +9,10 @@ const { spawnSync } = require("node:child_process");
 
 const SANDBOX = "/usr/bin/sandbox-exec";
 const SYSTEM_READ_ROOTS = Object.freeze(["/bin", "/usr/lib", "/System/Library", "/dev", "/private/var/db/timezone", "/private/var/select/sh"]);
+// Codex probes this system policy path even when it is absent. Seatbelt must
+// return ENOENT rather than EPERM, otherwise Codex treats the optional policy
+// lookup as a configuration failure.
+const CODEX_REQUIREMENTS_FILE = "/private/etc/codex/requirements.toml";
 // These are fixed OS TLS configuration files, not user or evaluation data.
 // Keep this list literal and narrow: a future required file must be added with
 // a reproduced startup probe, never by granting /private or /etc wholesale.
@@ -66,7 +70,7 @@ function createSeatbeltProfile({ runRoot, inputDir, outputDir, codexPath, authFi
   // Seatbelt needs the root vnode readable to start a process. `(literal "/")`
   // is not a recursive grant; every child still requires one of the explicit
   // `subpath`/`literal` rules below.
-  const reads = [quote("/"), runtimeRoots.map(subpath).join(" "), tlsFiles.map(quote).join(" "), subpath(input), auth ? quote(auth) : ""].filter(Boolean).join(" ");
+  const reads = [quote("/"), runtimeRoots.map(subpath).join(" "), quote(CODEX_REQUIREMENTS_FILE), tlsFiles.map(quote).join(" "), subpath(input), auth ? quote(auth) : ""].filter(Boolean).join(" ");
   return [
     "(version 1)", "(deny default)", "(allow process*)", "(allow file-map-executable)", "(allow sysctl-read)", "(allow mach-lookup)",
     "(allow network-outbound)", `(allow file-read-metadata ${metadata})`, `(allow file-read* ${reads})`, `(allow file-write* ${subpath(output)})`

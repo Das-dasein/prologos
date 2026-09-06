@@ -10,10 +10,13 @@ roots are not caller-configurable: the declared Codex executable parent is
 checked after realpath resolution and rejected if it overlaps the repository,
 CDR evidence/dataset root, or user-memory root.
 
-The profile permits outbound provider networking and only the fixed macOS TLS
-runtime files `/private/etc/ssl/openssl.cnf` and `/private/etc/ssl/cert.pem`
-when they exist; it never grants an `/etc`, `/private`, home, or repository
-tree. Before any live child, the offline preflight verifies that the resolved
+The profile permits outbound provider networking, the one exact optional Codex
+policy lookup `/private/etc/codex/requirements.toml`, and only the fixed macOS
+TLS runtime files `/private/etc/ssl/openssl.cnf` and
+`/private/etc/ssl/cert.pem` when they exist; it never grants an `/etc`,
+`/private`, home, or repository tree. The policy lookup is allowed even when
+absent so Codex observes `ENOENT`, not a Seatbelt denial. Before any live
+child, the offline preflight verifies that the resolved
 Codex executable can start with `--version` and that those declared TLS files
 are readable. The test also executes actual Seatbelt probes: host
 repository-file, `MEMORY.md`, dataset/evaluator-file reads and an outside-root
