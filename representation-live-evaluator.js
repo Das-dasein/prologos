@@ -212,18 +212,41 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   try { events = lines.map(line => JSON.parse(line)); } catch { throw new Error("Codex JSONL trace is malformed"); }
   const sealedBroker = path.resolve(brokerPath);
   const brokerState = path.dirname(sealedBroker);
-  const calls = events.filter(event => /(?:command_execution|function_call|\btool\b)/i.test(JSON.stringify(event)));
-  if (calls.length !== 1) throw new Error(`P2 trace must contain exactly one broker action, got ${calls.length}`);
-  const commandEvent = calls[0];
-  const item = commandEvent && commandEvent.item;
-  if (!item || item.type !== "command_execution") throw new Error("P2 trace broker action must be an item.type=command_execution event");
+  // A native command is emitted twice by Codex: item.started and
+  // item.completed.  Treat that pair as one action only when the lifecycle
+  // identity and the complete validated command payload agree byte-for-byte.
+  // Counting text that merely mentions command_execution would admit forged
+  // or partial traces, while accepting only the completed event would hide a
+  // missing lifecycle half.
+  const lifecycleEvents = events.filter(event => event && /^item\.(?:started|completed)$/.test(event.type) && event.item && event.item.type === "command_execution");
+  const otherActionEvents = events.filter(event => {
+    if (lifecycleEvents.includes(event)) return false;
+    return /(?:command_execution|function_call|\btool\b)/i.test(JSON.stringify(event));
+  });
+  if (otherActionEvents.length) throw new Error(`P2 trace contains foreign or unsupported action events: ${otherActionEvents.length}`);
+  if (lifecycleEvents.length === 0) throw new Error("P2 trace must contain exactly one broker lifecycle pair, got 0");
+  if (lifecycleEvents.length !== 2) throw new Error(`P2 trace must contain exactly one broker lifecycle pair, got ${lifecycleEvents.length} events`);
+  const started = lifecycleEvents.filter(event => event.type === "item.started");
+  const completedLifecycle = lifecycleEvents.filter(event => event.type === "item.completed");
+  if (started.length !== 1 || completedLifecycle.length !== 1) throw new Error("P2 trace must contain one item.started and one item.completed broker event");
+  const startedItem = started[0].item;
+  const completedItem = completedLifecycle[0].item;
+  if (typeof startedItem.id !== "string" || startedItem.id.length === 0 || completedItem.id !== startedItem.id) throw new Error("P2 trace broker lifecycle events must share the same item.id");
+  const payload = item => {
+    const copy = { ...item };
+    delete copy.id;
+    return JSON.stringify(copy, Object.keys(copy).sort());
+  };
+  if (payload(startedItem) !== payload(completedItem)) throw new Error("P2 trace broker lifecycle events must have the exact same command payload");
+  const commandEvent = started[0];
+  const item = startedItem;
   const command = item && item.command;
   const args = item && item.args;
   const shellLine = typeof command === "string" && new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(command);
   const argv = command === "/bin/zsh" && Array.isArray(args) && args.length === 2 && /^(?:-c|-lc)$/.test(args[0]) && args[1] === sealedBroker;
   if (!shellLine && !argv) throw new Error("P2 trace contains a foreign or parameterized command; expected /bin/zsh -c|-lc with the sealed broker path");
   for (const [key, value] of Object.entries(item || {})) {
-    if (key !== "type" && key !== "command" && key !== "args") throw new Error("P2 trace contains unexpected command fields");
+    if (key !== "id" && key !== "type" && key !== "command" && key !== "args") throw new Error("P2 trace contains unexpected command fields");
     if (key === "args" && !argv && value !== undefined) throw new Error("P2 trace contains command arguments outside the sealed shell wrapper");
   }
   // Codex may echo the broker's private state files in its command event or
@@ -244,7 +267,7 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
     if (Array.isArray(value)) { for (const child of value) traceLeaves(child, out, commandItem, insideCommandItem); return out; }
     if (value && typeof value === "object") for (const [key, child] of Object.entries(value)) {
       if (insideCommandItem && (key === "command" || key === "args")) continue;
-      traceLeaves(child, out, commandItem, insideCommandItem || child === commandItem);
+      traceLeaves(child, out, commandItem, insideCommandItem || child === commandItem || (child && child.type === "command_execution"));
     }
     return out;
   };

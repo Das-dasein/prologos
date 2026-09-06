@@ -40,7 +40,8 @@ function fakeP2Spawn({ seen, labels }) {
       const brokerPath = path.join(state, "query-broker.sh");
       const label = broker ? labels[p2Index++] : "entailed"; if (broker) fs.writeFileSync(path.join(state, "broker-receipt.txt"), `BROKER_RESULT: ${label}\n`);
       fs.writeFileSync(final, JSON.stringify({ answer: "RESULT: entailed" }));
-      child.stdout.end(`${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: broker ? `/bin/zsh -lc ${brokerPath}` : "foreign" } })}\n${JSON.stringify({ type: "turn.completed", usage: { input_tokens: 11, output_tokens: 2 } })}\n`); child.stderr.end(""); child.emit("close", 0);
+      const item = { id: `p2-${p2Index}`, type: "command_execution", command: broker ? `/bin/zsh -lc ${brokerPath}` : "foreign" };
+      child.stdout.end(`${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${JSON.stringify({ type: "turn.completed", usage: { input_tokens: 11, output_tokens: 2 } })}\n`); child.stderr.end(""); child.emit("close", 0);
     });
     return child;
   };
@@ -83,31 +84,37 @@ async function main() {
     }
     assert.equal(p2.aggregate.per_condition.P2.correctness_count, 12); assert.equal(p2.aggregate.per_condition.P2.format_failure_count, 0); assert.equal(p2.aggregate.records.filter(record => record.condition === "P2").every(record => record.inspection.tool_events_observed === 1), true);
     const p2Trace = path.join(parent, "p2-trace.jsonl"), brokerPath = "/sealed/query-broker.sh", done = JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } });
+    const writeLifecycle = (startedItem, completedItem = startedItem, extra = "") => fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.started", item: startedItem })}\n${JSON.stringify({ type: "item.completed", item: completedItem })}\n${extra}${done}\n`);
     for (const command of [`/bin/zsh -c ${brokerPath}`, `/bin/zsh -lc ${brokerPath}`]) {
-      fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command } })}\n${done}\n`);
+      const item = { id: "broker-1", type: "command_execution", command };
+      fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${done}\n`);
       assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1);
     }
-    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: "/bin/zsh", args: ["-c", brokerPath] } })}\n${done}\n`);
+    { const item = { id: "broker-1", type: "command_execution", command: "/bin/zsh", args: ["-c", brokerPath] }; fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${done}\n`); }
     assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1);
     for (const command of [`/bin/zsh -c ${brokerPath}; echo injected`, `/bin/zsh -lc ${brokerPath} foreign`, `/bin/zsh -lc '${brokerPath}'`]) {
-      fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command } })}\n${done}\n`);
+      const item = { id: "broker-1", type: "command_execution", command };
+      fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${done}\n`);
       assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or parameterized/);
     }
-    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: "/bin/zsh", args: ["-lc", brokerPath, "extra"] } })}\n${done}\n`);
+    { const item = { id: "broker-1", type: "command_execution", command: "/bin/zsh", args: ["-lc", brokerPath, "extra"] }; fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${done}\n`); }
     assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or parameterized/);
-    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: "/bin/zsh", args: ["-lc", brokerPath], env: { INJECTED: "1" } } })}\n${done}\n`);
+    { const item = { id: "broker-1", type: "command_execution", command: "/bin/zsh", args: ["-lc", brokerPath], env: { INJECTED: "1" } }; fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${done}\n`); }
     assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /unexpected command fields/);
-    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` } })}\n${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /exactly one broker action/);
-    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: "/sealed/foreign.sh" } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or parameterized/);
-    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "function_call", command: `/bin/zsh -lc ${brokerPath}` } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /item.type=command_execution/);
+    { const item = { id: "broker-1", type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` }; fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /exactly one broker lifecycle pair/); }
+    { const item = { id: "broker-1", type: "command_execution", command: "/sealed/foreign.sh" }; fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item: { ...item } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or parameterized/); }
+    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "function_call", command: `/bin/zsh -lc ${brokerPath}` } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unsupported action/);
+    const validItem = { id: "broker-1", type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` };
+    writeLifecycle(validItem, { ...validItem, id: "broker-2" }); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /same item.id/);
+    writeLifecycle(validItem, { ...validItem, command: "/bin/zsh -lc /sealed/other.sh" }); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /exact same command payload/);
     const brokerState = "/sealed", sealedProgram = `${brokerState}/sealed-program.pl`, brokerReceipt = `${brokerState}/broker-receipt.txt`;
-    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` } })}\n${JSON.stringify({ type: "agent_message", text: `${sealedProgram} ${brokerReceipt}` })}\n${done}\n`);
+    writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text: `${sealedProgram} ${brokerReceipt}` })}\n`);
     assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1, "current broker state files may be echoed beside the exact broker action");
     for (const text of [brokerState, "/bin/zsh"]) {
-      fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` } })}\n${JSON.stringify({ type: "agent_message", text })}\n${done}\n`);
+      writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text })}\n`);
       assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unexpected state path/);
     }
-    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` } })}\n${JSON.stringify({ type: "agent_message", text: `${brokerState}/foreign-state.txt` })}\n${done}\n`);
+    writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text: `${brokerState}/foreign-state.txt` })}\n`);
     assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unexpected state path/);
     const bad = await api.collectLive({ fixtureInput: fixture, configInput, allowLiveProvider: true, provider: "codex-seatbelt", model: config.model, rawRoot: path.join(parent, "invalid"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeSpawn({ invalid: true, seen: [] }), preflight: () => ({ status: "fake-preflight-no-provider-call" }) });
     assert.equal(bad.aggregate.invalid_or_missing_records.length, 48, "malformed JSONL makes every call a non-result");
