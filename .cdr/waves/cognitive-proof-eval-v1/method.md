@@ -122,6 +122,19 @@ Any incomplete intake is `INDETERMINATE`; an integrity-valid intake is still
 not a result until fresh CDR beta audits local evidence. The committed fixture
 is `synthetic_non_result`, has no raw file, and demonstrates parser/gates only.
 
+## Native usage reconciliation amendment (issue #46)
+
+`receipt-intake-v6` is a separate, forward-only envelope. It keeps every v5
+wire-authority, sealed-prompt, proof, artifact, pairing and leakage gate, and
+adds an independently checked native usage receipt. For `openai-api`, each
+record must carry exactly `input_tokens`, `output_tokens`, and `total_tokens`:
+non-negative safe integers where total equals input plus output. The measured
+effective context budget `E` is also a non-negative safe integer and exactly
+the provider-native `input_tokens`; intake never derives, rounds, or replaces
+it from configuration. The committed synthetic non-result uses the explicit
+all-zero shape. Versions v1 through v5 are invalid v6 inputs. This is local
+preparation only, not collection, aggregation, or an effectiveness claim.
+
 ## Actual assembled-prompt binding amendment (issue #35)
 
 `receipt-intake-v2` is a separate format and never upgrades or reinterprets a
