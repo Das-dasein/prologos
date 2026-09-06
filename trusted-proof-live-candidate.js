@@ -9,7 +9,7 @@ const path = require("node:path");
 const { assembleCondition, immutableInputs, scoreHiddenContract } = require("./trusted-proof-preflight");
 const { prepareOpenAIAnsweringRun } = require("./trusted-proof-answering");
 const { canonicalSampling } = require("./providers/openai-answering");
-const { validateEnvelope, trustedInputs } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v3");
+const { validateEnvelope, trustedInputs } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v5");
 
 const WAVE = path.join(__dirname, ".cdr/waves/cognitive-proof-eval-v1");
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -30,7 +30,7 @@ async function validateConfig(config, inputs) {
   if (config.provider !== "openai-api") throw new Error("config.provider must be openai-api");
   canonicalSampling(config.sampling);
   const registry = await trustedInputs();
-  if (config.source_commit !== registry.source_commit || config.dataset_sha256 !== inputs.dataset_sha256 || config.slot_registration_file_sha256 !== inputs.registration_sha256 || config.slot_registration_sha256 !== inputs.binding.slot_registration_sha256 || config.base_prompt_sha256 !== registry.wire_transport.template_identities.base_prompt_sha256 || config.wrapper_prompt_sha256 !== registry.wire_transport.template_identities.wrapper_prompt_sha256) throw new Error("config does not match CDR v3 registry and wire identities");
+  if (config.source_commit !== registry.source_commit || config.dataset_sha256 !== inputs.dataset_sha256 || config.slot_registration_file_sha256 !== inputs.registration_sha256 || config.slot_registration_sha256 !== inputs.binding.slot_registration_sha256 || config.base_prompt_sha256 !== registry.wire.template_identities.base_prompt_sha256 || config.wrapper_prompt_sha256 !== registry.wire.template_identities.wrapper_prompt_sha256) throw new Error("config does not match CDR v5 registry and wire identities");
   return registry;
 }
 function runView(config) {
@@ -74,8 +74,8 @@ async function collectCandidate({ config, root, allowLiveProvider, provider = "o
     if (!records.every(record => record && record.scorer && record.scorer.decision === "accepted")) {
       throw new Error("candidate receipt unavailable: every local scorer decision must be accepted");
     }
-    const receipt = { schema_version: "cognitive-proof-eval-receipt-intake-v3", kind: "candidate_live_receipt", source_commit: registry.source_commit, dataset: registry.dataset, slot_registration: registry.slot_registration, trusted_proof_digest_registry: registry.trusted_proof_digest_registry, wire_prompt_digest_registry: { path: "wire-assembled-prompt-digest-registry-v3.json", sha256: registry.registry_sha256 }, run, records };
-    const receiptFile = path.join(root, "candidate-receipt-v3.json"); fs.writeFileSync(receiptFile, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx", mode: 0o600 });
+    const receipt = { schema_version: "cognitive-proof-eval-receipt-intake-v5", kind: "candidate_live_receipt", source_commit: registry.source_commit, dataset: registry.dataset, slot_registration: registry.slot_registration, trusted_proof_digest_registry: registry.trusted_proof_digest_registry, wire_authority_prompt_digest_registry: { path: "wire-authority-assembled-prompt-digest-registry-v5.json", sha256: registry.registry_sha256 }, run, records };
+    const receiptFile = path.join(root, "candidate-receipt-v5.json"); fs.writeFileSync(receiptFile, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx", mode: 0o600 });
     const integrity = await validateEnvelope(receipt, { rawRoot: root });
     return Object.freeze({ receipt_file: receiptFile, records: records.length, integrity });
   } catch (error) { throw error; }
