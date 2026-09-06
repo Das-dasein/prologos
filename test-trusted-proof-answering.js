@@ -27,6 +27,9 @@ async function main() {
   }
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "fake", allowLiveProvider: true, config, inputs, rawDirectory: raw, clientFactory }), /fixed provider/); assert.equal(clients, 0);
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: false, config, inputs, rawDirectory: raw, clientFactory }), /allow-live-provider/); assert.equal(clients, 0);
+  const openaiMismatchRaw = path.join(root, "openai-provider-mismatch");
+  assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config: { ...config, provider: "codex-exec", sampling: { temperature: "not-reached", top_p: 1 } }, inputs, rawDirectory: openaiMismatchRaw, clientFactory: () => { throw new Error("OpenAI provider must not be constructed"); } }), /config\.provider must match selected provider/);
+  assert.equal(fs.existsSync(openaiMismatchRaw), false, "OpenAI provider mismatch creates no raw directory");
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config: { ...config, base_prompt_sha256: "0".repeat(64) }, inputs, rawDirectory: raw, clientFactory }), /wire template/); assert.equal(clients, 0);
   for (const [name, sampling, error] of [
     ["seed", { temperature: 0, top_p: 1, seed: 0 }, /exactly temperature and top_p/],
@@ -80,6 +83,10 @@ async function main() {
   };
   const codexRaw = path.join(root, "codex");
   assert.throws(() => prepareCodexExecAnsweringRun({ provider: "codex-exec", allowLiveProvider: false, config, inputs, rawDirectory: codexRaw, spawnImpl: fakeSpawn }), /allow-live-provider/);
+  const codexMismatchRaw = path.join(root, "codex-provider-mismatch");
+  assert.throws(() => prepareCodexExecAnsweringRun({ provider: "codex-exec", allowLiveProvider: true, config: { ...config, provider: "openai-api" }, inputs, rawDirectory: codexMismatchRaw, spawnImpl: () => { throw new Error("Codex provider must not be constructed or spawned"); } }), /config\.provider must match selected provider/);
+  assert.equal(fs.existsSync(codexMismatchRaw), false, "Codex provider mismatch creates no raw directory");
+  assert.equal(spawns, 0, "Codex provider mismatch never spawns");
   const codexRun = prepareCodexExecAnsweringRun({ provider: "codex-exec", allowLiveProvider: true, config, inputs, rawDirectory: codexRaw, spawnImpl: fakeSpawn, binary: "fake-codex" });
   assert.equal(spawns, 0, "Codex is not spawned until the sealed run reaches its transport");
   const codexResult = await codexRun.run(p0);

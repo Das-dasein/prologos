@@ -10,6 +10,7 @@ const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 
 function requireWireConfig(config, inputs, provider = "openai-api") {
   const immutable = requireImmutableConfig(config, inputs);
+  if (Object.hasOwn(config, "provider") && config.provider !== provider) throw new Error("config.provider must match selected provider");
   if (immutable.base_prompt_sha256 !== ASSEMBLED_PROMPT_TEMPLATE_SHA256) throw new Error("config.base_prompt_sha256 does not match sealed assembled-prompt wire template");
   if (immutable.wrapper_prompt_sha256 !== WRAPPER_TEMPLATE_SHA256) throw new Error("config.wrapper_prompt_sha256 does not match no-wrapper wire template");
   return Object.freeze({ ...immutable, ...(provider === "openai-api" ? { sampling: canonicalSampling(immutable.sampling) } : {}) });
