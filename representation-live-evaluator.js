@@ -233,10 +233,22 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   // foreign-command failure, not a path-classification side effect.
   const sealedProgram = path.join(brokerState, "sealed-program.pl");
   const brokerReceipt = path.join(brokerState, "broker-receipt.txt");
-  const allowedP2PathValue = value => value === "/bin/zsh" || value === sealedBroker || value === brokerState || value === sealedProgram || value === brokerReceipt || new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(value);
+  const allowedP2PathValue = value => value === sealedBroker || value === sealedProgram || value === brokerReceipt || new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(value);
   const absolutePathLike = /(^|\s)\/(?:[^\s"']+)/;
   const protectedPaths = [...new Set(prohibitedPaths.map(value => path.resolve(value)))];
-  for (const event of events) for (const value of stringLeaves(event)) {
+  // `/bin/zsh` and the broker state directory are admissible only as parts of
+  // the already validated native command wrapper.  Do not let the generic
+  // path scan turn them into standalone allowlisted text elsewhere in JSONL.
+  const traceLeaves = (value, out = [], commandItem = item, insideCommandItem = false) => {
+    if (typeof value === "string") { out.push(value); return out; }
+    if (Array.isArray(value)) { for (const child of value) traceLeaves(child, out, commandItem, insideCommandItem); return out; }
+    if (value && typeof value === "object") for (const [key, child] of Object.entries(value)) {
+      if (insideCommandItem && (key === "command" || key === "args")) continue;
+      traceLeaves(child, out, commandItem, insideCommandItem || child === commandItem);
+    }
+    return out;
+  };
+  for (const event of events) for (const value of traceLeaves(event)) {
     if (allowedP2PathValue(value)) continue;
     const pathTokens = value.match(/\/[^\s"']+/g) || [];
     if (pathTokens.length && pathTokens.every(token => allowedP2PathValue(token))) continue;

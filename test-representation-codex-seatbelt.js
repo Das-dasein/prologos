@@ -103,6 +103,10 @@ async function main() {
     const brokerState = "/sealed", sealedProgram = `${brokerState}/sealed-program.pl`, brokerReceipt = `${brokerState}/broker-receipt.txt`;
     fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` } })}\n${JSON.stringify({ type: "agent_message", text: `${sealedProgram} ${brokerReceipt}` })}\n${done}\n`);
     assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1, "current broker state files may be echoed beside the exact broker action");
+    for (const text of [brokerState, "/bin/zsh"]) {
+      fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` } })}\n${JSON.stringify({ type: "agent_message", text })}\n${done}\n`);
+      assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unexpected state path/);
+    }
     fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: `/bin/zsh -lc ${brokerPath}` } })}\n${JSON.stringify({ type: "agent_message", text: `${brokerState}/foreign-state.txt` })}\n${done}\n`);
     assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unexpected state path/);
     const bad = await api.collectLive({ fixtureInput: fixture, configInput, allowLiveProvider: true, provider: "codex-seatbelt", model: config.model, rawRoot: path.join(parent, "invalid"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeSpawn({ invalid: true, seen: [] }), preflight: () => ({ status: "fake-preflight-no-provider-call" }) });
