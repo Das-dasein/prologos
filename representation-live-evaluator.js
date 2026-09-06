@@ -219,6 +219,7 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   if (calls.length !== 1) throw new Error(`P2 trace must contain exactly one broker action, got ${calls.length}`);
   const commandEvent = calls[0];
   const item = commandEvent && commandEvent.item;
+  if (!item || item.type !== "command_execution") throw new Error("P2 trace broker action must be an item.type=command_execution event");
   const command = item && item.command;
   const args = item && item.args;
   const shellLine = typeof command === "string" && new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(command);
