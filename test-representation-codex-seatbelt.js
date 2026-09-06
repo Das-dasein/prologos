@@ -77,6 +77,9 @@ async function main() {
       assert.equal(call.args.includes(seatbelt.SANDBOX), false, "trace-gated transport must not wrap Codex in Seatbelt");
       assert.equal(call.args[call.args.indexOf("--model") + 1], "gpt-5.4-mini");
       assert.equal(call.args[call.args.indexOf("--sandbox") + 1], "workspace-write");
+      assert.equal(call.args[call.args.indexOf("-C") + 1], call.options.cwd, "trace-gated Codex -C must bind to the fresh workspace");
+      assert.equal(call.options.cwd.endsWith(`${path.sep}workspace`), true, "trace-gated Codex cwd must be the fresh workspace");
+      assert.equal(call.args[call.args.indexOf("-C") + 1], call.options.cwd, "trace-gated Codex -C and cwd must be identical");
     }
     assert.equal(p2.aggregate.per_condition.P2.correctness_count, 12); assert.equal(p2.aggregate.per_condition.P2.format_failure_count, 0); assert.equal(p2.aggregate.records.filter(record => record.condition === "P2").every(record => record.inspection.tool_events_observed === 1), true);
     const p2Trace = path.join(parent, "p2-trace.jsonl"), brokerPath = "/sealed/query-broker.sh", done = JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } });

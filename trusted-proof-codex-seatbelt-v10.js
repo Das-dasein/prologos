@@ -156,8 +156,8 @@ function buildTraceAuditedInvocation({ run, sealed, codexPath, model, authFile }
   if (!run || !sealed || typeof model !== "string" || !model.trim()) throw Error("run, sealed input and model are required");
   const codex = absoluteFile(codexPath, "codex_path"), privateState = provisionPrivateCodexState(run, authFile);
   const finalOutput = path.join(run.output_dir, "final-output.txt"), stdout = path.join(run.output_dir, "codex-stdout.jsonl"), stderr = path.join(run.output_dir, "codex-stderr.txt");
-  const args = ["exec", "--json", "--ephemeral", "-C", run.run_root, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "workspace-write", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
-  return Object.freeze({ command: codex, args: Object.freeze(args), cwd: run.run_root, env: Object.freeze({ CODEX_HOME: run.state_dir, HOME: run.state_dir, TMPDIR: privateState.temp_dir, PATH: process.env.PATH || "/usr/bin:/bin" }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateState.auth_file, run_root: run.run_root });
+  const args = ["exec", "--json", "--ephemeral", "-C", run.workspace_dir, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "workspace-write", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
+  return Object.freeze({ command: codex, args: Object.freeze(args), cwd: run.workspace_dir, env: Object.freeze({ CODEX_HOME: run.state_dir, HOME: run.state_dir, TMPDIR: privateState.temp_dir, PATH: process.env.PATH || "/usr/bin:/bin" }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateState.auth_file, run_root: run.run_root });
 }
 function runSeatbeltProbe({ profile, cwd, command, args = [] }) {
   const result = spawnSync(SANDBOX, ["-p", profile, command, ...args], { cwd, encoding: "utf8" });
