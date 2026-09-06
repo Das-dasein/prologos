@@ -4,163 +4,91 @@ const fsp = fs.promises;
 const path = require("path");
 const crypto = require("crypto");
 const readline = require("readline");
-const os = require("os");
-const { execFile } = require("child_process");
 
-const CATEGORIES = ["dynamic", "static", "conditional"];
-const QUERY_CLASSES = ["direct_recall", "current_state", "conflict", "rule_derived"];
-const MAPPING_VERSION = "memconflict-step4_4-mapping-v1";
+const SOURCE_SCHEMA = "memconflict-step4_4-source-index-v1";
+const MAPPING_VERSION = "memconflict-step4_4-intake-v1";
+const CATEGORY_BY_SOURCE = Object.freeze({ dynamic_conflict: "dynamic", static_conflict: "static", conditional_conflict: "conditional" });
+const ROLES = new Set(["user", "assistant"]);
 
-function sha256Bytes(bytes) { return crypto.createHash("sha256").update(bytes).digest("hex"); }
-function sha256File(file) { return sha256Bytes(fs.readFileSync(file)); }
-function stable(value) {
-  const order = input => Array.isArray(input) ? input.map(order) : input && typeof input === "object" ? Object.fromEntries(Object.keys(input).sort().map(k => [k, order(input[k])])) : input;
-  return `${JSON.stringify(order(value), null, 2)}\n`;
+function fail(code, message) { const error = new Error(message); error.code = code; throw error; }
+function nonEmpty(value, field) { if (typeof value !== "string" || !value.trim()) fail("INELIGIBLE", `${field} must be non-empty text`); return value; }
+function absolute(value, field) { if (!path.isAbsolute(value)) fail("ARGS", `${field} must be absolute`); return path.resolve(nonEmpty(value, field)); }
+function date(value, field) { if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00Z`))) fail("INELIGIBLE", `${field} must be an ISO date`); return value; }
+function array(value, field) { if (!Array.isArray(value)) fail("INELIGIBLE", `${field} must be an array`); return value; }
+function object(value, field) { if (!value || typeof value !== "object" || Array.isArray(value)) fail("INELIGIBLE", `${field} must be an object`); return value; }
+function sha256(bytes) { return crypto.createHash("sha256").update(bytes).digest("hex"); }
+function stable(value) { const sort = input => Array.isArray(input) ? input.map(sort) : input && typeof input === "object" ? Object.fromEntries(Object.keys(input).sort().map(key => [key, sort(input[key])])) : input; return `${JSON.stringify(sort(value), null, 2)}\n`; }
+
+function validateConflictList(value, field, category) {
+  return array(value, field).map((item, index) => {
+    object(item, `${field}[${index}]`); nonEmpty(item.Conflict_ID, `${field}[${index}].Conflict_ID`);
+    if (!["Point_A", "Point_B", "Point_C", "Point_D", "Distractor"].includes(item.Role)) fail("INELIGIBLE", `${field}[${index}].Role is unsupported`);
+    if (category === "conditional" && item.Role !== "Distractor") for (const key of ["Rule_ID", "Preference_Type", "Item", "Condition"]) nonEmpty(item[key], `${field}[${index}].${key}`);
+    return item;
+  });
 }
-function fail(code, message) { const e = new Error(message); e.code = code; throw e; }
-function text(value, field) { if (typeof value !== "string" || !value.trim()) fail("INELIGIBLE", `${field} must be non-empty text`); return value; }
-function absolute(value, field) { const p = text(value, field); if (!path.isAbsolute(p)) fail("ARGS", `${field} must be absolute`); return path.resolve(p); }
-function safeAtom(value) {
-  const s = text(value, "atom");
-  if (!/^[a-z][a-z0-9_]*$/.test(s)) fail("INELIGIBLE", `unsafe Prolog atom: ${s}`);
-  return s;
+function validateUpdated(value, field) { return array(value, field).map((item, index) => { object(item, `${field}[${index}]`); nonEmpty(item.Attribute, `${field}[${index}].Attribute`); if (!("Before" in item && "After" in item)) fail("INELIGIBLE", `${field}[${index}] must contain Before and After`); return item; }); }
+function dialogueIndex(raw, field) {
+  object(raw, field);
+  return Object.keys(raw).sort((a, b) => Number(a.slice(14)) - Number(b.slice(14))).map(turnId => {
+    if (!/^dialogue_turn_\d+$/.test(turnId)) fail("INELIGIBLE", `${field}.${turnId} is not a dialogue turn key`);
+    return { turn_id: turnId, messages: array(raw[turnId], `${field}.${turnId}`).map((message, messageIndex) => {
+      object(message, `${field}.${turnId}[${messageIndex}]`);
+      let role = message.role;
+      let content = message.content;
+      // The observed release has five assistant messages using
+      // {assistant: "content", content: "..."} and nineteen using
+      // {assistant: {content: "..."}}. These are explicit source shapes,
+      // so normalize them while retaining the original shape marker.
+      let sourceShape = "role_content";
+      if (!role && Object.prototype.hasOwnProperty.call(message, "assistant")) {
+        role = "assistant"; sourceShape = typeof message.assistant === "string" ? "assistant_key_plus_content" : "assistant_object_plus_content";
+        if (content === undefined && message.assistant && typeof message.assistant === "object") content = message.assistant.content;
+      }
+      if (!ROLES.has(role)) fail("INELIGIBLE", `${field}.${turnId}[${messageIndex}].role is unsupported or missing`);
+      content = nonEmpty(content, `${field}.${turnId}[${messageIndex}].content`);
+      return { message_index: messageIndex, role, content, content_sha256: sha256(Buffer.from(content, "utf8")), source_shape: sourceShape };
+    }) };
+  });
 }
-function quote(value) {
-  const s = text(String(value), "atom");
-  if (!/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(s)) fail("INELIGIBLE", `unsafe Prolog atom: ${s}`);
-  return `'${s.replace(/'/g, "''")}'`;
+function questionIndex(raw, field, session) {
+  object(raw, field); const questionId = nonEmpty(raw.question_id, `${field}.question_id`); const conflictType = nonEmpty(raw.conflict_type, `${field}.conflict_type`); const category = CATEGORY_BY_SOURCE[conflictType];
+  if (!category) fail("INELIGIBLE", `${field}.conflict_type is unsupported: ${conflictType}`);
+  return { question_id: questionId, question: nonEmpty(raw.question, `${field}.question`), gold_answer: nonEmpty(raw.answer, `${field}.answer`), source_conflict_type: conflictType, category, ability_target: nonEmpty(raw.ability_target, `${field}.ability_target`), difficulty: nonEmpty(raw.difficulty, `${field}.difficulty`), source_path: field, source_turn_coordinates: session.dialogue.flatMap(turn => turn.messages.map(message => ({ turn_id: turn.turn_id, message_index: message.message_index, role: message.role, content_sha256: message.content_sha256 }))), formalization: { status: "not_formalized", reason: "MemConflict prose and metadata are indexed for later reviewed mapping; no Prolog predicate, argument, rule, or oracle is inferred here." } };
 }
-function arr(value, field) { if (!Array.isArray(value)) fail("INELIGIBLE", `${field} must be an array`); return value; }
-function recordCategory(record) {
-  const category = record.conflict_type || record.conflict && record.conflict.type;
-  if (!CATEGORIES.includes(category)) fail("INELIGIBLE", `${record.record_id || "record"}: unsupported conflict type`);
-  return category;
+function sessionIndex(raw, field) {
+  object(raw, field); if (!Number.isInteger(raw.Session_ID) || raw.Session_ID < 0) fail("INELIGIBLE", `${field}.Session_ID must be a non-negative integer`);
+  const dialogue = dialogueIndex(raw.Session_Dialogue, `${field}.Session_Dialogue`); const questions = array(raw.Session_Questions, `${field}.Session_Questions`);
+  const session = { session_id: raw.Session_ID, date: date(raw.Date, `${field}.Date`), session_type: nonEmpty(raw.Session_Type, `${field}.Session_Type`), source_path: field, dialogue, conflict_metadata: { updated_attributes: validateUpdated(raw.Updated_Attributes === undefined ? [] : raw.Updated_Attributes, `${field}.Updated_Attributes`), static: validateConflictList(raw.Static_Conflict_Information, `${field}.Static_Conflict_Information`, "static"), conditional: validateConflictList(raw.Conditional_Conflict_Information, `${field}.Conditional_Conflict_Information`, "conditional"), others_dynamic: array(raw.Others_Dynamic_Information, `${field}.Others_Dynamic_Information`) }, questions: [] };
+  session.conflict_metadata.others_dynamic.forEach((item, index) => object(item, `${field}.Others_Dynamic_Information[${index}]`)); session.questions = questions.map((question, index) => questionIndex(question, `${field}.Session_Questions[${index}]`, session));
+  if (raw.Session_Question_Count !== undefined && raw.Session_Question_Count !== session.questions.length) fail("INELIGIBLE", `${field}.Session_Question_Count disagrees with Session_Questions`); return session;
 }
-function claimFrom(raw, index, record) {
-  const c = raw && raw.assertion ? raw.assertion : raw;
-  const id = text(c && c.id, `${record.record_id}.claims[${index}].id`);
-  const predicate = safeAtom(c.predicate, `${record.record_id}.claims[${index}].predicate`);
-  const args = arr(c.args, `${record.record_id}.claims[${index}].args`).map((x, i) => safeAtom(x, `${id}.args[${i}]`));
-  const polarity = c.polarity === undefined ? "positive" : text(c.polarity, `${id}.polarity`);
-  if (!["positive", "negative"].includes(polarity)) fail("INELIGIBLE", `${id}: polarity must be positive or negative`);
-  const value = safeAtom(c.value, `${id}.value`);
-  const status = c.status === undefined ? "asserted" : text(c.status, `${id}.status`);
-  const sessionId = text(c.session_id, `${id}.session_id`);
-  const turnId = text(c.turn_id, `${id}.turn_id`);
-  const date = text(c.date, `${id}.date`);
-  const span = text(c.source_span, `${id}.source_span`);
-  const fieldPath = text(c.field_path, `${id}.field_path`);
-  const supersedes = c.supersedes === null || c.supersedes === undefined ? null : text(c.supersedes, `${id}.supersedes`);
-  return { id, predicate, args, polarity, value, status, session_id: sessionId, turn_id: turnId, date, source_span: span, field_path: fieldPath, supersedes };
+function personaIndex(raw, line) { object(raw, `line ${line}`); const personaId = nonEmpty(raw.ID, `line ${line}.ID`); const chain = array(raw.Full_Session_Chain, `line ${line}.Full_Session_Chain`); if (!chain.length) fail("INELIGIBLE", `line ${line}.Full_Session_Chain is empty`); return { persona_id: personaId, source_line: line, source_path: `line ${line}`, sessions: chain.map((session, index) => sessionIndex(session, `line ${line}.Full_Session_Chain[${index}]`)) }; }
+
+async function readSource(source) {
+  const records = []; const rejected = []; const ids = new Set(); const input = fs.createReadStream(source, { encoding: "utf8" }); const rl = readline.createInterface({ input, crlfDelay: Infinity }); let line = 0;
+  try { for await (const raw of rl) {
+    line++;
+    if (!raw.trim()) { rejected.push({ source_line: line, record_id: null, reason: "malformed_source", detail: "blank JSONL line" }); continue; }
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (error) { rejected.push({ source_line: line, record_id: null, reason: "malformed_source", detail: `invalid JSONL (${error.message})` }); continue; }
+    const candidateId = parsed && parsed.ID;
+    if (ids.has(candidateId)) { rejected.push({ source_line: line, record_id: candidateId || null, reason: "duplicate_id", detail: "duplicate top-level ID" }); continue; }
+    try { const indexed = personaIndex(parsed, line); ids.add(indexed.persona_id); records.push(indexed); } catch (error) { rejected.push({ source_line: line, record_id: typeof candidateId === "string" ? candidateId : null, reason: String(error.code || "ineligible").toLowerCase(), detail: error.message }); }
+  } } finally { input.destroy(); }
+  if (!records.length) fail("INELIGIBLE", "source contains no eligible records"); return { records, rejected };
 }
-function normalize(record, expectedCategory) {
-  if (!record || typeof record !== "object" || Array.isArray(record)) fail("INELIGIBLE", "record must be an object");
-  const recordId = text(record.record_id, "record_id");
-  const category = recordCategory(record);
-  if (category !== expectedCategory) fail("INELIGIBLE", `${recordId}: declared category differs from selection`);
-  const profileClaims = record.profile && record.profile.claims;
-  const timelineClaims = record.timeline && record.timeline.claims;
-  const rawClaims = [...(Array.isArray(profileClaims) ? profileClaims : []), ...(Array.isArray(timelineClaims) ? timelineClaims : [])];
-  if (!rawClaims.length) fail("INELIGIBLE", `${recordId}: no mapped profile/timeline claims`);
-  const claims = rawClaims.map((c, i) => claimFrom(c, i, record));
-  const ids = new Set(claims.map(c => c.id));
-  for (const c of claims) if (c.supersedes && !ids.has(c.supersedes)) fail("INELIGIBLE", `${recordId}: supersedes target is absent: ${c.supersedes}`);
-  const query = record.query;
-  if (!query || !QUERY_CLASSES.includes(query.class)) fail("INELIGIBLE", `${recordId}: query.class is not supported`);
-  const qPred = safeAtom(query.predicate, `${recordId}.query.predicate`);
-  const qArgs = arr(query.args, `${recordId}.query.args`).map((x, i) => safeAtom(x, `${recordId}.query.args[${i}]`));
-  const qValue = safeAtom(query.value, `${recordId}.query.value`);
-  const rules = Array.isArray(record.rules) ? record.rules.map((r, i) => normalizeRule(r, `${recordId}.rules[${i}]`)) : [];
-  if (query.class === "rule_derived" && !rules.length) fail("INELIGIBLE", `${recordId}: rule_derived query has no rule`);
-  const gold = record.gold;
-  if (!gold || !["entailed", "contradicted", "unknown", "conflict"].includes(gold.label)) fail("INELIGIBLE", `${recordId}: invalid gold.label`);
-  return {
-    record_id: recordId, category, query: { class: query.class, predicate: qPred, args: qArgs, value: qValue },
-    claims, rules, gold: { label: gold.label },
-    source_excerpt: { record_id: recordId, sessions: record.sessions || null, dialogue: record.dialogue || null, query, conflict: record.conflict || { type: category } },
-  };
+function countIndex(personas) { const counts = { personas: personas.length, sessions: 0, questions: 0, by_conflict_type: { dynamic: 0, static: 0, conditional: 0 } }; for (const persona of personas) for (const session of persona.sessions) { counts.sessions++; for (const question of session.questions) { counts.questions++; counts.by_conflict_type[question.category]++; } } return counts; }
+
+async function adapt({ source, sourceCommit, out }) {
+  source = absolute(source, "--source"); out = absolute(out, "--out"); sourceCommit = nonEmpty(sourceCommit, "--source-commit"); if (fs.existsSync(out)) fail("OUT_NOT_FRESH", `--out already exists: ${out}`); if (!fs.existsSync(source)) fail("SOURCE_MISSING", `source does not exist: ${source}`);
+  const sourceBytes = fs.readFileSync(source); const sourceSha256 = sha256(sourceBytes); const intake = await readSource(source); const personas = intake.records; const counts = countIndex(personas);
+  const index = { schema_version: SOURCE_SCHEMA, mapping_version: MAPPING_VERSION, source: { path: source, sha256: sourceSha256, bytes: sourceBytes.length, upstream_commit: sourceCommit }, counts, semantics: { prose_to_prolog: "not_performed", oracle: "not_computed", note: "This intake binds source identity and provenance only. A reviewed mapping contract must formalize selected questions later." }, personas };
+  const manifest = { schema_version: "memconflict-source-manifest-v2", source: { path: source, sha256: sourceSha256, bytes: sourceBytes.length, upstream_commit: sourceCommit, redistribution: "operator_local_only_license_unresolved" }, index_schema: SOURCE_SCHEMA, mapping_version: MAPPING_VERSION, counts, license_gate: { status: "blocked_pending_upstream_terms", source_may_not_be_redistributed: true } };
+  const rejection = { schema_version: "memconflict-rejection-report-v2", source_sha256: sourceSha256, excluded: intake.rejected, note: "Ineligible records are excluded from the index with a typed reason; no fields from them are normalized." };
+  await fsp.mkdir(out, { recursive: true, mode: 0o700 }); await Promise.all([["source-manifest.json", manifest], ["index.json", index], ["rejection-report.json", rejection]].map(([name, value]) => fsp.writeFile(path.join(out, name), stable(value), { flag: "wx", mode: 0o600 })));
+  return { out, source_sha256: sourceSha256, counts, index_sha256: sha256(Buffer.from(stable(index))) };
 }
-function normalizeRule(raw, field) {
-  if (!raw || typeof raw !== "object") fail("INELIGIBLE", `${field} must be an object`);
-  const id = text(raw.id, `${field}.id`);
-  const head = raw.head; if (!head) fail("INELIGIBLE", `${field}.head missing`);
-  const normalizeAtom = (x, f) => ({ predicate: safeAtom(x.predicate, `${f}.predicate`), args: arr(x.args, `${f}.args`).map((v, i) => safeAtom(v, `${f}.args[${i}]`)), value: safeAtom(x.value, `${f}.value`) });
-  return { id, head: normalizeAtom(head, `${field}.head`), body: arr(raw.body, `${field}.body`).map((x, i) => normalizeAtom(x, `${field}.body[${i}]`)) };
-}
-function term(atom) { return quote(atom); }
-function fact(c) { return `claim(${term(c.id)},${term(c.predicate)},[${c.args.map(term).join(",")}],${term(c.polarity)},${term(c.value)},${term(c.status)},${term(c.date)},${term(c.session_id)},${term(c.turn_id)}).`; }
-function rule(r) {
-  const atom = x => `atom(${term(x.predicate)},[${x.args.map(term).join(",")}],${term(x.value)})`;
-  return `declared_rule(${term(r.id)},${atom(r.head)},[${r.body.map(atom).join(",")}]).`;
-}
-async function runOracle(caseData) {
-  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "memconflict-oracle-"));
-  const file = path.join(dir, "oracle.pl");
-  const q = caseData.query;
-  const program = [
-    ":- use_module(library(http/json)).",
-    ...caseData.claims.map(fact), ...caseData.claims.filter(c => c.supersedes).map(c => `supersedes(${term(c.id)},${term(c.supersedes)}).`), ...caseData.rules.map(rule),
-    "declared_rule(_,_,_) :- fail.",
-    "supersedes(_,_) :- fail.",
-    "active(C) :- claim(C,_,_,_,_,_,_,_,_), \\+ (supersedes(N,C), claim(N,_,_,_,_,S,_,_,_), S \\= retracted).",
-    "atom_holds(atom(P,A,V), C) :- active(C), claim(C,P,A,positive,V,S,_,_,_), S \\= retracted.",
-    "atom_holds(atom(P,A,V), rule(R)) :- declared_rule(R,atom(P,A,V),Body), maplist(body_holds,Body).",
-    "body_holds(A) :- atom_holds(A,_).",
-    "matching(P,A,V,C) :- atom_holds(atom(P,A,V),C).",
-    "proof_id(rule(R),I) :- !, atom_concat('rule:',R,I).",
-    "proof_id(I,I) :- atom(I).",
-    "evidence(P,A,V,Ids) :- findall(I,(matching(P,A,V,C),proof_id(C,I)),Raw), sort(Raw,Ids).",
-    "query_conflict(P,A,V) :- matching(P,A,V,_), matching(P,A,Other,_), Other \\= V.",
-    `solve(conflict,Ids) :- query_conflict(${term(q.predicate)},[${q.args.map(term).join(",")}],${term(q.value)}), evidence(${term(q.predicate)},[${q.args.map(term).join(",")}],${term(q.value)},Ids), !.`,
-    `solve(entailed,Ids) :- matching(${term(q.predicate)},[${q.args.map(term).join(",")}],${term(q.value)},_), evidence(${term(q.predicate)},[${q.args.map(term).join(",")}],${term(q.value)},Ids), !.`,
-    `solve(contradicted,Ids) :- atom_value(${term(q.predicate)},[${q.args.map(term).join(",")}],${term(q.value)},Other), matching(${term(q.predicate)},[${q.args.map(term).join(",")}],Other,_), evidence(${term(q.predicate)},[${q.args.map(term).join(",")}],Other,Ids), !.`,
-    "solve(unknown,[]).",
-    `atom_value(P,A,V,O) :- matching(P,A,V,_), matching(P,A,O,_), O \\= V.`,
-    "main :- solve(Label,Proof), findall(C,active(C),Active), json_write_dict(current_output,_{label:Label,proof:Proof,active:Active}), nl.",
-  ].join("\n");
-  await fsp.writeFile(file, `${program}\n`, { mode: 0o600 });
-  try {
-    const output = await new Promise((resolve, reject) => execFile("swipl", ["-q", "-s", file, "-g", "main", "-t", "halt"], { timeout: 10000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => error ? reject(new Error(`SWI oracle failed: ${stderr || error.message}`)) : resolve(stdout)));
-    return JSON.parse(output.trim());
-  } finally { await fsp.rm(dir, { recursive: true, force: true }); }
-}
-async function readJsonl(source) {
-  const records = new Map();
-  const input = fs.createReadStream(source, { encoding: "utf8" });
-  const rl = readline.createInterface({ input, crlfDelay: Infinity });
-  let line = 0;
-  try {
-    for await (const raw of rl) { line++; if (!raw.trim()) continue; let value; try { value = JSON.parse(raw); } catch (e) { fail("MALFORMED_SOURCE", `line ${line}: invalid JSONL (${e.message})`); } if (!value.record_id) fail("INELIGIBLE", `line ${line}: missing record_id`); if (records.has(value.record_id)) fail("INELIGIBLE", `duplicate record_id: ${value.record_id}`); records.set(value.record_id, value); }
-  } finally { input.destroy(); }
-  return records;
-}
-async function adapt({ source, sourceCommit, selection, out }) {
-  source = absolute(source, "--source"); out = absolute(out, "--out"); sourceCommit = text(sourceCommit, "--source-commit");
-  if (fs.existsSync(out)) fail("OUT_NOT_FRESH", `--out already exists: ${out}`);
-  if (!fs.existsSync(source)) fail("SOURCE_MISSING", `source does not exist: ${source}`);
-  const selectionPath = absolute(selection, "--selection");
-  const selected = JSON.parse(fs.readFileSync(selectionPath, "utf8"));
-  if (selected.schema_version !== "memconflict-selection-v1" || !Array.isArray(selected.records)) fail("INELIGIBLE", "selection schema is invalid");
-  if (selected.source_commit && selected.source_commit !== sourceCommit) fail("INELIGIBLE", "selection source_commit does not match --source-commit");
-  const byId = new Map(); for (const item of selected.records) { if (!item || typeof item.id !== "string" || !CATEGORIES.includes(item.category)) fail("INELIGIBLE", "invalid selection item"); if (byId.has(item.id)) fail("INELIGIBLE", `duplicate selection id: ${item.id}`); byId.set(item.id, item.category); }
-  if (selected.records.length !== 24 || CATEGORIES.some(c => selected.records.filter(x => x.category === c).length !== 8)) fail("INELIGIBLE", "selection must contain eight records per conflict type");
-  const sourceMap = await readJsonl(source); const rejection = [];
-  for (const id of sourceMap.keys()) if (!byId.has(id)) rejection.push({ record_id: id, reason: "not_selected" });
-  const normalized = [];
-  for (const [id, category] of byId) { const raw = sourceMap.get(id); if (!raw) { rejection.push({ record_id: id, reason: "selected_id_missing" }); continue; } try { normalized.push(normalize(raw, category)); } catch (e) { rejection.push({ record_id: id, reason: e.code || "ineligible", detail: e.message }); } }
-  if (rejection.some(x => x.reason !== "not_selected") || normalized.length !== 24) fail("INELIGIBLE", `selection mapping failed (${rejection.filter(x => x.reason !== "not_selected").length} selected records rejected)`);
-  const oracle = [];
-  for (const item of normalized) { const result = await runOracle(item); if (result.label !== item.gold.label) fail("ORACLE_MISMATCH", `${item.record_id}: source gold ${item.gold.label}, oracle ${result.label}`); oracle.push({ record_id: item.record_id, query: item.query, answer: result.label, active_claim_ids: result.active, proof_basis: result.proof }); }
-  const sourceBytes = fs.readFileSync(source); const selectionBytes = fs.readFileSync(selectionPath);
-  const ruleSetSha256 = sha256Bytes(Buffer.from(stable(normalized.flatMap(x => x.rules.map(rule => ({ record_id: x.record_id, ...rule }))))));
-  const fixture = { schema_version: "memconflict-local-fixture-v1", mapping_version: MAPPING_VERSION, source_commit: sourceCommit, source_sha256: sha256Bytes(sourceBytes), rule_set_sha256: ruleSetSha256, selected: normalized };
-  const oracleFile = { schema_version: "memconflict-oracle-v1", mapping_version: MAPPING_VERSION, source_sha256: fixture.source_sha256, selection_sha256: sha256Bytes(selectionBytes), rule_set_sha256: ruleSetSha256, cases: oracle };
-  const manifest = { schema_version: "memconflict-source-manifest-v1", source: { path: source, sha256: fixture.source_sha256, bytes: sourceBytes.length, upstream_commit: sourceCommit, redistribution: "operator_local_only_license_unresolved" }, selection: { path: selectionPath, sha256: sha256Bytes(selectionBytes), records: selected.records.map(x => x.id) }, mapping_version: MAPPING_VERSION, rule_set_sha256: ruleSetSha256, license_gate: { status: "blocked_pending_upstream_terms", source_may_not_be_redistributed: true } };
-  const report = { schema_version: "memconflict-rejection-report-v1", source_sha256: fixture.source_sha256, excluded: rejection };
-  await fsp.mkdir(out, { recursive: true, mode: 0o700 });
-  await Promise.all([["source-manifest.json", manifest], ["fixture.json", fixture], ["oracle.json", oracleFile], ["rejection-report.json", report]].map(async ([name, value]) => fsp.writeFile(path.join(out, name), stable(value), { flag: "wx", mode: 0o600 })));
-  return { out, cases: normalized.length, source_sha256: fixture.source_sha256, oracle_sha256: sha256Bytes(Buffer.from(stable(oracleFile))) };
-}
-function parseArgs(argv) { const a = {}; for (let i = 0; i < argv.length; i++) { const k = argv[i]; if (!["--source", "--source-commit", "--selection", "--out"].includes(k) || !argv[i + 1]) fail("ARGS", "usage: memconflict-adapter.js --source ABS --source-commit REV --selection ABS --out FRESH_ABS"); a[k.slice(2)] = argv[++i]; } if (Object.keys(a).length !== 4) fail("ARGS", "all four arguments are required"); return a; }
-module.exports = { adapt, normalize, normalizeRule, readJsonl, runOracle, parseArgs, MAPPING_VERSION };
+function parseArgs(argv) { const args = {}; for (let i = 0; i < argv.length; i += 2) { const key = argv[i]; if (!["--source", "--source-commit", "--out"].includes(key) || !argv[i + 1]) fail("ARGS", "usage: memconflict-adapter.js --source ABS --source-commit REV --out FRESH_ABS"); const name = key === "--source-commit" ? "sourceCommit" : key.slice(2); args[name] = argv[i + 1]; } if (Object.keys(args).length !== 3) fail("ARGS", "--source, --source-commit and --out are required"); return args; }
+module.exports = { adapt, readSource, personaIndex, sessionIndex, questionIndex, parseArgs, MAPPING_VERSION, SOURCE_SCHEMA };
 if (require.main === module) adapt(parseArgs(process.argv.slice(2))).then(result => console.log(JSON.stringify(result))).catch(error => { console.error(`memconflict-adapter: ${error.code || "ERROR"}: ${error.message}`); process.exitCode = 1; });
