@@ -18,7 +18,9 @@ TLS runtime files `/private/etc/ssl/openssl.cnf` and
 `/private`, home, or repository tree. The policy lookup is allowed even when
 absent so Codex observes `ENOENT`, not a Seatbelt denial. The two spellings
 are necessary because Codex `exec` uses `/etc` while Seatbelt may preserve the
-literal open path rather than resolving the symlink first. Before any live
+literal open path rather than resolving the symlink first. Their ancestor
+directories receive metadata traversal only; content reads remain the two
+literal files. Before any live
 child, the offline preflight verifies that the resolved
 Codex executable can start with `--version` and that those declared TLS files
 are readable. The test also executes actual Seatbelt probes: host
