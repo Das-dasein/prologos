@@ -129,6 +129,17 @@ function buildCodexInvocation({ run, sealed, codexPath, model, authFile }) {
   // back to the user's home despite CODEX_HOME being sealed.
   return Object.freeze({ command: SANDBOX, args: Object.freeze(args), cwd: run.run_root, env: Object.freeze({ CODEX_HOME: run.state_dir, HOME: run.state_dir, TMPDIR: privateState.temp_dir }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateState.auth_file, profile, run_root: run.run_root });
 }
+// Pragmatic v10 answering mode. It deliberately does not claim the outer
+// Seatbelt boundary after macOS resolver failures; instead each raw trace must
+// contain no tool/command event. Codex's own workspace sandbox and a fresh cwd
+// remain in force.
+function buildTraceAuditedInvocation({ run, sealed, codexPath, model, authFile }) {
+  if (!run || !sealed || typeof model !== "string" || !model.trim()) throw Error("run, sealed input and model are required");
+  const codex = absoluteFile(codexPath, "codex_path"), privateState = provisionPrivateCodexState(run, authFile);
+  const finalOutput = path.join(run.output_dir, "final-output.txt"), stdout = path.join(run.output_dir, "codex-stdout.jsonl"), stderr = path.join(run.output_dir, "codex-stderr.txt");
+  const args = ["exec", "--json", "--ephemeral", "-C", run.run_root, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "workspace-write", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
+  return Object.freeze({ command: codex, args: Object.freeze(args), cwd: run.run_root, env: Object.freeze({ CODEX_HOME: run.state_dir, HOME: run.state_dir, TMPDIR: privateState.temp_dir, PATH: process.env.PATH || "/usr/bin:/bin" }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateState.auth_file, run_root: run.run_root });
+}
 function runSeatbeltProbe({ profile, cwd, command, args = [] }) {
   const result = spawnSync(SANDBOX, ["-p", profile, command, ...args], { cwd, encoding: "utf8" });
   return Object.freeze({ status: result.status, signal: result.signal, stdout: result.stdout || "", stderr: result.stderr || "", error: result.error ? result.error.message : null });
@@ -155,4 +166,4 @@ function offlineProbeReport({ run, codexPath, repositoryFile, memoryFile, datase
   return Object.freeze({ status: "seatbelt-preflight-passed-no-provider-call-v10", checks });
 }
 
-module.exports = { SANDBOX, createFreshSealedRunRoot, writeSealedInput, provisionPrivateCodexState, createSeatbeltProfile, buildCodexInvocation, runSeatbeltProbe, offlineProbeReport };
+module.exports = { SANDBOX, createFreshSealedRunRoot, writeSealedInput, provisionPrivateCodexState, createSeatbeltProfile, buildCodexInvocation, buildTraceAuditedInvocation, runSeatbeltProbe, offlineProbeReport };
