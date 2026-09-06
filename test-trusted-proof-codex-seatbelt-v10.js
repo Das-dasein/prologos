@@ -34,6 +34,9 @@ try {
   assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocation.run_root); assert.equal(invocation.env.CODEX_HOME, invocationRun.state_dir);
   assert.equal(fs.readFileSync(invocation.private_auth_file, "utf8"), "not-a-real-credential"); assert.equal(fs.statSync(invocation.private_auth_file).mode & 0o777, 0o600);
   assert.equal(invocation.profile.includes(fs.realpathSync(host)), false, "host auth parent must not enter the profile");
+  const escapedState = path.join(host, "escaped-state"); fs.mkdirSync(escapedState);
+  assert.throws(() => api.buildCodexInvocation({ run: { ...invocationRun, state_dir: escapedState }, sealed, codexPath: "/bin/echo", model: "test-model", authFile }), /sealed input, output, and private state/);
+  assert.equal(fs.existsSync(path.join(escapedState, "auth.json")), false, "invalid state must fail before copying auth outside sealed root");
   assert.equal(invocation.args.includes(process.cwd()), false);
   assert.match(invocation.profile, /\(allow network-outbound\)/);
   const metadataStart = invocation.profile.indexOf("(allow file-read-metadata ");

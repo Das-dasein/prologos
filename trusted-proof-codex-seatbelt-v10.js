@@ -59,10 +59,15 @@ function declaredRuntimeRoots({ codexPath }) {
   for (const root of roots) { rejectBroadRoot(root, "runtime root"); rejectProtectedRoot(root, "runtime root"); }
   return Object.freeze([...new Set(roots)]);
 }
+function sealedDirectories(run) {
+  if (!run || typeof run !== "object") throw Error("sealed run is required");
+  const root = absoluteDirectory(run.run_root, "run_root"), input = absoluteDirectory(run.input_dir, "sealed input directory"), output = absoluteDirectory(run.output_dir, "output directory"), state = absoluteDirectory(run.state_dir, "private state directory");
+  if (![input, output, state].every(value => sameOrWithin(root, value)) || new Set([input, output, state]).size !== 3) throw Error("sealed input, output, and private state must be distinct children of run_root");
+  return Object.freeze({ root, input, output, state });
+}
 function createSeatbeltProfile({ runRoot, inputDir, outputDir, stateDir, codexPath, authFile = null }) {
   if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw Error("macOS sandbox-exec is required for v10 isolation preflight");
-  const root = absoluteDirectory(runRoot, "run_root"), input = absoluteDirectory(inputDir, "sealed input directory"), output = absoluteDirectory(outputDir, "output directory"), state = absoluteDirectory(stateDir, "private state directory");
-  if (![input, output, state].every(value => sameOrWithin(root, value)) || new Set([input, output, state]).size !== 3) throw Error("sealed input, output, and private state must be distinct children of run_root");
+  const { root, input, output, state } = sealedDirectories({ run_root: runRoot, input_dir: inputDir, output_dir: outputDir, state_dir: stateDir });
   const codex = absoluteFile(codexPath, "codex_path");
   const auth = authFile === null ? null : absoluteFile(authFile, "auth_file");
   const runtimeRoots = declaredRuntimeRoots({ codexPath: codex });
@@ -94,8 +99,7 @@ function writeSealedInput(run, { prompt, schema }) {
   return Object.freeze({ prompt_file: promptFile, schema_file: schemaFile });
 }
 function provisionPrivateCodexState(run, authFile) {
-  if (!run || typeof run.state_dir !== "string") throw Error("run private state directory is required");
-  const state = absoluteDirectory(run.state_dir, "private state directory");
+  const { state } = sealedDirectories(run);
   const auth = absoluteFile(authFile, "auth_file");
   if (path.basename(auth) !== "auth.json") throw Error("auth_file must be the exact CODEX_HOME/auth.json file");
   const destination = path.join(state, "auth.json");
