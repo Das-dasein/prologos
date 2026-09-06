@@ -46,3 +46,18 @@ Issue #38 adds a separate forward-only v3 registry for the future PR #37
 answering adapter. It binds real wire hashes, exact transport sources and
 byte-for-byte sealed input mode; it makes no provider/model call and changes
 no result, threshold, dataset, oracle, v0 status, or effectiveness claim.
+
+Issue #52 aligns the human-facing status with the current forward-only v7
+authority. `wire-authority-assembled-prompt-digest-registry-v7.json` together
+with `validate-receipt-intake-v7.js` is the current registry/receipt-intake
+pair; it binds authority commit `7f0a58cddd0966c8b1834f66ece726d2b60d184e`
+and exactly `providers/openai-answering.js` plus
+`trusted-proof-answering.js` as the wire-authority sources. The current
+operator collector is `trusted-proof-live-candidate.js`, with
+`trusted-proof-live-candidate-config-v7.json` as its immutable operator
+configuration. The collector/config consume and must match v7 authority, but
+are not additional wire-authority sources. v1 through v6 registries, schemas,
+fixtures, validators, and their source snapshots remain historical artifacts;
+they are invalid v7 receipt inputs and do not establish current authority.
+This remains preparation only: no provider call, candidate receipt, CDR
+receipt, aggregation, result, or effectiveness claim exists.
