@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Астра · P0 / P1 / P2 · CDR r4</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1320;--panel:#151f30;--text:#e8edf6;--muted:#a6b5cb;--line:#32425b;--accent:#83c9fc;--warn:#ffcf80}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,sans-serif}main{max-width:1320px;margin:auto;padding:40px 24px 64px}h1{font-size:clamp(28px,4vw,46px);line-height:1.15;letter-spacing:-1px;margin:12px 0}h2{font-size:25px;margin:32px 0 14px}h3{font-size:16px;margin:0;overflow-wrap:anywhere}h4{font-size:14px;margin:0 0 10px;color:var(--accent)}p{margin:12px 0}.muted,.caption{color:var(--muted)}.caption{font-size:13px}.eyebrow{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--accent)}.verdict{border-left:4px solid var(--warn);background:#29251f;padding:18px 22px;margin:24px 0}.verdict strong{color:var(--warn)}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.stat,.world{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}.stat .number{font-size:38px;font-weight:750;display:block}.stat p{color:var(--muted);font-size:14px}.badge{font-size:12px;border:1px solid #39706b;background:#153f3b;color:#a6e3d3;border-radius:30px;padding:4px 10px;white-space:nowrap}.bad{color:var(--warn);border-color:#8b6740;background:#34291d}.world{margin:18px 0}.failed{border-color:#bd8849}.world-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.pair{display:grid;grid-template-columns:1.1fr 1fr;gap:22px;margin-top:22px}pre{background:#0a111e;border:1px solid #2b3d56;border-radius:8px;padding:16px;overflow:auto;font:13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}pre code{color:#bce9d3}.natural{font:14px/1.65 system-ui,sans-serif}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.answers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.answers>div{background:#101929;padding:12px;border-radius:8px}.answers code,.answers span{display:block;margin-top:6px}.answers span{font-size:12px;color:var(--muted)}.failure{color:var(--warn)}details{margin-top:18px;border-top:1px solid var(--line);padding-top:12px;font-size:13px}summary{cursor:pointer;color:var(--accent)}details h4{margin-top:18px}.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters label{font-size:13px;color:var(--muted)}select{display:block;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:9px;font:inherit;margin-top:4px}a{color:var(--accent)}.notes{font-size:14px;color:var(--muted)}[hidden]{display:none!important}@media(max-width:760px){main{padding:24px 14px}.stats,.pair,.answers{grid-template-columns:1fr}.world-head{align-items:start;flex-direction:column}.world{padding:16px}}
+</style></head><body><main>
+<div class="eyebrow">Astra · независимый CDR β · 6 сентября 2026</div>
+<h1>Что дали Prolog-память и решатель?</h1>
+<p class="muted">Representation experiment · живой прогон r3 · аудит r4 · модель gpt-5.4-mini · 24 мира × 3 условия = 72 вызова модели</p>
+<div class="verdict"><strong>CDR: REVISE</strong><p>На этих задачах преимущества не обнаружены. P0 и P1 дали 24/24: разница <strong>0 процентных пунктов</strong>, достигнут потолок. Для P2 один из 24 запусков не выполнил обязательный вызов брокера: эффект P1 → P2 заявлять нельзя.</p></div>
+<div class="stats"><section class="stat"><h3>P0 · Естественный язык</h3><span class="number">24 / 24</span><p>Верных ответов и валидных наблюдений. Команд и вызовов инструментов нет.</p></section><section class="stat"><h3>P1 · Prolog без решателя</h3><span class="number">24 / 24</span><p>Верных ответов и валидных наблюдений. Модель рассуждала сама по фактам и правилам.</p></section><section class="stat"><h3>P2 · Prolog + брокер</h3><span class="number">23 / 24</span><p>Валидных наблюдений. Среди них 23/23 верны. Всего правильных финальных ответов 24/24, но один без брокера.</p></section></div>
+<h2>Вывод CDR</h2><p>Результат не доказывает бесполезность формализации: выбранные миры не различили P0 и P1 по точности. RFR-C1 не установлен. Для сравнения с решателем полный протокол P2 не выполнен. Следующий дизайн требует более различающих задач; этот отчёт не является разрешением нового прогона.</p>
+<p class="notes">Астра независимо пересчитала все 24 oracle локальным SWI-Prolog: все финальные ответы и 23 receipt совпали с oracle. Валидация основана на сохранённых трассах (trace gate); она не доказывает запрет посторонних действий на уровне ОС. Revalidation r4 исправляет ложное отклонение стандартных диагностик SWI-Prolog и не содержит новых модельных вызовов.</p>
+<h2>24 мира: код, текст и результат</h2><p class="muted">Приведены точные представления из fixture. «unknown» означает, что запрос не выводится из данных правил; это не утверждение его ложности.</p>
+<div class="filters"><label>Глубина<select id="depth"><option value="">Все</option>1</option><option>3</option><option>5</option></select></label><label>Структура<select id="topology"><option value="">Все</option><option value="chain">Цепочка</option><option value="join">Несколько условий</option></select></label><label>Oracle<select id="label"><option value="">Все</option><option>entailed</option><option>unknown</option></select></label><label>Протокол P2<select id="valid"><option value="">Все</option><option value="true">Валиден</option><option value="false">Не выполнен</option></select></label><span id="count" aria-live="polite">Показано 24 из 24</span></div>
+<article class="world " data-depth="1" data-topology="chain" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d1-chain-entailed-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 1 · Цепочка · Повтор 1 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(boris).
+calm(X) :- source_trait(X).
+
+% Проверяемый запрос
+?- calm(boris).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Boris has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.</pre><p>Question: Is Boris calm?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Boris has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+Question: Is Boris calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(boris).
+calm(X) :- source_trait(X).
+Question: Is Boris calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-nY7ksu</code> · P1: <code>codex-v10-sealed-tIubFO</code> · P2: <code>codex-v10-sealed-hT0cbI</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="1" data-topology="chain" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d1-chain-entailed-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 1 · Цепочка · Повтор 2 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(cora).
+calm(X) :- source_trait(X).
+
+% Проверяемый запрос
+?- calm(cora).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Cora has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.</pre><p>Question: Is Cora calm?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Cora has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+Question: Is Cora calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(cora).
+calm(X) :- source_trait(X).
+Question: Is Cora calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-Ua6enC</code> · P1: <code>codex-v10-sealed-uC8Jyw</code> · P2: <code>codex-v10-sealed-T1T6OB</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="1" data-topology="chain" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d1-chain-unknown-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 1 · Цепочка · Повтор 1 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(kian).
+calm(X) :- source_trait(X).
+
+% Проверяемый запрос
+?- calm(finn).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Kian has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.</pre><p>Question: Is Finn calm?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Kian has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+Question: Is Finn calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(kian).
+calm(X) :- source_trait(X).
+Question: Is Finn calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-DY83rC</code> · P1: <code>codex-v10-sealed-fjyWhg</code> · P2: <code>codex-v10-sealed-f9r80M</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="1" data-topology="chain" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d1-chain-unknown-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 1 · Цепочка · Повтор 2 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(hugo).
+calm(X) :- source_trait(X).
+
+% Проверяемый запрос
+?- calm(dani).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Hugo has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.</pre><p>Question: Is Dani calm?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Hugo has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+Question: Is Dani calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(hugo).
+calm(X) :- source_trait(X).
+Question: Is Dani calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-OAoRpz</code> · P1: <code>codex-v10-sealed-3g2yzn</code> · P2: <code>codex-v10-sealed-rFPfLq</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="1" data-topology="join" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d1-join-entailed-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 1 · Правило с несколькими условиями · Повтор 1 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(boris).
+marker_trait(boris).
+calm(X) :- source_trait(X), marker_trait(X).
+
+% Проверяемый запрос
+?- calm(boris).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Boris has a source trait.
+Boris has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.</pre><p>Question: Is Boris calm?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Boris has a source trait.
+Boris has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+Question: Is Boris calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(boris).
+marker_trait(boris).
+calm(X) :- source_trait(X), marker_trait(X).
+Question: Is Boris calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-buZqU8</code> · P1: <code>codex-v10-sealed-Sii1qG</code> · P2: <code>codex-v10-sealed-gWhTXc</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="1" data-topology="join" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d1-join-entailed-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 1 · Правило с несколькими условиями · Повтор 2 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(dani).
+marker_trait(dani).
+calm(X) :- source_trait(X), marker_trait(X).
+
+% Проверяемый запрос
+?- calm(dani).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Dani has a source trait.
+Dani has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.</pre><p>Question: Is Dani calm?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Dani has a source trait.
+Dani has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+Question: Is Dani calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(dani).
+marker_trait(dani).
+calm(X) :- source_trait(X), marker_trait(X).
+Question: Is Dani calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-VRp4gP</code> · P1: <code>codex-v10-sealed-aY1fQV</code> · P2: <code>codex-v10-sealed-Gdwn4g</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="1" data-topology="join" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d1-join-unknown-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 1 · Правило с несколькими условиями · Повтор 1 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(elin).
+marker_trait(iris).
+calm(X) :- source_trait(X), marker_trait(X).
+
+% Проверяемый запрос
+?- calm(elin).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Elin has a source trait.
+Iris has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.</pre><p>Question: Is Elin calm?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Elin has a source trait.
+Iris has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+Question: Is Elin calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(elin).
+marker_trait(iris).
+calm(X) :- source_trait(X), marker_trait(X).
+Question: Is Elin calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-Atfbsg</code> · P1: <code>codex-v10-sealed-YoXiSX</code> · P2: <code>codex-v10-sealed-PsYjBb</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="1" data-topology="join" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d1-join-unknown-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 1 · Правило с несколькими условиями · Повтор 2 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(dani).
+marker_trait(juno).
+calm(X) :- source_trait(X), marker_trait(X).
+
+% Проверяемый запрос
+?- calm(dani).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Dani has a source trait.
+Juno has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.</pre><p>Question: Is Dani calm?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Dani has a source trait.
+Juno has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+Question: Is Dani calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(dani).
+marker_trait(juno).
+calm(X) :- source_trait(X), marker_trait(X).
+Question: Is Dani calm?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-Z16N6N</code> · P1: <code>codex-v10-sealed-NrG1xH</code> · P2: <code>codex-v10-sealed-CQ6axY</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="3" data-topology="chain" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d3-chain-entailed-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 3 · Цепочка · Повтор 1 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(elin).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+
+% Проверяемый запрос
+?- prepared(elin).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Elin has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.</pre><p>Question: Is Elin prepared?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Elin has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+Question: Is Elin prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(elin).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+Question: Is Elin prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-YAlbS8</code> · P1: <code>codex-v10-sealed-bpeK94</code> · P2: <code>codex-v10-sealed-XSHuWn</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="3" data-topology="chain" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d3-chain-entailed-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 3 · Цепочка · Повтор 2 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(dani).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+
+% Проверяемый запрос
+?- prepared(dani).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Dani has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.</pre><p>Question: Is Dani prepared?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Dani has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+Question: Is Dani prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(dani).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+Question: Is Dani prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-r1yoaq</code> · P1: <code>codex-v10-sealed-cqipkY</code> · P2: <code>codex-v10-sealed-SKaGYv</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="3" data-topology="chain" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d3-chain-unknown-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 3 · Цепочка · Повтор 1 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(iris).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+
+% Проверяемый запрос
+?- prepared(boris).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Iris has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.</pre><p>Question: Is Boris prepared?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Iris has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+Question: Is Boris prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(iris).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+Question: Is Boris prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-S5sDaD</code> · P1: <code>codex-v10-sealed-icNKpQ</code> · P2: <code>codex-v10-sealed-pN7reT</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world failed" data-depth="3" data-topology="chain" data-label="unknown" data-valid="false"><div class="world-head"><h3>rw-d3-chain-unknown-r2</h3><span class="badge bad">P2: нет вызова брокера</span></div><p class="muted">Глубина 3 · Цепочка · Повтор 2 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(juno).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+
+% Проверяемый запрос
+?- prepared(elin).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Juno has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.</pre><p>Question: Is Elin prepared?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол не выполнен</span></div></div><p class="failure">В этой попытке модель дала правильное «unknown», но не вызвала брокер. Receipt отсутствует. Этот ответ не засчитывается как валидное P2-наблюдение.</p><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Juno has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+Question: Is Elin prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(juno).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+Question: Is Elin prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-oZJqQB</code> · P1: <code>codex-v10-sealed-wC1VEo</code> · P2: <code>codex-v10-sealed-bMuTKv</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="3" data-topology="join" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d3-join-entailed-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 3 · Правило с несколькими условиями · Повтор 1 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(boris).
+marker_trait(boris).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+
+% Проверяемый запрос
+?- prepared(boris).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Boris has a source trait.
+Boris has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.</pre><p>Question: Is Boris prepared?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Boris has a source trait.
+Boris has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+Question: Is Boris prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(boris).
+marker_trait(boris).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+Question: Is Boris prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-rYGS0q</code> · P1: <code>codex-v10-sealed-QxZCa8</code> · P2: <code>codex-v10-sealed-VUS7VA</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="3" data-topology="join" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d3-join-entailed-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 3 · Правило с несколькими условиями · Повтор 2 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(elin).
+marker_trait(elin).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+
+% Проверяемый запрос
+?- prepared(elin).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Elin has a source trait.
+Elin has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.</pre><p>Question: Is Elin prepared?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Elin has a source trait.
+Elin has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+Question: Is Elin prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(elin).
+marker_trait(elin).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+Question: Is Elin prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-JflZrR</code> · P1: <code>codex-v10-sealed-1Mi3hg</code> · P2: <code>codex-v10-sealed-AiZ3r8</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="3" data-topology="join" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d3-join-unknown-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 3 · Правило с несколькими условиями · Повтор 1 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(aria).
+marker_trait(juno).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+
+% Проверяемый запрос
+?- prepared(aria).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Aria has a source trait.
+Juno has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.</pre><p>Question: Is Aria prepared?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Aria has a source trait.
+Juno has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+Question: Is Aria prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(aria).
+marker_trait(juno).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+Question: Is Aria prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-GWW8kr</code> · P1: <code>codex-v10-sealed-G4ICGS</code> · P2: <code>codex-v10-sealed-3DMV91</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="3" data-topology="join" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d3-join-unknown-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 3 · Правило с несколькими условиями · Повтор 2 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(finn).
+marker_trait(kian).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+
+% Проверяемый запрос
+?- prepared(finn).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Finn has a source trait.
+Kian has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.</pre><p>Question: Is Finn prepared?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Finn has a source trait.
+Kian has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+Question: Is Finn prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(finn).
+marker_trait(kian).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+Question: Is Finn prepared?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-Wzos7W</code> · P1: <code>codex-v10-sealed-Yzl2jO</code> · P2: <code>codex-v10-sealed-nbmas7</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="5" data-topology="chain" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d5-chain-entailed-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 5 · Цепочка · Повтор 1 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(dani).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+
+% Проверяемый запрос
+?- ready(dani).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Dani has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.</pre><p>Question: Is Dani ready?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Dani has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.
+Question: Is Dani ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(dani).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+Question: Is Dani ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-Q0IZkR</code> · P1: <code>codex-v10-sealed-aGZ5St</code> · P2: <code>codex-v10-sealed-eoQ6lw</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="5" data-topology="chain" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d5-chain-entailed-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 5 · Цепочка · Повтор 2 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(boris).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+
+% Проверяемый запрос
+?- ready(boris).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Boris has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.</pre><p>Question: Is Boris ready?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Boris has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.
+Question: Is Boris ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(boris).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+Question: Is Boris ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-Jdhuaw</code> · P1: <code>codex-v10-sealed-froM5O</code> · P2: <code>codex-v10-sealed-SxqsrT</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="5" data-topology="chain" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d5-chain-unknown-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 5 · Цепочка · Повтор 1 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(gala).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+
+% Проверяемый запрос
+?- ready(cora).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Gala has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.</pre><p>Question: Is Cora ready?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Gala has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.
+Question: Is Cora ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(gala).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+Question: Is Cora ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-Gm8j62</code> · P1: <code>codex-v10-sealed-yv3HcJ</code> · P2: <code>codex-v10-sealed-NZ32co</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="5" data-topology="chain" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d5-chain-unknown-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 5 · Цепочка · Повтор 2 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(hugo).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+
+% Проверяемый запрос
+?- ready(cora).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Hugo has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.</pre><p>Question: Is Cora ready?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Hugo has a source trait.
+Rules:
+If someone has a source trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.
+Question: Is Cora ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(hugo).
+calm(X) :- source_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+Question: Is Cora ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-oZmNfW</code> · P1: <code>codex-v10-sealed-J5rgWf</code> · P2: <code>codex-v10-sealed-Cw1Aop</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="5" data-topology="join" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d5-join-entailed-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 5 · Правило с несколькими условиями · Повтор 1 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(cora).
+marker_trait(cora).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+
+% Проверяемый запрос
+?- ready(cora).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Cora has a source trait.
+Cora has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.</pre><p>Question: Is Cora ready?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Cora has a source trait.
+Cora has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.
+Question: Is Cora ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(cora).
+marker_trait(cora).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+Question: Is Cora ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-tudzqJ</code> · P1: <code>codex-v10-sealed-uqnH4y</code> · P2: <code>codex-v10-sealed-APbq6s</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="5" data-topology="join" data-label="entailed" data-valid="true"><div class="world-head"><h3>rw-d5-join-entailed-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 5 · Правило с несколькими условиями · Повтор 2 · Oracle: <strong>entailed</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(finn).
+marker_trait(finn).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+
+% Проверяемый запрос
+?- ready(finn).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Finn has a source trait.
+Finn has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.</pre><p>Question: Is Finn ready?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: entailed</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Finn has a source trait.
+Finn has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.
+Question: Is Finn ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(finn).
+marker_trait(finn).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+Question: Is Finn ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-8wqLDl</code> · P1: <code>codex-v10-sealed-Z7zMJy</code> · P2: <code>codex-v10-sealed-ledXKe</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="5" data-topology="join" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d5-join-unknown-r1</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 5 · Правило с несколькими условиями · Повтор 1 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(dani).
+marker_trait(lena).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+
+% Проверяемый запрос
+?- ready(dani).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Dani has a source trait.
+Lena has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.</pre><p>Question: Is Dani ready?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Dani has a source trait.
+Lena has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.
+Question: Is Dani ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(dani).
+marker_trait(lena).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+Question: Is Dani ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-PqYtmn</code> · P1: <code>codex-v10-sealed-YSkrSa</code> · P2: <code>codex-v10-sealed-jiGfvA</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<article class="world " data-depth="5" data-topology="join" data-label="unknown" data-valid="true"><div class="world-head"><h3>rw-d5-join-unknown-r2</h3><span class="badge ">P2: брокер подтверждён</span></div><p class="muted">Глубина 5 · Правило с несколькими условиями · Повтор 2 · Oracle: <strong>unknown</strong></p><div class="pair"><section><h4>P1 / P2 · Prolog-память</h4><pre><code>source_trait(dani).
+marker_trait(lena).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+
+% Проверяемый запрос
+?- ready(dani).</code></pre><p class="caption">P1 решает сам. P2 получает ту же память и доступ к одному изолированному Prolog-брокеру. Запрос показан отдельно для чтения; вопрос модели задан естественным языком.</p></section><section><h4>P0 · Естественно-языковая память</h4><pre class="natural">Facts:
+Dani has a source trait.
+Lena has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.</pre><p>Question: Is Dani ready?</p></section></div><div class="answers"><div><b>P0</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P1</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div><div><b>P2</b><code>RESULT: unknown</code><span>Ответ верный; протокол выполнен</span></div></div><details><summary>Исходные промпты и аудит этого мира</summary><h4>Точный P0 prompt из fixture</h4><pre>You are given a finite rule world.
+Facts:
+Dani has a source trait.
+Lena has a marker trait.
+Rules:
+If the same person has both a source trait and a marker trait, then that person is calm.
+If someone is calm, then that person is focused.
+If someone is focused, then that person is prepared.
+If someone is prepared, then that person is reliable.
+If someone is reliable, then that person is ready.
+Question: Is Dani ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><h4>Точный P1 prompt из fixture</h4><pre>You are given a finite rule world.
+source_trait(dani).
+marker_trait(lena).
+calm(X) :- source_trait(X), marker_trait(X).
+focused(X) :- calm(X).
+prepared(X) :- focused(X).
+reliable(X) :- prepared(X).
+ready(X) :- reliable(X).
+Question: Is Dani ready?
+Answer with exactly one line: RESULT: entailed or RESULT: unknown. Use unknown only when the question is not derivable from the supplied facts and rules.
+</pre><p>Raw runs: P0: <code>codex-v10-sealed-Hj15A3</code> · P1: <code>codex-v10-sealed-Q4vrn2</code> · P2: <code>codex-v10-sealed-pemKmc</code></p><p>Оценка P2 взята из revalidation r4; первоначальный transport reject в raw record не является окончательным результатом.</p></details></article>
+<details><summary>Происхождение данных и контрольные суммы</summary><p>Основа: <a href="beta-r4-dashboard.md">независимый β-отчёт r4</a>. Снимок 2026-09-06. Эта HTML-страница автономна; для её отображения не требуются raw-файлы, сеть или сервер.</p><p>Raw: <code>/tmp/representation-cdr-alpha-r3.I1KHoh/raw</code></p><p>Fixture: <code>.cdr/waves/representation-formalization-v1/representation-world-fixture-v1.json</code><br>SHA-256: <code>f8a8286bd06df2e8945d82a3439ca2e7a7fece884e5473cf39cfbda9bb2e95e3</code></p><p>Revalidation: <code>/tmp/representation-cdr-alpha-r3.I1KHoh/p2-revalidation-r4.json</code><br>SHA-256: <code>3eb1bba327036258821919b3633b2d0c0f976bdba7993c742d02ba17a70fc10a</code></p><p>Не засчитанная попытка: <code>rw-d3-chain-unknown-r2-p2</code>; raw run <code>codex-v10-sealed-bMuTKv</code>. Корректный ответ не заменяет обязательный вызов брокера.</p></details>
+</main><script>
+(function(){const keys=['depth','topology','label','valid'];const cards=Array.from(document.querySelectorAll('.world'));function filter(){let count=0;cards.forEach(card=>{const show=keys.every(key=>!document.getElementById(key).value||card.dataset[key]===document.getElementById(key).value);card.hidden=!show;if(show)count++;});document.getElementById('count').textContent='Показано '+count+' из '+cards.length;}keys.forEach(key=>document.getElementById(key).addEventListener('change',filter));})();
+</script></body></html>
+
