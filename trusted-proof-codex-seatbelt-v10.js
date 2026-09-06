@@ -9,6 +9,10 @@ const { spawnSync } = require("node:child_process");
 
 const SANDBOX = "/usr/bin/sandbox-exec";
 const SYSTEM_READ_ROOTS = Object.freeze(["/bin", "/usr/lib", "/System/Library", "/dev", "/private/var/db/timezone", "/private/var/select/sh"]);
+// These are fixed OS TLS configuration files, not user or evaluation data.
+// Keep this list literal and narrow: a future required file must be added with
+// a reproduced startup probe, never by granting /private or /etc wholesale.
+const TLS_RUNTIME_FILES = Object.freeze(["/private/etc/ssl/openssl.cnf", "/private/etc/ssl/cert.pem"]);
 
 function absoluteFile(value, label, { exists = true } = {}) {
   if (typeof value !== "string" || !path.isAbsolute(value)) throw Error(`${label} must be an absolute path`);
@@ -55,16 +59,17 @@ function createSeatbeltProfile({ runRoot, inputDir, outputDir, codexPath, authFi
   const codex = absoluteFile(codexPath, "codex_path");
   const auth = authFile === null ? null : absoluteFile(authFile, "auth_file");
   const runtimeRoots = declaredRuntimeRoots({ codexPath: codex });
+  const tlsFiles = TLS_RUNTIME_FILES.filter(fs.existsSync).map(file => fs.realpathSync(file));
   // Metadata grants are only path traversal.  Content reads are restricted to
   // runtime, the sealed input, and (when unavoidable) one exact auth file.
-  const metadata = [...new Set([...runtimeRoots.flatMap(ancestors), ...ancestors(root), ...(auth ? ancestors(auth) : [])])].join(" ");
+  const metadata = [...new Set([...runtimeRoots.flatMap(ancestors), ...tlsFiles.flatMap(ancestors), ...ancestors(root), ...(auth ? ancestors(auth) : [])])].join(" ");
   // Seatbelt needs the root vnode readable to start a process. `(literal "/")`
   // is not a recursive grant; every child still requires one of the explicit
   // `subpath`/`literal` rules below.
-  const reads = [quote("/"), runtimeRoots.map(subpath).join(" "), subpath(input), auth ? quote(auth) : ""].filter(Boolean).join(" ");
+  const reads = [quote("/"), runtimeRoots.map(subpath).join(" "), tlsFiles.map(quote).join(" "), subpath(input), auth ? quote(auth) : ""].filter(Boolean).join(" ");
   return [
     "(version 1)", "(deny default)", "(allow process*)", "(allow file-map-executable)", "(allow sysctl-read)", "(allow mach-lookup)",
-    `(allow file-read-metadata ${metadata})`, `(allow file-read* ${reads})`, `(allow file-write* ${subpath(output)})`
+    "(allow network-outbound)", `(allow file-read-metadata ${metadata})`, `(allow file-read* ${reads})`, `(allow file-write* ${subpath(output)})`
   ].join(" ");
 }
 function createFreshSealedRunRoot(parent) {
@@ -106,15 +111,17 @@ function offlineProbeReport({ run, codexPath, repositoryFile, memoryFile, datase
   if (typeof outsideWriteFile !== "string" || !path.isAbsolute(outsideWriteFile) || sameOrWithin(run.run_root, path.resolve(outsideWriteFile))) throw Error("outside write target must be outside run_root");
   const sealed = writeSealedInput(run, { prompt: "sealed input", schema: "{\"type\":\"object\"}\n" });
   const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, codexPath });
+  const runtimeStart = runSeatbeltProbe({ profile, cwd: run.run_root, command: absoluteFile(codexPath, "codex_path"), args: ["--version"] });
+  const tlsReads = TLS_RUNTIME_FILES.filter(fs.existsSync).map(file => runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [fs.realpathSync(file)] }));
   const deniedRead = file => runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [file] });
   const allowedInput = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [sealed.prompt_file] });
   const outputTarget = path.join(run.output_dir, "probe-output.txt");
   const allowedWrite = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/sh", args: ["-c", `printf permitted > ${JSON.stringify(outputTarget)}`] });
   const deniedWrite = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/sh", args: ["-c", `printf forbidden > ${JSON.stringify(outsideWriteFile)}`] });
-  const checks = Object.freeze({ repository_read: deniedRead(repositoryFile), memory_read: deniedRead(memoryFile), dataset_or_evaluator_read: deniedRead(datasetOrEvaluatorFile), outside_write: deniedWrite, sealed_input_read: allowedInput, declared_output_write: allowedWrite });
+  const checks = Object.freeze({ runtime_start: runtimeStart, tls_runtime_read: tlsReads, repository_read: deniedRead(repositoryFile), memory_read: deniedRead(memoryFile), dataset_or_evaluator_read: deniedRead(datasetOrEvaluatorFile), outside_write: deniedWrite, sealed_input_read: allowedInput, declared_output_write: allowedWrite });
   const denied = check => check.status !== 0;
   if (![checks.repository_read, checks.memory_read, checks.dataset_or_evaluator_read, checks.outside_write].every(denied)) throw Error("Seatbelt preflight did not deny every protected host access");
-  if (checks.sealed_input_read.status !== 0 || checks.declared_output_write.status !== 0 || !fs.existsSync(outputTarget)) throw Error("Seatbelt preflight did not permit declared isolated input/output");
+  if (checks.runtime_start.status !== 0 || checks.tls_runtime_read.some(check => check.status !== 0) || checks.sealed_input_read.status !== 0 || checks.declared_output_write.status !== 0 || !fs.existsSync(outputTarget)) throw Error("Seatbelt preflight did not permit declared isolated runtime/input/output");
   return Object.freeze({ status: "seatbelt-preflight-passed-no-provider-call-v10", checks });
 }
 
