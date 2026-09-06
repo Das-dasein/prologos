@@ -43,6 +43,17 @@ contain an expected label, proof trace, proof digest, answer contract, engine
 output, or a tool declaration. The live P0/P1 adapter must have no callable
 Prolog-tool surface. P2 is out of scope for this wave.
 
+### Codex transport amendment
+
+The existing `openai-api` transport is not the only prospective execution
+route. A later `codex-seatbelt` transport is permitted only after its own CDD
+cycle proves: a fresh sealed root; an outer default-deny macOS Seatbelt profile;
+denial of repository/evidence and resolved `swipl` reads/execution; one exact
+copied Codex auth file; no user config; and rejection of any tool/command event
+in the Codex JSONL trace. Ordinary Codex CLI execution and trace-only auditing
+are not valid P0/P1 routes. This amendment changes no P0/P1/P2 meaning and
+does not authorize a live run by itself.
+
 ## Formal source and dataset construction
 
 The dataset is not retrieved or hand-labelled. A deterministic generator takes
