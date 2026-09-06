@@ -273,6 +273,11 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   const sealedProgram = path.join(brokerState, "sealed-program.pl");
   const brokerReceipt = path.join(brokerState, "broker-receipt.txt");
   const allowedP2PathValue = value => value === sealedBroker || value === requestedBroker || value === sealedProgram || value === brokerReceipt || (typeof value === "string" && (() => { const match = value.match(/^\/bin\/zsh (-(?:c|lc)) (\/.*)$/); return Boolean(match) && canonicalizeExistingPath(match[2]) === sealedBroker; })());
+  // SWI-Prolog diagnostics append source locations (for example
+  // `sealed-program.pl:7:`) to an otherwise sealed state path.  Classify the
+  // path portion, rather than rejecting that diagnostic as a second command or
+  // a foreign file.  Only a numeric source-location suffix is stripped.
+  const allowedP2PathToken = token => allowedP2PathValue(token) || allowedP2PathValue(token.replace(/:\d+(?::\d+)?:?$/, ""));
   const absolutePathLike = /(^|\s)\/(?:[^\s"']+)/;
   const protectedPaths = [...new Set(prohibitedPaths.map(value => path.resolve(value)))];
   // `/bin/zsh` and the broker state directory are admissible only as parts of
@@ -289,8 +294,11 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   };
   for (const event of events) for (const value of traceLeaves(event)) {
     if (allowedP2PathValue(value)) continue;
-    const pathTokens = value.match(/\/[^\s"']+/g) || [];
-    if (pathTokens.length && pathTokens.every(token => allowedP2PathValue(token))) continue;
+    // A slash inside prose such as `initialization/2.` is not an absolute
+    // filesystem path.  Keep this tokenization aligned with
+    // `absolutePathLike`: a path starts at the string boundary or whitespace.
+    const pathTokens = [...value.matchAll(/(?:^|\s)(\/[^\s"']+)/g)].map(match => match[1]);
+    if (pathTokens.length && pathTokens.every(token => allowedP2PathToken(token))) continue;
     for (const protectedPath of protectedPaths) if (value === protectedPath || value.includes(protectedPath)) throw new Error(`prohibited host path exposed in Codex JSONL: ${protectedPath}`);
     if (absolutePathLike.test(value) && !allowedP2PathValue(value)) throw new Error(`P2 trace exposes a foreign or unexpected state path: ${value}`);
   }

@@ -112,6 +112,11 @@ async function main() {
     const brokerState = "/sealed", sealedProgram = `${brokerState}/sealed-program.pl`, brokerReceipt = `${brokerState}/broker-receipt.txt`;
     writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text: `${sealedProgram} ${brokerReceipt}` })}\n`);
     assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1, "current broker state files may be echoed beside the exact broker action");
+    const swiWarning = `Warning: [Thread main] ${sealedProgram}:7: main\nWarning: [Thread main]   Initialization goal called halt(0).\nWarning: [Thread main]   The program entry point should be called using initialization/2.`;
+    writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text: swiWarning })}\n`);
+    assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1, "full SWI source-location diagnostics for the sealed program remain admissible");
+    writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text: `${swiWarning}\n/foreign/state.pl` })}\n`);
+    assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unexpected state path/);
     for (const text of [brokerState, "/bin/zsh"]) {
       writeLifecycle(validItem, validItem, `${JSON.stringify({ type: "agent_message", text })}\n`);
       assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or unexpected state path/);
