@@ -30,7 +30,7 @@ try {
   const authFile = make("auth.json", "not-a-real-credential");
   const invocation = api.buildCodexInvocation({ run: invocationRun, sealed, codexPath: "/bin/echo", model: "test-model", authFile });
   assert.equal(invocation.command, "/usr/bin/sandbox-exec");
-  for (const token of ["-C", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--ephemeral"]) assert.ok(invocation.args.includes(token), `missing ${token}`);
+  for (const token of ["-C", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "workspace-write", "--ephemeral"]) assert.ok(invocation.args.includes(token), `missing ${token}`);
   assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocation.run_root); assert.equal(invocation.env.CODEX_HOME, invocationRun.state_dir); assert.equal(invocation.env.HOME, invocationRun.state_dir); assert.equal(invocation.env.TMPDIR, path.join(invocationRun.state_dir, "tmp"));
   assert.equal(fs.readFileSync(invocation.private_auth_file, "utf8"), "not-a-real-credential"); assert.equal(fs.statSync(invocation.private_auth_file).mode & 0o777, 0o600);
   assert.equal(invocation.profile.includes(fs.realpathSync(host)), false, "host auth parent must not enter the profile");

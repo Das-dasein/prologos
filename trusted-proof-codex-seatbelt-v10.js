@@ -121,7 +121,10 @@ function buildCodexInvocation({ run, sealed, codexPath, model, authFile }) {
   // `-C` has to be the fresh root: never the repository. `--ignore-user-config`
   // deliberately retains only Codex authentication (via CODEX_HOME), not host
   // configuration or project instructions. This function never executes it.
-  const args = ["-p", profile, codex, "exec", "--json", "--ephemeral", "-C", run.run_root, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "read-only", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
+  // Codex itself needs to persist ephemeral session state in the sealed root.
+  // `workspace-write` grants that inner workspace only; the outer default-deny
+  // profile remains the authority and still denies every host evidence root.
+  const args = ["-p", profile, codex, "exec", "--json", "--ephemeral", "-C", run.run_root, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "workspace-write", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
   // Do not leave HOME/TMPDIR implicit: platform fallbacks can otherwise point
   // back to the user's home despite CODEX_HOME being sealed.
   return Object.freeze({ command: SANDBOX, args: Object.freeze(args), cwd: run.run_root, env: Object.freeze({ CODEX_HOME: run.state_dir, HOME: run.state_dir, TMPDIR: privateState.temp_dir }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateState.auth_file, profile, run_root: run.run_root });

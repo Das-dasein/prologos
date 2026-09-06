@@ -3,8 +3,10 @@
 This implementation is an offline macOS preflight only. It creates a fresh
 sealed root with distinct `input`, `output`, and private `state` children, and builds (but never
 executes) a Codex invocation with `-C <fresh-root>`,
-`--skip-git-repo-check`, `--ignore-user-config`, and Codex's `read-only`
-sandbox. An outer default-deny `sandbox-exec` profile limits reads to declared
+`--skip-git-repo-check`, `--ignore-user-config`, and Codex's `workspace-write`
+sandbox. This inner workspace is the fresh sealed root, so Codex can create
+ephemeral state; the outer default-deny `sandbox-exec` profile is the binding
+host boundary and limits reads to declared
 runtime roots plus sealed input, and writes to declared output only. Runtime
 roots are not caller-configurable: the declared Codex executable parent is
 checked after realpath resolution and rejected if it overlaps the repository,
