@@ -24,7 +24,31 @@ function canonicalSampling(sampling) {
 
 function nativeUsage(response) {
   const usage = response && response.usage;
-  if (!usage || !Number.isSafeInteger(usage.input_tokens) || !Number.isSafeInteger(usage.output_tokens) || !Number.isSafeInteger(usage.total_tokens) || usage.input_tokens < 0 || usage.output_tokens < 0 || usage.total_tokens < 0 || usage.total_tokens !== usage.input_tokens + usage.output_tokens) throw new Error("OpenAI response usage must contain reconciling non-negative native integral input_tokens, output_tokens and total_tokens");
+  const requireExactKeys = (value, allowed, label) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`OpenAI response ${label} must be an object`);
+    const keys = Object.getOwnPropertyNames(value).sort();
+    if (keys.some(key => !allowed.includes(key)) || Object.getOwnPropertySymbols(value).length) throw new Error(`OpenAI response ${label} contains an unknown field`);
+    return keys;
+  };
+  const requireCounters = (value, keys, label) => {
+    if (!keys.every(key => own(value, key) && Number.isSafeInteger(value[key]) && value[key] >= 0)) {
+      if (label === "usage") throw new Error("OpenAI response usage must contain reconciling non-negative native integral input_tokens, output_tokens and total_tokens");
+      throw new Error(`OpenAI response ${label} must contain non-negative native integral counters`);
+    }
+  };
+  const usageKeys = requireExactKeys(usage, ["input_tokens", "input_tokens_details", "output_tokens", "output_tokens_details", "total_tokens"], "usage");
+  requireCounters(usage, ["input_tokens", "output_tokens", "total_tokens"], "usage");
+  if (usage.total_tokens !== usage.input_tokens + usage.output_tokens) throw new Error("OpenAI response usage must contain reconciling non-negative native integral input_tokens, output_tokens and total_tokens");
+  if (usageKeys.includes("input_tokens_details")) {
+    const detailKeys = requireExactKeys(usage.input_tokens_details, ["cache_write_tokens", "cached_tokens"], "usage.input_tokens_details");
+    if (detailKeys.length !== 2) throw new Error("OpenAI response usage.input_tokens_details must contain exactly cache_write_tokens and cached_tokens");
+    requireCounters(usage.input_tokens_details, ["cache_write_tokens", "cached_tokens"], "usage.input_tokens_details");
+  }
+  if (usageKeys.includes("output_tokens_details")) {
+    const detailKeys = requireExactKeys(usage.output_tokens_details, ["reasoning_tokens"], "usage.output_tokens_details");
+    if (detailKeys.length !== 1) throw new Error("OpenAI response usage.output_tokens_details must contain exactly reasoning_tokens");
+    requireCounters(usage.output_tokens_details, ["reasoning_tokens"], "usage.output_tokens_details");
+  }
   return Object.freeze({ input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.total_tokens, effective_context_budget: usage.input_tokens });
 }
 function defaultClientFactory() { const OpenAI = require("openai"); return new OpenAI(); }

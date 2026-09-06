@@ -14,7 +14,8 @@ async function main() {
   const p0 = await assembleCondition({ fixture, inputs, config, condition: "P0", trustedQuery: fakeTrusted });
   const p1 = await assembleCondition({ fixture, inputs, config, condition: "P1", trustedQuery: fakeTrusted });
   let clients = 0, calls = 0, forwarded;
-  const clientFactory = () => { clients += 1; return { responses: { create: async request => { calls += 1; forwarded = request; return { model: config.model, output_text: "answer", usage: { input_tokens: 41, output_tokens: 6, total_tokens: 47 } }; } } }; };
+  const sdkUsage = { input_tokens: 41, input_tokens_details: { cache_write_tokens: 0, cached_tokens: 17 }, output_tokens: 6, output_tokens_details: { reasoning_tokens: 2 }, total_tokens: 47 };
+  const clientFactory = () => { clients += 1; return { responses: { create: async request => { calls += 1; forwarded = request; return { model: config.model, output_text: "answer", usage: sdkUsage }; } } }; };
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "trusted-proof-answering-")), raw = path.join(root, "fresh");
   async function assertRejectedWithoutFinalMetadata(name, response, error) {
     const rawDirectory = path.join(root, name);
@@ -43,6 +44,7 @@ async function main() {
   const r0 = await run.run(p0);
   assert.deepEqual(forwarded, { model: config.model, input: p0.prompt, temperature: config.sampling.temperature, top_p: config.sampling.top_p }, "sealed prompt and exact pinned sampling are forwarded with no wrapper/instructions");
   assert.equal(clients, 1); assert.equal(calls, 1); assert.equal(r0.response.usage.effective_context_budget, 41); assert.equal(r0.cdr_status, "not-a-cdr-receipt-v2");
+  assert.deepEqual(r0.response.usage, { input_tokens: 41, output_tokens: 6, total_tokens: 47, effective_context_budget: 41 }, "canonical receipt projection excludes native detail counters");
   assert.equal(fs.readFileSync(r0.artifacts.prompt_file, "utf8"), p0.prompt);
   assert.throws(() => prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: raw, clientFactory }), /must not already exist/);
   assert.throws(() => fs.writeFileSync(r0.artifacts.prompt_file, "changed", { flag: "wx" }), /EEXIST/);
@@ -53,6 +55,10 @@ async function main() {
   await assertRejectedWithoutFinalMetadata("negative-input", { model: config.model, output_text: "x", usage: { input_tokens: -1, output_tokens: 2, total_tokens: 1 } }, /reconciling non-negative native integral/);
   await assertRejectedWithoutFinalMetadata("negative-output", { model: config.model, output_text: "x", usage: { input_tokens: 2, output_tokens: -1, total_tokens: 1 } }, /reconciling non-negative native integral/);
   await assertRejectedWithoutFinalMetadata("negative-total", { model: config.model, output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: -2 } }, /reconciling non-negative native integral/);
+  await assertRejectedWithoutFinalMetadata("unknown-usage", { model: config.model, output_text: "x", usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2, extra: 0 } }, /usage contains an unknown field/);
+  await assertRejectedWithoutFinalMetadata("unknown-input-detail", { model: config.model, output_text: "x", usage: { input_tokens: 1, input_tokens_details: { cache_write_tokens: 0, cached_tokens: 0, extra: 0 }, output_tokens: 1, total_tokens: 2 } }, /input_tokens_details contains an unknown field/);
+  await assertRejectedWithoutFinalMetadata("missing-input-detail", { model: config.model, output_text: "x", usage: { input_tokens: 1, input_tokens_details: { cached_tokens: 0 }, output_tokens: 1, total_tokens: 2 } }, /must contain exactly cache_write_tokens and cached_tokens/);
+  await assertRejectedWithoutFinalMetadata("negative-output-detail", { model: config.model, output_text: "x", usage: { input_tokens: 1, output_tokens: 1, output_tokens_details: { reasoning_tokens: -1 }, total_tokens: 2 } }, /output_tokens_details must contain non-negative native integral counters/);
   const p1run = prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: path.join(root, "p1"), clientFactory: () => ({ responses: { create: async () => ({ model: config.model, output_text: "answer", usage: { input_tokens: 42, output_tokens: 6, total_tokens: 48 } }) } }) });
   const r1 = await p1run.run(p1);
   assert.throws(() => rejectUnequalBeforeScoring([{ condition: "P0", ...r0.response }, { condition: "P1", ...r1.response }]), /unequal measured E/);
