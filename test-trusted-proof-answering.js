@@ -3,9 +3,11 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { EventEmitter } = require("node:events");
+const { PassThrough } = require("node:stream");
 const { assembleCondition, immutableInputs, rejectUnequalBeforeScoring } = require("./trusted-proof-preflight");
 const { ASSEMBLED_PROMPT_TEMPLATE_SHA256, WRAPPER_TEMPLATE_SHA256 } = require("./providers/openai-answering");
-const { prepareOpenAIAnsweringRun } = require("./trusted-proof-answering");
+const { prepareOpenAIAnsweringRun, prepareCodexExecAnsweringRun } = require("./trusted-proof-answering");
 
 async function main() {
   const inputs = immutableInputs(), fixture = inputs.dataset.cases[0];
@@ -64,6 +66,31 @@ async function main() {
   assert.throws(() => rejectUnequalBeforeScoring([{ condition: "P0", ...r0.response }, { condition: "P1", ...r1.response }]), /unequal measured E/);
   const leakRun = prepareOpenAIAnsweringRun({ provider: "openai-api", allowLiveProvider: true, config, inputs, rawDirectory: path.join(root, "leak"), clientFactory });
   await assert.rejects(leakRun.run({ ...p0, prompt: `${p0.prompt}${fixture.hidden_answer_contract.allowed}` }), /unsealed or reconstructed assembly/); assert.equal(calls, 1, "leaked reconstruction never reaches client");
+  let spawns = 0, codexCall;
+  const fakeSpawn = (binary, args, options) => {
+    spawns += 1; codexCall = { binary, args, options };
+    const child = new EventEmitter(); child.stdout = new PassThrough(); child.stderr = new PassThrough();
+    process.nextTick(() => {
+      const finalFile = args[args.indexOf("--output-last-message") + 1];
+      fs.writeFileSync(finalFile, JSON.stringify({ answer: "codex answer" }));
+      child.stdout.end(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ignored: final capture is authoritative" } })}\n${JSON.stringify({ type: "turn.completed", usage: { input_tokens: 51, output_tokens: 7, total_tokens: 58 } })}\n`);
+      child.stderr.end("fake diagnostic\n"); child.emit("close", 0);
+    });
+    return child;
+  };
+  const codexRaw = path.join(root, "codex");
+  assert.throws(() => prepareCodexExecAnsweringRun({ provider: "codex-exec", allowLiveProvider: false, config, inputs, rawDirectory: codexRaw, spawnImpl: fakeSpawn }), /allow-live-provider/);
+  const codexRun = prepareCodexExecAnsweringRun({ provider: "codex-exec", allowLiveProvider: true, config, inputs, rawDirectory: codexRaw, spawnImpl: fakeSpawn, binary: "fake-codex" });
+  assert.equal(spawns, 0, "Codex is not spawned until the sealed run reaches its transport");
+  const codexResult = await codexRun.run(p0);
+  assert.equal(spawns, 1); assert.equal(codexCall.binary, "fake-codex");
+  assert.deepEqual(codexCall.args.slice(0, 5), ["exec", "--ephemeral", "--sandbox", "read-only", "--json"]);
+  assert.equal(codexCall.args.at(-1), p0.prompt, "sealed prompt is the sole Codex task text");
+  assert.equal(codexCall.args[codexCall.args.indexOf("--model") + 1], config.model);
+  assert.equal(codexCall.options.stdio[0], "ignore");
+  assert.equal(codexResult.response.answer, "codex answer");
+  assert.deepEqual(codexResult.response.usage, { input_tokens: 51, output_tokens: 7, total_tokens: 58, effective_context_budget: 51 });
+  for (const name of ["codex-final-answer-schema.json", "codex-final-output.json", "codex-stdout.jsonl", "codex-stderr.txt"]) assert.equal(fs.existsSync(path.join(codexRaw, name)), true, `${name} is retained locally`);
   console.log("trusted-proof-answering ok: lazy gated fake OpenAI transport, exact wire, native E, local non-overwrite evidence, mismatch and leak rejection");
 }
 main().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
