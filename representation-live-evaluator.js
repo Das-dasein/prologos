@@ -278,7 +278,7 @@ function codexSeatbeltPreflight({ rawRoot, codexPath, swiplPath }) {
   const memoryFile = path.join(os.homedir(), ".codex", "memories", "MEMORY.md");
   const report = seatbelt.offlineProbeReport({ run: preflightRun, codexPath, repositoryFile: path.join(__dirname, "package.json"), memoryFile, datasetOrEvaluatorFile: __filename, outsideWriteFile: path.join(rawRoot, "preflight-must-not-write") });
   const denialRun = seatbelt.createFreshSealedRunRoot(rawRoot);
-  const profile = seatbelt.createSeatbeltProfile({ runRoot: denialRun.run_root, inputDir: denialRun.input_dir, outputDir: denialRun.output_dir, stateDir: denialRun.state_dir, codexPath });
+  const profile = seatbelt.createSeatbeltProfile({ runRoot: denialRun.run_root, inputDir: denialRun.input_dir, outputDir: denialRun.output_dir, stateDir: denialRun.state_dir, workspaceDir: denialRun.workspace_dir, codexPath });
   const denied = seatbelt.runSeatbeltProbe({ profile, cwd: denialRun.run_root, command: swiplPath, args: ["--version"] });
   if (denied.status === 0) throw new Error("Seatbelt preflight did not deny resolved swipl --version");
   return Object.freeze({ status: "codex-seatbelt-preflight-passed-no-provider-call", swipl_denial_status: denied.status, preflight_run: preflightRun.run_root, denial_run: denialRun.run_root, report_status: report.status });

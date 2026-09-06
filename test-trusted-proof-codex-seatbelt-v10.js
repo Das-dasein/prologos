@@ -23,15 +23,15 @@ try {
   // profile has no caller-provided runtime-root grant, so even a supplied
   // ignored legacy field cannot make the repository readable; pointing the
   // declared executable into the checkout fails closed as well.
-  const legacyExtra = api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: "/bin/echo", extraRuntimeRoots: [__dirname] });
+  const legacyExtra = api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, workspaceDir: run.workspace_dir, codexPath: "/bin/echo", extraRuntimeRoots: [__dirname] });
   assert.notEqual(api.runSeatbeltProbe({ profile: legacyExtra, cwd: run.run_root, command: "/bin/cat", args: [repositoryFile] }).status, 0, "legacy runtime-root injection must not grant repo read");
-  assert.throws(() => api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: repositoryFile }), /prohibited repository or evidence root/);
+  assert.throws(() => api.createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, workspaceDir: run.workspace_dir, codexPath: repositoryFile }), /prohibited repository or evidence root/);
   const invocationRun = api.createFreshSealedRunRoot(parent), sealed = api.writeSealedInput(invocationRun, { prompt: "p", schema: "{}" });
   const authFile = make("auth.json", "not-a-real-credential");
   const invocation = api.buildCodexInvocation({ run: invocationRun, sealed, codexPath: "/bin/echo", model: "test-model", authFile });
   assert.equal(invocation.command, "/usr/bin/sandbox-exec");
   for (const token of ["-C", "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "workspace-write", "--ephemeral"]) assert.ok(invocation.args.includes(token), `missing ${token}`);
-  assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocation.run_root); assert.equal(invocation.env.CODEX_HOME, invocationRun.state_dir); assert.equal(invocation.env.HOME, invocationRun.state_dir); assert.equal(invocation.env.TMPDIR, path.join(invocationRun.state_dir, "tmp"));
+  assert.equal(invocation.args[invocation.args.indexOf("-C") + 1], invocationRun.workspace_dir); assert.equal(invocation.env.CODEX_HOME, invocationRun.state_dir); assert.equal(invocation.env.HOME, invocationRun.state_dir); assert.equal(invocation.env.TMPDIR, path.join(invocationRun.state_dir, "tmp"));
   assert.equal(fs.readFileSync(invocation.private_auth_file, "utf8"), "not-a-real-credential"); assert.equal(fs.statSync(invocation.private_auth_file).mode & 0o777, 0o600);
   assert.equal(invocation.profile.includes(fs.realpathSync(host)), false, "host auth parent must not enter the profile");
   const stagedSource = make("codex-host-binary", "sealed-startup-probe"); fs.chmodSync(stagedSource, 0o755);

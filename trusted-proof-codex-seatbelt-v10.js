@@ -65,9 +65,11 @@ function sealedDirectories(run) {
   if (![input, output, state].every(value => sameOrWithin(root, value)) || new Set([input, output, state]).size !== 3) throw Error("sealed input, output, and private state must be distinct children of run_root");
   return Object.freeze({ root, input, output, state });
 }
-function createSeatbeltProfile({ runRoot, inputDir, outputDir, stateDir, codexPath, authFile = null, extraRuntimeFiles = [] }) {
+function createSeatbeltProfile({ runRoot, inputDir, outputDir, stateDir, workspaceDir, codexPath, authFile = null, extraRuntimeFiles = [] }) {
   if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw Error("macOS sandbox-exec is required for v10 isolation preflight");
   const { root, input, output, state } = sealedDirectories({ run_root: runRoot, input_dir: inputDir, output_dir: outputDir, state_dir: stateDir });
+  const workspace = absoluteDirectory(workspaceDir, "sealed workspace directory");
+  if (!sameOrWithin(root, workspace) || new Set([input, output, state, workspace]).size !== 4) throw Error("sealed workspace must be a distinct child of run_root");
   const codex = absoluteFile(codexPath, "codex_path");
   const auth = authFile === null ? null : absoluteFile(authFile, "auth_file");
   if (!Array.isArray(extraRuntimeFiles)) throw Error("extraRuntimeFiles must be an array");
@@ -83,15 +85,15 @@ function createSeatbeltProfile({ runRoot, inputDir, outputDir, stateDir, codexPa
   const reads = [quote("/"), runtimeRoots.map(subpath).join(" "), extraFiles.map(quote).join(" "), CODEX_REQUIREMENTS_FILES.map(quote).join(" "), tlsFiles.map(quote).join(" "), subpath(input), subpath(output), subpath(state), auth ? quote(auth) : ""].filter(Boolean).join(" ");
   return [
     "(version 1)", "(deny default)", "(allow process*)", "(allow file-map-executable)", "(allow sysctl-read)", "(allow mach-lookup)",
-    "(allow network-outbound)", `(allow file-read-metadata ${metadata})`, `(allow file-read* ${reads})`, `(allow file-write* ${subpath(output)} ${subpath(state)})`
+    "(allow network-outbound)", `(allow file-read-metadata ${metadata})`, `(allow file-read* ${reads})`, `(allow file-write* ${subpath(workspace)} ${subpath(output)} ${subpath(state)})`
   ].join(" ");
 }
 function createFreshSealedRunRoot(parent) {
   const base = absoluteDirectory(parent, "run parent");
   const root = fs.realpathSync(fs.mkdtempSync(path.join(base, "codex-v10-sealed-")));
-  const input = path.join(root, "input"), output = path.join(root, "output"), state = path.join(root, "state");
-  fs.mkdirSync(input, { mode: 0o700 }); fs.mkdirSync(output, { mode: 0o700 }); fs.mkdirSync(state, { mode: 0o700 });
-  return Object.freeze({ run_root: root, input_dir: input, output_dir: output, state_dir: state });
+  const input = path.join(root, "input"), output = path.join(root, "output"), state = path.join(root, "state"), workspace = path.join(root, "workspace");
+  fs.mkdirSync(input, { mode: 0o700 }); fs.mkdirSync(output, { mode: 0o700 }); fs.mkdirSync(state, { mode: 0o700 }); fs.mkdirSync(workspace, { mode: 0o700 });
+  return Object.freeze({ run_root: root, input_dir: input, output_dir: output, state_dir: state, workspace_dir: workspace });
 }
 function writeSealedInput(run, { prompt, schema }) {
   if (!run || typeof prompt !== "string" || !prompt.trim() || typeof schema !== "string" || !schema.trim()) throw Error("sealed prompt and output schema are required");
@@ -133,7 +135,7 @@ function buildCodexInvocation({ run, sealed, codexPath, model, authFile, extraRu
   // auth.json rather than silently opening the user's whole .codex directory.
   const privateState = provisionPrivateCodexState(run, authFile);
   const codex = provisionPrivateCodexBinary(run, codexPath);
-  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: codex, extraRuntimeFiles });
+  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, workspaceDir: run.workspace_dir, codexPath: codex, extraRuntimeFiles });
   const finalOutput = path.join(run.output_dir, "final-output.txt"), stdout = path.join(run.output_dir, "codex-stdout.jsonl"), stderr = path.join(run.output_dir, "codex-stderr.txt");
   // `-C` has to be the fresh root: never the repository. `--ignore-user-config`
   // deliberately retains only Codex authentication (via CODEX_HOME), not host
@@ -141,10 +143,10 @@ function buildCodexInvocation({ run, sealed, codexPath, model, authFile, extraRu
   // Codex itself needs to persist ephemeral session state in the sealed root.
   // `workspace-write` grants that inner workspace only; the outer default-deny
   // profile remains the authority and still denies every host evidence root.
-  const args = ["-p", profile, codex, "exec", "--json", "--ephemeral", "-C", run.run_root, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "workspace-write", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
+  const args = ["-p", profile, codex, "exec", "--json", "--ephemeral", "-C", run.workspace_dir, "--skip-git-repo-check", "--ignore-user-config", "--sandbox", "workspace-write", "--model", model, "--output-schema", sealed.schema_file, "--output-last-message", finalOutput, "-"];
   // Do not leave HOME/TMPDIR implicit: platform fallbacks can otherwise point
   // back to the user's home despite CODEX_HOME being sealed.
-  return Object.freeze({ command: SANDBOX, args: Object.freeze(args), cwd: run.run_root, env: Object.freeze({ CODEX_HOME: run.state_dir, HOME: run.state_dir, TMPDIR: privateState.temp_dir }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateState.auth_file, profile, run_root: run.run_root });
+  return Object.freeze({ command: SANDBOX, args: Object.freeze(args), cwd: run.workspace_dir, env: Object.freeze({ CODEX_HOME: run.state_dir, HOME: run.state_dir, TMPDIR: privateState.temp_dir }), stdin_file: sealed.prompt_file, stdout_file: stdout, stderr_file: stderr, final_output_file: finalOutput, private_auth_file: privateState.auth_file, profile, run_root: run.run_root });
 }
 // Pragmatic v10 answering mode. It deliberately does not claim the outer
 // Seatbelt boundary after macOS resolver failures; instead each raw trace must
@@ -166,7 +168,7 @@ function offlineProbeReport({ run, codexPath, repositoryFile, memoryFile, datase
   if (typeof outsideWriteFile !== "string" || !path.isAbsolute(outsideWriteFile) || sameOrWithin(run.run_root, path.resolve(outsideWriteFile))) throw Error("outside write target must be outside run_root");
   const sealed = writeSealedInput(run, { prompt: "sealed input", schema: "{\"type\":\"object\"}\n" });
   const privateCodex = provisionPrivateCodexBinary(run, codexPath);
-  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: privateCodex });
+  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, workspaceDir: run.workspace_dir, codexPath: privateCodex });
   const runtimeStart = runSeatbeltProbe({ profile, cwd: run.run_root, command: privateCodex, args: ["--version"] });
   const tlsReads = TLS_RUNTIME_FILES.filter(fs.existsSync).map(file => runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [fs.realpathSync(file)] }));
   const deniedRead = file => runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/cat", args: [file] });

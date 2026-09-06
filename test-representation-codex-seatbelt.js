@@ -35,8 +35,9 @@ function fakeP2Spawn({ seen, labels }) {
     const child = new EventEmitter(); child.stdin = new PassThrough(); child.stdout = new PassThrough(); child.stderr = new PassThrough();
     process.nextTick(() => {
       const final = args[args.indexOf("--output-last-message") + 1];
-      const broker = fs.readdirSync(path.join(options.cwd, "state"), { withFileTypes: true }).find(entry => entry.name === "query-broker.sh");
-      const state = path.join(options.cwd, "state"), brokerPath = path.join(state, "query-broker.sh");
+      const runRoot = path.dirname(options.cwd), state = path.join(runRoot, "state");
+      const broker = fs.readdirSync(state, { withFileTypes: true }).find(entry => entry.name === "query-broker.sh");
+      const brokerPath = path.join(state, "query-broker.sh");
       const label = broker ? labels[p2Index++] : "entailed"; if (broker) fs.writeFileSync(path.join(state, "broker-receipt.txt"), `BROKER_RESULT: ${label}\n`);
       fs.writeFileSync(final, JSON.stringify({ answer: "RESULT: entailed" }));
       child.stdout.end(`${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: broker ? brokerPath : "foreign" } })}\n${JSON.stringify({ type: "turn.completed", usage: { input_tokens: 11, output_tokens: 2 } })}\n`); child.stderr.end(""); child.emit("close", 0);
