@@ -17,17 +17,26 @@ LLM Prolog thought source
   -> isolated, read-only, untrusted execution
   -> transcript / run evidence / candidate identity
 
-explicit admission decision + declarative source-backed clauses
+explicit admission decision + immutable source-backed accepted items
   -> immutable accepted snapshot
   -> trusted structural query interpreter
   -> proved proof DAG | unknown missing-goal report | direct-conflict result
 ```
 
-The trusted lane accepts only source-backed declarative facts and Horn clauses
-that the trusted interpreter can represent structurally.  It never consults,
-calls, or gives host authority to a thought candidate.  A useful thought rule
-may therefore require a separate, explicit admission/re-expression step
-before it has trusted memory authority.
+**Current implementation truth.** `admitCandidate` preserves a candidate's
+source unchanged after an explicit admission decision. It does not yet reject
+an accepted directive or arbitrary full-Prolog text by declarative shape.
+That source does not thereby gain trusted execution authority: the trusted
+runner never consults or calls it. It reads terms structurally, and text that
+is not a fact or Horn clause it can traverse is unavailable to a trusted
+proof result.
+
+**Future trusted-intake work.** A native-term declarative admission check may
+later reject or quarantine unsupported accepted source before it enters the
+trusted snapshot. It is an implementation-owned safety/lifecycle check, not
+an agent-facing JSON schema or bespoke thought grammar. A useful thought rule
+still requires an explicit admission/re-expression decision before it can
+become a trusted logical premise.
 
 ## Conflict surface
 
@@ -54,13 +63,14 @@ remains an untrusted reflection hypothesis, never this result.
 | --- | --- |
 | AC1 restricted proposal parser | Superseded: full Prolog thought is allowed only in the untrusted lane; trusted clause intake is structural/native-term validation. |
 | AC2 persistent AST | Superseded: preserve Prolog source, immutable IDs and sources. Native terms are internal and ephemeral/implementation-owned. |
-| AC3 lifecycle | Explicit admission remains required; hypotheses/candidates remain untrusted. |
+| AC3 lifecycle | Explicit admission remains required. Current admission preserves source but does not validate declarative shape; unsupported source remains unavailable to trusted proof traversal. |
 | AC4/AC5 | Retain isolated trusted structural inference, proof DAG, and bounded unknown/missing-goal result. |
 | AC6 | Upgrade direct temporal polarity conflict from a JS lifecycle projection to an answering-layer-visible structured trusted conflict result with both fact provenance nodes. |
 
 ## Boundaries
 
-No arbitrary Prolog becomes trusted merely by parsing.  No API/provider run,
-dataset change, evaluator claim, or autonomous hypothesis admission belongs in
-this decision.  Implementation of the conflict surface is a fresh CDD alpha
-task after this design is reviewed.
+No arbitrary Prolog becomes trusted merely by parsing **or by current raw
+admission**. No API/provider run, dataset change, evaluator claim, or
+autonomous hypothesis admission belongs in this decision. The future native
+term admission check and implementation of the conflict surface are separate
+CDD tasks after this design is reviewed.
