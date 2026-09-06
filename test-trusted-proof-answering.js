@@ -87,10 +87,10 @@ async function main() {
   assert.throws(() => prepareCodexExecAnsweringRun({ provider: "codex-exec", allowLiveProvider: true, config: { ...config, provider: "openai-api" }, inputs, rawDirectory: codexMismatchRaw, spawnImpl: () => { throw new Error("Codex provider must not be constructed or spawned"); } }), /config\.provider must match selected provider/);
   assert.equal(fs.existsSync(codexMismatchRaw), false, "Codex provider mismatch creates no raw directory");
   assert.equal(spawns, 0, "Codex provider mismatch never spawns");
-  const codexRun = prepareCodexExecAnsweringRun({ provider: "codex-exec", allowLiveProvider: true, config, inputs, rawDirectory: codexRaw, spawnImpl: fakeSpawn, binary: "fake-codex" });
+  const codexRun = prepareCodexExecAnsweringRun({ provider: "codex-exec", allowLiveProvider: true, config, inputs, rawDirectory: codexRaw, spawnImpl: fakeSpawn });
   assert.equal(spawns, 0, "Codex is not spawned until the sealed run reaches its transport");
   const codexResult = await codexRun.run(p0);
-  assert.equal(spawns, 1); assert.equal(codexCall.binary, "fake-codex");
+  assert.equal(spawns, 1); assert.equal(codexCall.binary, "codex");
   assert.deepEqual(codexCall.args.slice(0, 5), ["exec", "--ephemeral", "--sandbox", "read-only", "--json"]);
   assert.equal(codexCall.args.at(-1), p0.prompt, "sealed prompt is the sole Codex task text");
   assert.equal(codexCall.args[codexCall.args.indexOf("--model") + 1], config.model);

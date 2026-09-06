@@ -41,12 +41,12 @@ function prepareOpenAIAnsweringRun({ provider, allowLiveProvider, config, inputs
     return Object.freeze({ response, artifacts, cdr_status: "not-a-cdr-receipt-v2" });
   } });
 }
-function prepareCodexExecAnsweringRun({ provider, allowLiveProvider, config, inputs, rawDirectory, spawnImpl, binary }) {
+function prepareCodexExecAnsweringRun({ provider, allowLiveProvider, config, inputs, rawDirectory, spawnImpl }) {
   if (provider !== "codex-exec") throw new Error("live answering requires fixed provider codex-exec");
   if (allowLiveProvider !== true) throw new Error("live answering requires --allow-live-provider");
   const immutableConfig = requireWireConfig(config, inputs, "codex-exec"); requireFreshRawDirectory(rawDirectory);
   fs.mkdirSync(rawDirectory, { mode: 0o700 });
-  const transport = createCodexExecAnsweringProvider({ config: immutableConfig, rawDirectory, spawnImpl, binary });
+  const transport = createCodexExecAnsweringProvider({ config: immutableConfig, rawDirectory, spawnImpl });
   return Object.freeze({ provider: "codex-exec", raw_directory: rawDirectory, async run(assembled) {
     const response = await executeWithInjectedProvider(assembled, transport);
     const artifacts = writeLocalEvidence({ directory: rawDirectory, assembled, response, config: immutableConfig, provider: "codex-exec" });
