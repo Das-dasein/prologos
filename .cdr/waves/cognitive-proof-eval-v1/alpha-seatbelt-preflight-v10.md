@@ -10,10 +10,16 @@ roots are not caller-configurable: the declared Codex executable parent is
 checked after realpath resolution and rejected if it overlaps the repository,
 CDR evidence/dataset root, or user-memory root.
 
-The test executes actual Seatbelt probes: host repository-file, `MEMORY.md`,
-dataset/evaluator-file reads and an outside-root write all fail; sealed-input
-read and output write succeed. It makes no provider, network, Docker, AST, or
-effect claim. Authentication is intentionally absent from committed config:
+The profile permits outbound provider networking and only the fixed macOS TLS
+runtime files `/private/etc/ssl/openssl.cnf` and `/private/etc/ssl/cert.pem`
+when they exist; it never grants an `/etc`, `/private`, home, or repository
+tree. Before any live child, the offline preflight verifies that the resolved
+Codex executable can start with `--version` and that those declared TLS files
+are readable. The test also executes actual Seatbelt probes: host
+repository-file, `MEMORY.md`, dataset/evaluator-file reads and an outside-root
+write all fail; sealed-input read and output write succeed. It makes no
+provider, auth, model, Docker, AST, or effect claim. Authentication is
+intentionally absent from committed config:
 Codex documents that `--ignore-user-config` still uses `CODEX_HOME` for auth,
 so a future runtime must provide exactly `CODEX_HOME/auth.json`; it is never
 copied, emitted, or recorded in artifacts. This is an accepted credential-
