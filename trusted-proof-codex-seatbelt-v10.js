@@ -65,12 +65,14 @@ function sealedDirectories(run) {
   if (![input, output, state].every(value => sameOrWithin(root, value)) || new Set([input, output, state]).size !== 3) throw Error("sealed input, output, and private state must be distinct children of run_root");
   return Object.freeze({ root, input, output, state });
 }
-function createSeatbeltProfile({ runRoot, inputDir, outputDir, stateDir, codexPath, authFile = null }) {
+function createSeatbeltProfile({ runRoot, inputDir, outputDir, stateDir, codexPath, authFile = null, extraRuntimeFiles = [] }) {
   if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw Error("macOS sandbox-exec is required for v10 isolation preflight");
   const { root, input, output, state } = sealedDirectories({ run_root: runRoot, input_dir: inputDir, output_dir: outputDir, state_dir: stateDir });
   const codex = absoluteFile(codexPath, "codex_path");
   const auth = authFile === null ? null : absoluteFile(authFile, "auth_file");
-  const runtimeRoots = declaredRuntimeRoots({ codexPath: codex });
+  if (!Array.isArray(extraRuntimeFiles)) throw Error("extraRuntimeFiles must be an array");
+  const extraFiles = extraRuntimeFiles.map((file, index) => absoluteFile(file, `extra runtime file ${index}`));
+  const runtimeRoots = [...declaredRuntimeRoots({ codexPath: codex }), ...extraFiles.map(file => path.dirname(file))];
   const tlsFiles = TLS_RUNTIME_FILES.filter(fs.existsSync).map(file => fs.realpathSync(file));
   // Metadata grants are only path traversal.  Content reads are restricted to
   // runtime, the sealed input, and (when unavoidable) one exact auth file.
@@ -78,7 +80,7 @@ function createSeatbeltProfile({ runRoot, inputDir, outputDir, stateDir, codexPa
   // Seatbelt needs the root vnode readable to start a process. `(literal "/")`
   // is not a recursive grant; every child still requires one of the explicit
   // `subpath`/`literal` rules below.
-  const reads = [quote("/"), runtimeRoots.map(subpath).join(" "), CODEX_REQUIREMENTS_FILES.map(quote).join(" "), tlsFiles.map(quote).join(" "), subpath(input), subpath(output), subpath(state), auth ? quote(auth) : ""].filter(Boolean).join(" ");
+  const reads = [quote("/"), runtimeRoots.map(subpath).join(" "), extraFiles.map(quote).join(" "), CODEX_REQUIREMENTS_FILES.map(quote).join(" "), tlsFiles.map(quote).join(" "), subpath(input), subpath(output), subpath(state), auth ? quote(auth) : ""].filter(Boolean).join(" ");
   return [
     "(version 1)", "(deny default)", "(allow process*)", "(allow file-map-executable)", "(allow sysctl-read)", "(allow mach-lookup)",
     "(allow network-outbound)", `(allow file-read-metadata ${metadata})`, `(allow file-read* ${reads})`, `(allow file-write* ${subpath(output)} ${subpath(state)})`
@@ -109,14 +111,14 @@ function provisionPrivateCodexState(run, authFile) {
   fs.mkdirSync(temp, { mode: 0o700 });
   return Object.freeze({ auth_file: destination, temp_dir: temp });
 }
-function buildCodexInvocation({ run, sealed, codexPath, model, authFile }) {
+function buildCodexInvocation({ run, sealed, codexPath, model, authFile, extraRuntimeFiles = [] }) {
   if (!run || !sealed || typeof model !== "string" || !model.trim()) throw Error("run, sealed input and model are required");
   const codex = absoluteFile(codexPath, "codex_path");
   // Codex documents that --ignore-user-config still obtains auth from
   // CODEX_HOME. There is no auth-free live mode, so require one exact existing
   // auth.json rather than silently opening the user's whole .codex directory.
   const privateState = provisionPrivateCodexState(run, authFile);
-  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: codex });
+  const profile = createSeatbeltProfile({ runRoot: run.run_root, inputDir: run.input_dir, outputDir: run.output_dir, stateDir: run.state_dir, codexPath: codex, extraRuntimeFiles });
   const finalOutput = path.join(run.output_dir, "final-output.txt"), stdout = path.join(run.output_dir, "codex-stdout.jsonl"), stderr = path.join(run.output_dir, "codex-stderr.txt");
   // `-C` has to be the fresh root: never the repository. `--ignore-user-config`
   // deliberately retains only Codex authentication (via CODEX_HOME), not host

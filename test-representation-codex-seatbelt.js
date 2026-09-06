@@ -28,6 +28,22 @@ function fakeSpawn({ invalid = false, seen }) {
     return child;
   };
 }
+function fakeP2Spawn({ seen, labels }) {
+  let p2Index = 0;
+  return (command, args, options) => {
+    seen.push({ command, args, options });
+    const child = new EventEmitter(); child.stdin = new PassThrough(); child.stdout = new PassThrough(); child.stderr = new PassThrough();
+    process.nextTick(() => {
+      const final = args[args.indexOf("--output-last-message") + 1];
+      const broker = fs.readdirSync(path.join(options.cwd, "state"), { withFileTypes: true }).find(entry => entry.name === "query-broker.sh");
+      const state = path.join(options.cwd, "state"), brokerPath = path.join(state, "query-broker.sh");
+      const label = broker ? labels[p2Index++] : "entailed"; if (broker) fs.writeFileSync(path.join(state, "broker-receipt.txt"), `BROKER_RESULT: ${label}\n`);
+      fs.writeFileSync(final, JSON.stringify({ answer: "RESULT: entailed" }));
+      child.stdout.end(`${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: broker ? brokerPath : "foreign" } })}\n${JSON.stringify({ type: "turn.completed", usage: { input_tokens: 11, output_tokens: 2 } })}\n`); child.stderr.end(""); child.emit("close", 0);
+    });
+    return child;
+  };
+}
 async function main() {
   const fixturePath = path.join(__dirname, ".cdr/waves/representation-formalization-v1/representation-world-fixture-v1.json");
   const fixture = api.loadFixture(fixturePath);
@@ -51,6 +67,14 @@ async function main() {
       assert.ok(record.raw.stdout && record.raw.stderr && record.raw.final_output, "successful call retains all raw artifacts");
       assert.equal(record.raw_response.ref.includes("auth.json"), false, "credential is never an evidence artifact");
     }
+    const p2Config = { ...config, provider: "codex-seatbelt-p2" }, p2Input = { file: path.join(os.tmpdir(), "fake-p2-config.json"), config: api.validateConfig(p2Config, fixture.sha256), bytes: stable(p2Config), sha256: sha256(stable(p2Config)) };
+    const p2Seen = [], labels = api.counterbalancedPlan(fixture.fixture).filter(item => item.condition === "P0").map(item => item.case.oracle.label), p2 = await api.collectLive({ fixtureInput: fixture, configInput: p2Input, allowLiveProvider: true, provider: "codex-seatbelt-p2", model: config.model, rawRoot: path.join(parent, "p2"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeP2Spawn({ seen: p2Seen, labels }), preflight: () => ({ status: "fake-p2-preflight-no-provider-call" }) });
+    assert.equal(p2Seen.length, 72); assert.equal(p2.aggregate.calls_recorded, 72); assert.deepEqual(Object.fromEntries(Object.entries(p2.aggregate.per_condition).map(([key, value]) => [key, value.denominator])), { P0: 24, P1: 24, P2: 24 });
+    assert.equal(p2.aggregate.per_condition.P2.correctness_count, 12); assert.equal(p2.aggregate.per_condition.P2.format_failure_count, 0); assert.equal(p2.aggregate.records.filter(record => record.condition === "P2").every(record => record.inspection.tool_events_observed === 1), true);
+    const p2Trace = path.join(parent, "p2-trace.jsonl"), brokerPath = "/sealed/query-broker.sh", done = JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } });
+    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: brokerPath } })}\n${done}\n`); assert.equal(api.parseP2CodexJsonl(p2Trace, [], brokerPath).inspection.tool_events_observed, 1);
+    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: brokerPath } })}\n${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: brokerPath } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /exactly one broker action/);
+    fs.writeFileSync(p2Trace, `${JSON.stringify({ type: "item.completed", item: { type: "command_execution", command: "/sealed/foreign.sh" } })}\n${done}\n`); assert.throws(() => api.parseP2CodexJsonl(p2Trace, [], brokerPath), /foreign or parameterized/);
     const bad = await api.collectLive({ fixtureInput: fixture, configInput, allowLiveProvider: true, provider: "codex-seatbelt", model: config.model, rawRoot: path.join(parent, "invalid"), codexPath: "/bin/echo", authFile: auth, swiplPath: "/usr/bin/false", spawnImpl: fakeSpawn({ invalid: true, seen: [] }), preflight: () => ({ status: "fake-preflight-no-provider-call" }) });
     assert.equal(bad.aggregate.invalid_or_missing_records.length, 48, "malformed JSONL makes every call a non-result");
     for (const record of bad.aggregate.records) assert.match(record.transport_error, /JSONL trace is malformed/);

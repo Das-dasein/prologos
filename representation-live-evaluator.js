@@ -9,7 +9,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
 const childProcess = require("node:child_process");
-const { SCHEMA_VERSION, validateCoverage, validatePublicPrompt } = require("./representation-world-generator");
+const { SCHEMA_VERSION, formalProgram, runPrologOracle, validateCoverage, validatePublicPrompt } = require("./representation-world-generator");
 const { canonicalSampling, createOpenAIAnsweringProvider } = require("./providers/openai-answering");
 const seatbelt = require("./trusted-proof-codex-seatbelt-v10");
 
@@ -17,6 +17,7 @@ const EVALUATOR_SCHEMA_VERSION = "representation-live-evaluator-v1";
 const RUN_SCHEMA_VERSION = "representation-live-run-v1";
 const CONFIG_SCHEMA_VERSION = "representation-live-config-v1";
 const CONDITION_ORDER = ["P0", "P1"];
+const THREE_CONDITION_ORDER = ["P0", "P1", "P2"];
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const stable = value => JSON.stringify(value, null, 2) + "\n";
 const readJson = file => JSON.parse(fs.readFileSync(file, "utf8"));
@@ -72,7 +73,7 @@ function validateFixture(fixture) {
 function validateConfig(config, fixtureHash) {
   exactKeys(config, ["fixture_sha256", "model", "provider", "retry_policy", "sampling", "schema_version"], "config");
   if (config.schema_version !== CONFIG_SCHEMA_VERSION) throw new Error(`config.schema_version must be ${CONFIG_SCHEMA_VERSION}`);
-  if (!["openai-api", "codex-seatbelt"].includes(config.provider)) throw new Error("P0/P1 requires config.provider openai-api or codex-seatbelt");
+  if (!["openai-api", "codex-seatbelt", "codex-seatbelt-p2"].includes(config.provider)) throw new Error("config.provider must be openai-api, codex-seatbelt, or codex-seatbelt-p2");
   requireText(config.model, "config.model");
   requireHash(config.fixture_sha256, "config.fixture_sha256");
   if (config.fixture_sha256 !== fixtureHash) throw new Error("config.fixture_sha256 does not bind the supplied fixture");
@@ -131,7 +132,7 @@ function assertLiveGates({ allowLiveProvider, model, rawRoot, provider }) {
   if (allowLiveProvider !== true) throw new Error("live collection requires --allow-live-provider");
   requireText(model, "--model");
   requireFreshRawRoot(rawRoot);
-  if (!["openai-api", "codex-seatbelt"].includes(provider)) throw new Error("P0/P1 permits only explicit openai-api or codex-seatbelt transport");
+  if (!["openai-api", "codex-seatbelt", "codex-seatbelt-p2"].includes(provider)) throw new Error("unsupported representation transport");
 }
 function providerResult(value) {
   if (!value || typeof value !== "object" || typeof value.answer !== "string" || typeof value.raw !== "string" || !value.usage || typeof value.usage !== "object") throw new Error("provider must return text answer, raw text, and native usage");
@@ -141,16 +142,18 @@ function providerResult(value) {
 }
 function aggregate(records, fixtureBinding, configBinding) {
   const byCondition = {};
-  for (const condition of CONDITION_ORDER) {
+  const conditions = records.some(item => item.condition === "P2") ? THREE_CONDITION_ORDER : CONDITION_ORDER;
+  for (const condition of conditions) {
     const items = records.filter(item => item.condition === condition);
     byCondition[condition] = { denominator: items.length, correctness_count: items.filter(item => item.score && item.score.score === "correct").length, format_failure_count: items.filter(item => item.score && !item.score.format_valid).length, input_tokens: items.reduce((sum, item) => sum + (item.usage ? item.usage.input_tokens : 0), 0), output_tokens: items.reduce((sum, item) => sum + (item.usage ? item.usage.output_tokens : 0), 0) };
   }
   const pairs = new Map();
   for (const record of records) { const pair = pairs.get(record.case_id) || []; pair.push(record); pairs.set(record.case_id, pair); }
   const disagreements = [];
-  for (const [case_id, pair] of pairs) if (pair.length !== 2 || pair[0].score.score !== pair[1].score.score || pair[0].score.parsed_answer !== pair[1].score.parsed_answer) disagreements.push(case_id);
+  const expectedPerCase = conditions.length;
+  for (const [case_id, pair] of pairs) if (pair.length !== expectedPerCase || new Set(pair.map(item => `${item.score.score}:${item.score.parsed_answer}`)).size > 1) disagreements.push(case_id);
   const invalid_or_missing_records = records.filter(item => !item.raw_response || !item.score.format_valid || item.transport_error).map(item => ({ record_id: item.record_id, reason: item.transport_error ? "transport_error" : !item.raw_response ? "missing_raw_response" : "format_failure" }));
-  return { schema_version: RUN_SCHEMA_VERSION, evaluator_schema_version: EVALUATOR_SCHEMA_VERSION, cdr_status: "not-a-cdr-receipt", fixture: fixtureBinding, config: configBinding, calls_expected: 48, calls_recorded: records.length, per_condition: byCondition, paired_disagreements: disagreements, input_tokens_total: records.reduce((sum, item) => sum + (item.usage ? item.usage.input_tokens : 0), 0), output_tokens_total: records.reduce((sum, item) => sum + (item.usage ? item.usage.output_tokens : 0), 0), invalid_or_missing_records, records };
+  return { schema_version: RUN_SCHEMA_VERSION, evaluator_schema_version: EVALUATOR_SCHEMA_VERSION, cdr_status: "not-a-cdr-receipt", fixture: fixtureBinding, config: configBinding, calls_expected: conditions.length * 24, calls_recorded: records.length, per_condition: byCondition, paired_disagreements: disagreements, input_tokens_total: records.reduce((sum, item) => sum + (item.usage ? item.usage.input_tokens : 0), 0), output_tokens_total: records.reduce((sum, item) => sum + (item.usage ? item.usage.output_tokens : 0), 0), invalid_or_missing_records, records };
 }
 function absoluteExecutable(value, label) {
   if (typeof value !== "string" || !path.isAbsolute(value) || !fs.existsSync(value) || !fs.statSync(value).isFile()) throw new Error(`${label} must be an existing absolute file`);
@@ -198,6 +201,38 @@ function parseCodexJsonl(stdoutFile, prohibitedPaths) {
   const usage = completed[0].usage;
   for (const key of ["input_tokens", "output_tokens"]) if (!Number.isSafeInteger(usage[key]) || usage[key] < 0) throw new Error("Codex native usage counter is invalid");
   return Object.freeze({ usage: Object.freeze({ input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.input_tokens + usage.output_tokens }), inspection: Object.freeze({ tool_events_observed: 0, prohibited_path_exposure: false }) });
+}
+function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
+  const raw = fs.readFileSync(stdoutFile, "utf8"), lines = raw.split(/\r?\n/).filter(Boolean);
+  if (!lines.length) throw new Error("Codex JSONL trace is empty");
+  let events;
+  try { events = lines.map(line => JSON.parse(line)); } catch { throw new Error("Codex JSONL trace is malformed"); }
+  const protectedPaths = [...new Set(prohibitedPaths.map(value => path.resolve(value)))];
+  for (const event of events) for (const value of stringLeaves(event)) if (value !== path.resolve(brokerPath)) for (const protectedPath of protectedPaths) if (value === protectedPath || value.includes(protectedPath)) throw new Error(`prohibited host path exposed in Codex JSONL: ${protectedPath}`);
+  const calls = events.filter(event => /(?:command_execution|function_call|\btool\b)/i.test(JSON.stringify(event)));
+  if (calls.length !== 1) throw new Error(`P2 trace must contain exactly one broker action, got ${calls.length}`);
+  const callText = stringLeaves(calls[0]).find(value => value === brokerPath || value.includes(brokerPath));
+  if (!callText || callText !== brokerPath) throw new Error("P2 trace contains a foreign or parameterized command");
+  const completed = events.filter(event => event && event.type === "turn.completed");
+  if (completed.length !== 1 || !completed[0].usage || typeof completed[0].usage !== "object") throw new Error("Codex JSONL must contain exactly one completed turn with native usage");
+  const usage = completed[0].usage;
+  for (const key of ["input_tokens", "output_tokens"]) if (!Number.isSafeInteger(usage[key]) || usage[key] < 0) throw new Error("Codex native usage counter is invalid");
+  return Object.freeze({ usage: Object.freeze({ input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.input_tokens + usage.output_tokens }), inspection: Object.freeze({ tool_events_observed: 1, broker_action: brokerPath, prohibited_path_exposure: false }) });
+}
+function writeP2Broker(run, item, swiplPath) {
+  const programFile = path.join(run.state_dir, "sealed-program.pl"), receiptFile = path.join(run.state_dir, "broker-receipt.txt"), brokerFile = path.join(run.state_dir, "query-broker.sh");
+  const query = `${item.case.formal_world.query.predicate}(${item.case.formal_world.query.args.join(",")})`;
+  const program = `${formalProgram(item.case.formal_world)}\n:- initialization(main).\nmain :- ((${query}) -> writeln('BROKER_RESULT: entailed') ; writeln('BROKER_RESULT: unknown')), halt.\n`;
+  fs.writeFileSync(programFile, program, { flag: "wx", mode: 0o400 });
+  const script = `#!/bin/sh\nexec ${JSON.stringify(swiplPath)} --quiet --nosignals -s ${JSON.stringify(programFile)} > ${JSON.stringify(receiptFile)}\n`;
+  fs.writeFileSync(brokerFile, script, { flag: "wx", mode: 0o700 }); fs.chmodSync(brokerFile, 0o700);
+  return Object.freeze({ programFile, receiptFile, brokerFile });
+}
+function readBrokerResult(file) {
+  if (!fs.existsSync(file)) throw new Error("P2 broker receipt is missing");
+  const value = fs.readFileSync(file, "utf8").trim();
+  if (value !== "BROKER_RESULT: entailed" && value !== "BROKER_RESULT: unknown") throw new Error("P2 broker receipt is malformed");
+  return value.slice("BROKER_RESULT: ".length);
 }
 function parseCodexFinalOutput(file) {
   let final;
@@ -275,6 +310,34 @@ async function collectCodexSeatbelt({ fixtureLoaded, configLoaded, config, model
   const aggregateArtifact = writeExclusive(path.join(rawRoot, "aggregate-not-a-cdr-receipt.json"), stable(result));
   return Object.freeze({ aggregate: result, aggregate_file: aggregateArtifact.file, raw_root: rawRoot });
 }
+async function collectCodexSeatbeltP2(options) {
+  const { fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight = codexSeatbeltPreflight, swiplPath } = options;
+  const codex = absoluteExecutable(codexPath, "codex_path"), auth = exactAuthFile(authFile), swipl = resolveSwiplBinary(swiplPath);
+  fs.mkdirSync(rawRoot, { mode: 0o700 });
+  writeExclusive(path.join(rawRoot, "seatbelt-preflight.json"), stable(preflight({ rawRoot, codexPath: codex, swiplPath: swipl })));
+  const records = [];
+  for (const item of counterbalancedPlan(fixtureLoaded.fixture).filter(entry => entry.condition === "P0")) for (const condition of THREE_CONDITION_ORDER) {
+    const run = seatbelt.createFreshSealedRunRoot(rawRoot), broker = condition === "P2" ? writeP2Broker(run, item, swipl) : null;
+    const prompt = condition === "P2" ? `${item.case.prompts.p1}\nUse exactly one private query broker action, with no arguments: ${broker.brokerFile}. Then answer in the required RESULT envelope.` : item.case.prompts[condition.toLowerCase()];
+    const sealed = seatbelt.writeSealedInput(run, { prompt, schema: stable(FINAL_ANSWER_SCHEMA) });
+    let response = null, rawResponse, transportError = null, inspection = null;
+    try {
+      const invocation = seatbelt.buildCodexInvocation({ run, sealed, codexPath: codex, model, authFile: auth, extraRuntimeFiles: condition === "P2" ? [swipl] : [] });
+      const raw = await invokeCodex({ invocation, spawnImpl });
+      const paths = protectedCodexPaths({ fixtureFile: fixtureLoaded.file, configFile: configLoaded.file, authFile: auth, swiplPath: swipl, invocation });
+      const parsed = condition === "P2" ? parseP2CodexJsonl(raw.stdout_file, paths, broker.brokerFile) : parseCodexJsonl(raw.stdout_file, paths);
+      if (condition === "P2") { const brokerLabel = readBrokerResult(broker.receiptFile), direct = await runPrologOracle(item.case.formal_world); if (brokerLabel !== direct.label) throw new Error("P2 broker result disagrees with direct SWI recomputation"); }
+      response = { answer: parseCodexFinalOutput(raw.final_output_file), usage: parsed.usage }; inspection = parsed.inspection; rawResponse = raw.final_output_file;
+    } catch (error) {
+      transportError = String(error && (error.stack || error.message) || error); const errorFile = path.join(run.output_dir, "collector-rejection.txt"); if (!fs.existsSync(errorFile)) writeExclusive(errorFile, transportError + "\n"); rawResponse = errorFile;
+    }
+    const score = scoreAnswer(response && response.answer, item.case.oracle.label);
+    const record = { record_id: `${item.case.case_id}-${condition.toLowerCase()}`, case_id: item.case.case_id, condition, counterbalanced_order: item.pair_order, fixture_sha256: fixtureLoaded.sha256, config_sha256: configLoaded.sha256, prompt_sha256: sha256(prompt), prompt: { ref: localRef(rawRoot, sealed.prompt_file), sha256: sha256(fs.readFileSync(sealed.prompt_file, "utf8")) }, raw_response: { ref: localRef(rawRoot, rawResponse), sha256: sha256(fs.readFileSync(rawResponse, "utf8")) }, provider: "codex-seatbelt-p2", model: config.model, sampling: config.sampling, retry_policy: config.retry_policy, usage: response ? response.usage : null, inspection, parsed_answer: score.parsed_answer, score, transport_error: transportError };
+    writeExclusive(path.join(run.output_dir, "record.json"), stable(record)); records.push(Object.freeze(record));
+  }
+  const result = aggregate(records, { file_sha256: fixtureLoaded.sha256, schema_version: fixtureLoaded.fixture.schema_version, case_count: fixtureLoaded.fixture.cases.length }, { file_sha256: configLoaded.sha256, schema_version: config.schema_version, provider: config.provider, model: config.model, sampling: config.sampling, retry_policy: config.retry_policy });
+  const aggregateArtifact = writeExclusive(path.join(rawRoot, "aggregate-not-a-cdr-receipt.json"), stable(result)); return Object.freeze({ aggregate: result, aggregate_file: aggregateArtifact.file, raw_root: rawRoot });
+}
 async function collectLive({ fixtureInput, configInput, allowLiveProvider, provider = "openai-api", model, rawRoot, providerFactory, codexPath, authFile, spawnImpl, preflight, swiplPath }) {
   const fixtureLoaded = canonicalVerifiedInput(typeof fixtureInput === "string" ? loadFixture(fixtureInput) : fixtureInput, "fixture");
   validateFixture(fixtureLoaded.fixture);
@@ -284,6 +347,7 @@ async function collectLive({ fixtureInput, configInput, allowLiveProvider, provi
   if (model !== config.model) throw new Error("--model must match config.model");
   if (provider !== config.provider) throw new Error("selected provider must match config.provider");
   if (provider === "codex-seatbelt") return collectCodexSeatbelt({ fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight, swiplPath });
+  if (provider === "codex-seatbelt-p2") return collectCodexSeatbeltP2({ fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight, swiplPath });
   if (typeof providerFactory !== "function") throw new Error("providerFactory must be a function");
   const plan = counterbalancedPlan(fixtureLoaded.fixture);
   fs.mkdirSync(rawRoot, { mode: 0o700 });
@@ -322,7 +386,7 @@ function parseArgs(argv) {
   }
   return result;
 }
-module.exports = { CONFIG_SCHEMA_VERSION, EVALUATOR_SCHEMA_VERSION, RUN_SCHEMA_VERSION, FINAL_ANSWER_SCHEMA, aggregate, collectLive, codexSeatbeltPreflight, counterbalancedPlan, invokeCodex, loadConfig, loadFixture, parseAnswer, parseArgs, parseCodexFinalOutput, parseCodexJsonl, requireFreshRawRoot, resolveSwiplBinary, scoreAnswer, validateConfig, validateFixture };
+module.exports = { CONFIG_SCHEMA_VERSION, EVALUATOR_SCHEMA_VERSION, RUN_SCHEMA_VERSION, FINAL_ANSWER_SCHEMA, aggregate, collectLive, codexSeatbeltPreflight, counterbalancedPlan, invokeCodex, loadConfig, loadFixture, parseAnswer, parseArgs, parseCodexFinalOutput, parseCodexJsonl, parseP2CodexJsonl, readBrokerResult, requireFreshRawRoot, resolveSwiplBinary, scoreAnswer, validateConfig, validateFixture };
 
 if (require.main === module) {
   (async () => {
