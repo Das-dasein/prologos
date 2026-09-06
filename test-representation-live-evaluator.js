@@ -32,6 +32,22 @@ async function main() {
   await assert.rejects(() => collectLive({ fixtureInput: fixture, configInput: { config: invalidConfig, bytes: stable(invalidConfig), sha256: sha256(stable(invalidConfig)) }, allowLiveProvider: true, provider: "openai-api", model: config.model, rawRoot: path.join(os.tmpdir(), "not-created-representation-live-binding"), providerFactory: () => { factories += 1; throw new Error("must not construct"); } }), /does not bind/);
   assert.equal(factories, 0, "invalid fixture/config binding never constructs a provider");
 
+  let integrityFactories = 0, integrityCalls = 0;
+  const neverConstruct = () => {
+    integrityFactories += 1;
+    return { async complete() { integrityCalls += 1; throw new Error("must not call"); } };
+  };
+  const mutatedFixture = JSON.parse(JSON.stringify(fixture.fixture));
+  mutatedFixture.cases[0].prompts.p0 = "mutated only in memory";
+  await assert.rejects(() => collectLive({ fixtureInput: { ...fixture, fixture: mutatedFixture }, configInput, allowLiveProvider: true, provider: "openai-api", model: config.model, rawRoot: path.join(os.tmpdir(), "not-created-representation-live-fixture-integrity"), providerFactory: neverConstruct }), /fixture object does not exactly match its verified bytes/);
+  assert.equal(integrityFactories, 0, "mutated fixture object never constructs a provider");
+  assert.equal(integrityCalls, 0, "mutated fixture object never calls a provider");
+  const mutatedConfig = JSON.parse(JSON.stringify(configInput.config));
+  mutatedConfig.model = "mutated-only-in-memory";
+  await assert.rejects(() => collectLive({ fixtureInput: fixture, configInput: { ...configInput, config: mutatedConfig }, allowLiveProvider: true, provider: "openai-api", model: config.model, rawRoot: path.join(os.tmpdir(), "not-created-representation-live-config-integrity"), providerFactory: neverConstruct }), /config object does not exactly match its verified bytes/);
+  assert.equal(integrityFactories, 0, "mutated config object never constructs a provider");
+  assert.equal(integrityCalls, 0, "mutated config object never calls a provider");
+
   const rootParent = fs.mkdtempSync(path.join(os.tmpdir(), "representation-live-evaluator-"));
   const rawRoot = path.join(rootParent, "raw");
   const expectedByPrompt = new Map();

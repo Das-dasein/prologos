@@ -4,6 +4,7 @@
 // intentionally a small, sealed Responses-only path: it never imports a
 // solver, never reconstructs prompts, and has no tool declaration surface.
 const crypto = require("node:crypto");
+const { isDeepStrictEqual } = require("node:util");
 const fs = require("node:fs");
 const path = require("node:path");
 const { SCHEMA_VERSION, validateCoverage, validatePublicPrompt } = require("./representation-world-generator");
@@ -81,6 +82,21 @@ function loadConfig(file, fixtureHash) {
   const bytes = fs.readFileSync(file, "utf8"), config = validateConfig(JSON.parse(bytes), fixtureHash);
   return Object.freeze({ file, bytes, sha256: sha256(bytes), config });
 }
+function canonicalVerifiedInput(input, kind) {
+  if (!input || typeof input !== "object" || typeof input.bytes !== "string" || typeof input.sha256 !== "string" || sha256(input.bytes) !== input.sha256) {
+    throw new Error(`a hash-validated ${kind} input is required`);
+  }
+  let parsed;
+  try { parsed = JSON.parse(input.bytes); }
+  catch { throw new Error(`${kind} bytes must contain JSON`); }
+  // A parsed object is optional convenience metadata.  It can never replace
+  // the content whose hash was verified above: reject any disagreement before
+  // validation planning, gates, or provider construction.
+  if (own(input, kind) && !isDeepStrictEqual(input[kind], parsed)) {
+    throw new Error(`${kind} object does not exactly match its verified bytes`);
+  }
+  return Object.freeze({ ...input, [kind]: parsed });
+}
 function counterbalancedPlan(fixture) {
   const cases = [...fixture.cases].sort((a, b) => a.case_id.localeCompare(b.case_id));
   const plan = [];
@@ -133,11 +149,9 @@ function aggregate(records, fixtureBinding, configBinding) {
   return { schema_version: RUN_SCHEMA_VERSION, evaluator_schema_version: EVALUATOR_SCHEMA_VERSION, cdr_status: "not-a-cdr-receipt", fixture: fixtureBinding, config: configBinding, calls_expected: 48, calls_recorded: records.length, per_condition: byCondition, paired_disagreements: disagreements, input_tokens_total: records.reduce((sum, item) => sum + (item.usage ? item.usage.input_tokens : 0), 0), output_tokens_total: records.reduce((sum, item) => sum + (item.usage ? item.usage.output_tokens : 0), 0), invalid_or_missing_records, records };
 }
 async function collectLive({ fixtureInput, configInput, allowLiveProvider, provider = "openai-api", model, rawRoot, providerFactory }) {
-  const fixtureLoaded = typeof fixtureInput === "string" ? loadFixture(fixtureInput) : fixtureInput;
-  if (!fixtureLoaded || !fixtureLoaded.fixture || typeof fixtureLoaded.bytes !== "string" || !fixtureLoaded.sha256 || sha256(fixtureLoaded.bytes) !== fixtureLoaded.sha256) throw new Error("a hash-validated fixture input is required");
+  const fixtureLoaded = canonicalVerifiedInput(typeof fixtureInput === "string" ? loadFixture(fixtureInput) : fixtureInput, "fixture");
   validateFixture(fixtureLoaded.fixture);
-  const configLoaded = typeof configInput === "string" ? loadConfig(configInput, fixtureLoaded.sha256) : configInput;
-  if (!configLoaded || !configLoaded.config || typeof configLoaded.bytes !== "string" || !configLoaded.sha256 || sha256(configLoaded.bytes) !== configLoaded.sha256) throw new Error("a hash-validated config input is required");
+  const configLoaded = canonicalVerifiedInput(typeof configInput === "string" ? loadConfig(configInput, fixtureLoaded.sha256) : configInput, "config");
   const config = validateConfig(configLoaded.config, fixtureLoaded.sha256);
   assertLiveGates({ allowLiveProvider, model, rawRoot, provider });
   if (model !== config.model) throw new Error("--model must match config.model");
