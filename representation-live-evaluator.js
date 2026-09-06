@@ -7,8 +7,11 @@ const crypto = require("node:crypto");
 const { isDeepStrictEqual } = require("node:util");
 const fs = require("node:fs");
 const path = require("node:path");
+const os = require("node:os");
+const childProcess = require("node:child_process");
 const { SCHEMA_VERSION, validateCoverage, validatePublicPrompt } = require("./representation-world-generator");
 const { canonicalSampling, createOpenAIAnsweringProvider } = require("./providers/openai-answering");
+const seatbelt = require("./trusted-proof-codex-seatbelt-v10");
 
 const EVALUATOR_SCHEMA_VERSION = "representation-live-evaluator-v1";
 const RUN_SCHEMA_VERSION = "representation-live-run-v1";
@@ -18,6 +21,7 @@ const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const stable = value => JSON.stringify(value, null, 2) + "\n";
 const readJson = file => JSON.parse(fs.readFileSync(file, "utf8"));
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+const FINAL_ANSWER_SCHEMA = Object.freeze({ type: "object", additionalProperties: false, required: ["answer"], properties: { answer: { type: "string" } } });
 
 function requireText(value, name) {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${name} must be non-empty text`);
@@ -68,7 +72,7 @@ function validateFixture(fixture) {
 function validateConfig(config, fixtureHash) {
   exactKeys(config, ["fixture_sha256", "model", "provider", "retry_policy", "sampling", "schema_version"], "config");
   if (config.schema_version !== CONFIG_SCHEMA_VERSION) throw new Error(`config.schema_version must be ${CONFIG_SCHEMA_VERSION}`);
-  if (config.provider !== "openai-api") throw new Error("P0/P1 v1 requires config.provider openai-api");
+  if (!["openai-api", "codex-seatbelt"].includes(config.provider)) throw new Error("P0/P1 requires config.provider openai-api or codex-seatbelt");
   requireText(config.model, "config.model");
   requireHash(config.fixture_sha256, "config.fixture_sha256");
   if (config.fixture_sha256 !== fixtureHash) throw new Error("config.fixture_sha256 does not bind the supplied fixture");
@@ -127,7 +131,7 @@ function assertLiveGates({ allowLiveProvider, model, rawRoot, provider }) {
   if (allowLiveProvider !== true) throw new Error("live collection requires --allow-live-provider");
   requireText(model, "--model");
   requireFreshRawRoot(rawRoot);
-  if (provider !== "openai-api") throw new Error("P0/P1 v1 permits only provider openai-api Responses transport");
+  if (!["openai-api", "codex-seatbelt"].includes(provider)) throw new Error("P0/P1 permits only explicit openai-api or codex-seatbelt transport");
 }
 function providerResult(value) {
   if (!value || typeof value !== "object" || typeof value.answer !== "string" || typeof value.raw !== "string" || !value.usage || typeof value.usage !== "object") throw new Error("provider must return text answer, raw text, and native usage");
@@ -148,7 +152,130 @@ function aggregate(records, fixtureBinding, configBinding) {
   const invalid_or_missing_records = records.filter(item => !item.raw_response || !item.score.format_valid || item.transport_error).map(item => ({ record_id: item.record_id, reason: item.transport_error ? "transport_error" : !item.raw_response ? "missing_raw_response" : "format_failure" }));
   return { schema_version: RUN_SCHEMA_VERSION, evaluator_schema_version: EVALUATOR_SCHEMA_VERSION, cdr_status: "not-a-cdr-receipt", fixture: fixtureBinding, config: configBinding, calls_expected: 48, calls_recorded: records.length, per_condition: byCondition, paired_disagreements: disagreements, input_tokens_total: records.reduce((sum, item) => sum + (item.usage ? item.usage.input_tokens : 0), 0), output_tokens_total: records.reduce((sum, item) => sum + (item.usage ? item.usage.output_tokens : 0), 0), invalid_or_missing_records, records };
 }
-async function collectLive({ fixtureInput, configInput, allowLiveProvider, provider = "openai-api", model, rawRoot, providerFactory }) {
+function absoluteExecutable(value, label) {
+  if (typeof value !== "string" || !path.isAbsolute(value) || !fs.existsSync(value) || !fs.statSync(value).isFile()) throw new Error(`${label} must be an existing absolute file`);
+  const resolved = fs.realpathSync(value);
+  fs.accessSync(resolved, fs.constants.X_OK);
+  return resolved;
+}
+function exactAuthFile(value) {
+  if (typeof value !== "string" || !path.isAbsolute(value) || !fs.existsSync(value) || !fs.statSync(value).isFile()) throw new Error("auth_file must be an existing absolute file");
+  const resolved = fs.realpathSync(value);
+  if (path.basename(resolved) !== "auth.json") throw new Error("auth_file must be the exact existing auth.json file");
+  return resolved;
+}
+function resolveSwiplBinary(value = process.env.SWIPL_BIN) {
+  if (value !== undefined && value !== "") return absoluteExecutable(value, "SWIPL_BIN");
+  for (const directory of (process.env.PATH || "").split(path.delimiter)) {
+    const candidate = path.join(directory || ".", "swipl");
+    try { return absoluteExecutable(candidate, "resolved swipl"); } catch { /* keep searching */ }
+  }
+  throw new Error("a resolved executable swipl binary is required for codex-seatbelt denial preflight");
+}
+function stringLeaves(value, out = []) {
+  if (typeof value === "string") out.push(value);
+  else if (Array.isArray(value)) for (const item of value) stringLeaves(item, out);
+  else if (value && typeof value === "object") for (const item of Object.values(value)) stringLeaves(item, out);
+  return out;
+}
+function parseCodexJsonl(stdoutFile, prohibitedPaths) {
+  const raw = fs.readFileSync(stdoutFile, "utf8");
+  const lines = raw.split(/\r?\n/).filter(Boolean);
+  if (!lines.length) throw new Error("Codex JSONL trace is empty");
+  let events;
+  try { events = lines.map(line => JSON.parse(line)); }
+  catch { throw new Error("Codex JSONL trace is malformed"); }
+  const protectedPaths = [...new Set(prohibitedPaths.map(value => path.resolve(value)))];
+  const exposed = [];
+  for (const event of events) for (const text of stringLeaves(event)) for (const protectedPath of protectedPaths) {
+    if (text === protectedPath || text.includes(protectedPath)) exposed.push(protectedPath);
+  }
+  if (exposed.length) throw new Error(`prohibited host path exposed in Codex JSONL: ${[...new Set(exposed)].join(", ")}`);
+  const toolEvents = events.filter(event => /(?:command_execution|function_call|\btool\b)/i.test(JSON.stringify(event))).length;
+  if (toolEvents) throw new Error(`Codex Seatbelt transport rejects tool or command events: ${toolEvents}`);
+  const completed = events.filter(event => event && event.type === "turn.completed");
+  if (completed.length !== 1 || !completed[0].usage || typeof completed[0].usage !== "object") throw new Error("Codex JSONL must contain exactly one completed turn with native usage");
+  const usage = completed[0].usage;
+  for (const key of ["input_tokens", "output_tokens"]) if (!Number.isSafeInteger(usage[key]) || usage[key] < 0) throw new Error("Codex native usage counter is invalid");
+  return Object.freeze({ usage: Object.freeze({ input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.input_tokens + usage.output_tokens }), inspection: Object.freeze({ tool_events_observed: 0, prohibited_path_exposure: false }) });
+}
+function parseCodexFinalOutput(file) {
+  let final;
+  try { final = JSON.parse(fs.readFileSync(file, "utf8")); }
+  catch { throw new Error("Codex final output is malformed JSON"); }
+  exactKeys(final, ["answer"], "Codex final output");
+  if (typeof final.answer !== "string") throw new Error("Codex final output.answer must be text");
+  return final.answer;
+}
+function invokeCodex({ invocation, spawnImpl = childProcess.spawn }) {
+  if (typeof spawnImpl !== "function") throw new Error("spawnImpl must be a function");
+  return new Promise((resolve, reject) => {
+    let child, stdout = "", stderr = "", settled = false;
+    const fail = error => { if (!settled) { settled = true; reject(error); } };
+    try { child = spawnImpl(invocation.command, invocation.args, { cwd: invocation.cwd, env: invocation.env, stdio: ["pipe", "pipe", "pipe"] }); } catch (error) { fail(error); return; }
+    if (!child || !child.stdin || !child.stdout || !child.stderr || typeof child.on !== "function") { fail(new Error("Seatbelt Codex spawn must provide stdio")); return; }
+    child.stdout.on("data", chunk => { stdout += String(chunk); });
+    child.stderr.on("data", chunk => { stderr += String(chunk); });
+    child.on("error", fail);
+    child.on("close", code => {
+      try {
+        writeExclusive(invocation.stdout_file, stdout); writeExclusive(invocation.stderr_file, stderr);
+        if (code !== 0) throw new Error(`Seatbelt Codex exited with code ${code}`);
+        if (!fs.existsSync(invocation.final_output_file)) throw new Error("Codex final output capture is missing");
+        resolve(Object.freeze({ stdout_file: invocation.stdout_file, stderr_file: invocation.stderr_file, final_output_file: invocation.final_output_file }));
+      } catch (error) { fail(error); }
+    });
+    try { child.stdin.end(fs.readFileSync(invocation.stdin_file)); } catch (error) { fail(error); }
+  });
+}
+function codexSeatbeltPreflight({ rawRoot, codexPath, swiplPath }) {
+  const preflightRun = seatbelt.createFreshSealedRunRoot(rawRoot);
+  const memoryFile = path.join(os.homedir(), ".codex", "memories", "MEMORY.md");
+  const report = seatbelt.offlineProbeReport({ run: preflightRun, codexPath, repositoryFile: path.join(__dirname, "package.json"), memoryFile, datasetOrEvaluatorFile: __filename, outsideWriteFile: path.join(rawRoot, "preflight-must-not-write") });
+  const denialRun = seatbelt.createFreshSealedRunRoot(rawRoot);
+  const profile = seatbelt.createSeatbeltProfile({ runRoot: denialRun.run_root, inputDir: denialRun.input_dir, outputDir: denialRun.output_dir, stateDir: denialRun.state_dir, codexPath });
+  const denied = seatbelt.runSeatbeltProbe({ profile, cwd: denialRun.run_root, command: swiplPath, args: ["--version"] });
+  if (denied.status === 0) throw new Error("Seatbelt preflight did not deny resolved swipl --version");
+  return Object.freeze({ status: "codex-seatbelt-preflight-passed-no-provider-call", swipl_denial_status: denied.status, preflight_run: preflightRun.run_root, denial_run: denialRun.run_root, report_status: report.status });
+}
+function protectedCodexPaths({ fixtureFile, configFile, authFile, swiplPath, invocation }) {
+  return Object.freeze([...new Set([__dirname, fixtureFile, configFile, authFile, swiplPath, path.join(os.homedir(), ".codex", "memories"), invocation.private_auth_file, invocation.private_auth_file && path.dirname(invocation.private_auth_file)].filter(Boolean).map(value => path.resolve(value)))]);
+}
+async function collectCodexSeatbelt({ fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight = codexSeatbeltPreflight, swiplPath }) {
+  const codex = absoluteExecutable(codexPath, "codex_path");
+  const auth = exactAuthFile(authFile);
+  const swipl = resolveSwiplBinary(swiplPath);
+  fs.mkdirSync(rawRoot, { mode: 0o700 });
+  const preflightEvidence = preflight({ rawRoot, codexPath: codex, swiplPath: swipl });
+  writeExclusive(path.join(rawRoot, "seatbelt-preflight.json"), stable(preflightEvidence));
+  const records = [];
+  for (const item of counterbalancedPlan(fixtureLoaded.fixture)) {
+    const run = seatbelt.createFreshSealedRunRoot(rawRoot);
+    const prompt = item.case.prompts[item.condition.toLowerCase()];
+    const sealed = seatbelt.writeSealedInput(run, { prompt, schema: stable(FINAL_ANSWER_SCHEMA) });
+    let invocation, rawResponse, response = null, transportError = null, inspection = null;
+    try {
+      invocation = seatbelt.buildCodexInvocation({ run, sealed, codexPath: codex, model, authFile: auth });
+      const raw = await invokeCodex({ invocation, spawnImpl });
+      const parsed = parseCodexJsonl(raw.stdout_file, protectedCodexPaths({ fixtureFile: fixtureLoaded.file, configFile: configLoaded.file, authFile: auth, swiplPath: swipl, invocation }));
+      response = { answer: parseCodexFinalOutput(raw.final_output_file), usage: parsed.usage };
+      inspection = parsed.inspection;
+      rawResponse = raw.final_output_file;
+    } catch (error) {
+      transportError = String(error && (error.stack || error.message) || error);
+      const errorFile = path.join(run.output_dir, "collector-rejection.txt");
+      if (!fs.existsSync(errorFile)) writeExclusive(errorFile, transportError + "\n");
+      rawResponse = fs.existsSync(path.join(run.output_dir, "final-output.txt")) ? path.join(run.output_dir, "final-output.txt") : fs.existsSync(path.join(run.output_dir, "codex-stdout.jsonl")) ? path.join(run.output_dir, "codex-stdout.jsonl") : errorFile;
+    }
+    const score = scoreAnswer(response && response.answer, item.case.oracle.label);
+    const record = { record_id: `${item.case.case_id}-${item.condition.toLowerCase()}`, case_id: item.case.case_id, condition: item.condition, counterbalanced_order: item.pair_order, fixture_sha256: fixtureLoaded.sha256, config_sha256: configLoaded.sha256, prompt_sha256: sha256(prompt), prompt: { ref: localRef(rawRoot, sealed.prompt_file), sha256: sha256(fs.readFileSync(sealed.prompt_file, "utf8")) }, raw_response: { ref: localRef(rawRoot, rawResponse), sha256: sha256(fs.readFileSync(rawResponse, "utf8")) }, raw: { schema: { ref: localRef(rawRoot, sealed.schema_file), sha256: sha256(fs.readFileSync(sealed.schema_file, "utf8")) }, stdout: fs.existsSync(path.join(run.output_dir, "codex-stdout.jsonl")) ? { ref: localRef(rawRoot, path.join(run.output_dir, "codex-stdout.jsonl")), sha256: sha256(fs.readFileSync(path.join(run.output_dir, "codex-stdout.jsonl"), "utf8")) } : null, stderr: fs.existsSync(path.join(run.output_dir, "codex-stderr.txt")) ? { ref: localRef(rawRoot, path.join(run.output_dir, "codex-stderr.txt")), sha256: sha256(fs.readFileSync(path.join(run.output_dir, "codex-stderr.txt"), "utf8")) } : null, final_output: fs.existsSync(path.join(run.output_dir, "final-output.txt")) ? { ref: localRef(rawRoot, path.join(run.output_dir, "final-output.txt")), sha256: sha256(fs.readFileSync(path.join(run.output_dir, "final-output.txt"), "utf8")) } : null }, provider: "codex-seatbelt", model: config.model, sampling: config.sampling, retry_policy: config.retry_policy, usage: response ? response.usage : null, inspection, parsed_answer: score.parsed_answer, score, transport_error: transportError };
+    writeExclusive(path.join(run.output_dir, "record.json"), stable(record)); records.push(Object.freeze(record));
+  }
+  const result = aggregate(records, { file_sha256: fixtureLoaded.sha256, schema_version: fixtureLoaded.fixture.schema_version, case_count: fixtureLoaded.fixture.cases.length }, { file_sha256: configLoaded.sha256, schema_version: config.schema_version, provider: config.provider, model: config.model, sampling: config.sampling, retry_policy: config.retry_policy });
+  const aggregateArtifact = writeExclusive(path.join(rawRoot, "aggregate-not-a-cdr-receipt.json"), stable(result));
+  return Object.freeze({ aggregate: result, aggregate_file: aggregateArtifact.file, raw_root: rawRoot });
+}
+async function collectLive({ fixtureInput, configInput, allowLiveProvider, provider = "openai-api", model, rawRoot, providerFactory, codexPath, authFile, spawnImpl, preflight, swiplPath }) {
   const fixtureLoaded = canonicalVerifiedInput(typeof fixtureInput === "string" ? loadFixture(fixtureInput) : fixtureInput, "fixture");
   validateFixture(fixtureLoaded.fixture);
   const configLoaded = canonicalVerifiedInput(typeof configInput === "string" ? loadConfig(configInput, fixtureLoaded.sha256) : configInput, "config");
@@ -156,6 +283,7 @@ async function collectLive({ fixtureInput, configInput, allowLiveProvider, provi
   assertLiveGates({ allowLiveProvider, model, rawRoot, provider });
   if (model !== config.model) throw new Error("--model must match config.model");
   if (provider !== config.provider) throw new Error("selected provider must match config.provider");
+  if (provider === "codex-seatbelt") return collectCodexSeatbelt({ fixtureLoaded, configLoaded, config, model, rawRoot, codexPath, authFile, spawnImpl, preflight, swiplPath });
   if (typeof providerFactory !== "function") throw new Error("providerFactory must be a function");
   const plan = counterbalancedPlan(fixtureLoaded.fixture);
   fs.mkdirSync(rawRoot, { mode: 0o700 });
@@ -189,19 +317,19 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === "--allow-live-provider") result.allowLiveProvider = true;
-    else if (["--fixture", "--config", "--provider", "--model", "--raw-root"].includes(token) && argv[index + 1]) result[{ "--fixture": "fixture", "--config": "config", "--provider": "provider", "--model": "model", "--raw-root": "rawRoot" }[token]] = argv[++index];
-    else throw new Error("usage: --fixture ABSOLUTE_FILE --config ABSOLUTE_FILE [--allow-live-provider --provider openai-api --model MODEL --raw-root FRESH_ABSOLUTE_DIR]");
+    else if (["--fixture", "--config", "--provider", "--model", "--raw-root", "--codex-path", "--auth-file"].includes(token) && argv[index + 1]) result[{ "--fixture": "fixture", "--config": "config", "--provider": "provider", "--model": "model", "--raw-root": "rawRoot", "--codex-path": "codexPath", "--auth-file": "authFile" }[token]] = argv[++index];
+    else throw new Error("usage: --fixture ABSOLUTE_FILE --config ABSOLUTE_FILE [--allow-live-provider --provider openai-api|codex-seatbelt --model MODEL --raw-root FRESH_ABSOLUTE_DIR --codex-path ABSOLUTE_FILE --auth-file ABSOLUTE_AUTH_JSON]");
   }
   return result;
 }
-module.exports = { CONFIG_SCHEMA_VERSION, EVALUATOR_SCHEMA_VERSION, RUN_SCHEMA_VERSION, aggregate, collectLive, counterbalancedPlan, loadConfig, loadFixture, parseAnswer, parseArgs, requireFreshRawRoot, scoreAnswer, validateConfig, validateFixture };
+module.exports = { CONFIG_SCHEMA_VERSION, EVALUATOR_SCHEMA_VERSION, RUN_SCHEMA_VERSION, FINAL_ANSWER_SCHEMA, aggregate, collectLive, codexSeatbeltPreflight, counterbalancedPlan, invokeCodex, loadConfig, loadFixture, parseAnswer, parseArgs, parseCodexFinalOutput, parseCodexJsonl, requireFreshRawRoot, resolveSwiplBinary, scoreAnswer, validateConfig, validateFixture };
 
 if (require.main === module) {
   (async () => {
     const args = parseArgs(process.argv.slice(2));
     const fixture = loadFixture(args.fixture), config = loadConfig(args.config, fixture.sha256);
     if (!args.allowLiveProvider) return console.log(JSON.stringify({ status: "offline-validated-no-provider-call", provider_calls: 0, fixture_sha256: fixture.sha256, config_sha256: config.sha256, calls_planned: 48 }));
-    const result = await collectLive({ fixtureInput: fixture, configInput: config, allowLiveProvider: true, provider: args.provider, model: args.model, rawRoot: args.rawRoot, providerFactory: ({ config: liveConfig }) => createOpenAIAnsweringProvider({ config: liveConfig }) });
+    const result = await collectLive({ fixtureInput: fixture, configInput: config, allowLiveProvider: true, provider: args.provider, model: args.model, rawRoot: args.rawRoot, codexPath: args.codexPath, authFile: args.authFile, providerFactory: args.provider === "openai-api" ? ({ config: liveConfig }) => createOpenAIAnsweringProvider({ config: liveConfig }) : undefined });
     console.log(JSON.stringify({ status: "collected-not-a-cdr-receipt", records: result.aggregate.calls_recorded, aggregate: result.aggregate_file }));
   })().catch(error => { console.error(`representation-live-evaluator: ${error.stack || error.message}`); process.exitCode = 1; });
 }
