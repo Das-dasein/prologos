@@ -9,8 +9,7 @@ const path = require("node:path");
 const { assembleCondition, immutableInputs, scoreHiddenContract } = require("./trusted-proof-preflight");
 const { prepareOpenAIAnsweringRun } = require("./trusted-proof-answering");
 const { canonicalSampling } = require("./providers/openai-answering");
-const { validateEnvelope, trustedRegistry } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v6");
-const { trustedInputs } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v5");
+const { validateEnvelope, trustedRegistry } = require("./.cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v7");
 
 const WAVE = path.join(__dirname, ".cdr/waves/cognitive-proof-eval-v1");
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -30,9 +29,9 @@ async function validateConfig(config, inputs) {
   for (const key of ["source_commit", "model", "base_prompt_sha256", "wrapper_prompt_sha256", "dataset_sha256", "slot_registration_file_sha256", "slot_registration_sha256", "retry_policy"]) requireText(config[key], `config.${key}`);
   if (config.provider !== "openai-api") throw new Error("config.provider must be openai-api");
   canonicalSampling(config.sampling);
-  const registry = await trustedInputs();
-  if (config.source_commit !== registry.source_commit || config.dataset_sha256 !== inputs.dataset_sha256 || config.slot_registration_file_sha256 !== inputs.registration_sha256 || config.slot_registration_sha256 !== inputs.binding.slot_registration_sha256 || config.base_prompt_sha256 !== registry.wire.template_identities.base_prompt_sha256 || config.wrapper_prompt_sha256 !== registry.wire.template_identities.wrapper_prompt_sha256) throw new Error("config does not match CDR v6 authority and wire identities");
-  return Object.freeze({ v5: registry, v6: await trustedRegistry() });
+  const registry = await trustedRegistry();
+  if (config.source_commit !== registry.source_commit || config.dataset_sha256 !== inputs.dataset_sha256 || config.dataset_sha256 !== registry.dataset.sha256 || config.slot_registration_file_sha256 !== inputs.registration_sha256 || config.slot_registration_sha256 !== inputs.binding.slot_registration_sha256 || config.slot_registration_sha256 !== registry.slot_registration.sha256 || config.base_prompt_sha256 !== registry.wire.template_identities.base_prompt_sha256 || config.wrapper_prompt_sha256 !== registry.wire.template_identities.wrapper_prompt_sha256) throw new Error("config does not match CDR v7 authority and wire identities");
+  return registry;
 }
 function runView(config) {
   return Object.freeze({ model: config.model, adapter: "openai-api", base_prompt_sha256: config.base_prompt_sha256, wrapper_prompt_sha256: config.wrapper_prompt_sha256, input_mode: "sealed-assembled-prompt-byte-for-byte", sampling: config.sampling, retry_policy: { max_attempts: 1, retryable: [] } });
@@ -75,12 +74,12 @@ async function collectCandidate({ config, root, allowLiveProvider, provider = "o
     if (!records.every(record => record && record.scorer && record.scorer.decision === "accepted")) {
       throw new Error("candidate receipt unavailable: every local scorer decision must be accepted");
     }
-    const receipt = { schema_version: "cognitive-proof-eval-receipt-intake-v6", kind: "candidate_live_receipt", source_commit: registry.v5.source_commit, dataset: registry.v5.dataset, slot_registration: registry.v5.slot_registration, trusted_proof_digest_registry: registry.v5.trusted_proof_digest_registry, wire_authority_prompt_digest_registry: { path: "wire-authority-assembled-prompt-digest-registry-v6.json", sha256: registry.v6.registry_sha256 }, run, records };
-    const receiptFile = path.join(root, "candidate-receipt-v6.json"); fs.writeFileSync(receiptFile, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx", mode: 0o600 });
+    const receipt = { schema_version: "cognitive-proof-eval-receipt-intake-v7", kind: "candidate_live_receipt", source_commit: registry.source_commit, dataset: registry.dataset, slot_registration: registry.slot_registration, trusted_proof_digest_registry: registry.trusted_proof_digest_registry, wire_authority_prompt_digest_registry: { path: "wire-authority-assembled-prompt-digest-registry-v7.json", sha256: registry.registry_sha256 }, run, records };
+    const receiptFile = path.join(root, "candidate-receipt-v7.json"); fs.writeFileSync(receiptFile, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx", mode: 0o600 });
     const integrity = await validateEnvelope(receipt, { rawRoot: root });
     return Object.freeze({ receipt_file: receiptFile, records: records.length, integrity });
   } catch (error) { throw error; }
 }
 function parseArgs(argv) { const a = {}; for (let i = 0; i < argv.length; i += 1) { const x = argv[i]; if (x === "--allow-live-provider") a.allowLiveProvider = true; else if (["--provider", "--config", "--model", "--root"].includes(x) && argv[i + 1]) a[{ "--provider": "provider", "--config": "configPath", "--model": "model", "--root": "root" }[x]] = argv[++i]; else throw new Error("usage: --provider openai-api --allow-live-provider --config ABSOLUTE_FILE --model MODEL --root FRESH_ABSOLUTE_DIR"); } return a; }
 module.exports = { collectCandidate, freshRoot, loadConfig, parseArgs, validateConfig };
-if (require.main === module) { (async () => { const args = parseArgs(process.argv.slice(2)); if (!args.allowLiveProvider) return console.log(JSON.stringify({ status: "offline-no-default-provider", provider_calls: 0 })); if (!args.configPath || !args.root || !args.model || !args.provider) throw new Error("all live gates are required"); const result = await collectCandidate({ ...args, config: loadConfig(args.configPath) }); console.log(JSON.stringify({ status: "candidate-integrity-collected-not-a-result-v6", records: result.records, integrity: result.integrity.status, receipt: result.receipt_file })); })().catch(e => { console.error(`live-candidate: ${e.message}`); process.exitCode = 1; }); }
+if (require.main === module) { (async () => { const args = parseArgs(process.argv.slice(2)); if (!args.allowLiveProvider) return console.log(JSON.stringify({ status: "offline-no-default-provider", provider_calls: 0 })); if (!args.configPath || !args.root || !args.model || !args.provider) throw new Error("all live gates are required"); const result = await collectCandidate({ ...args, config: loadConfig(args.configPath) }); console.log(JSON.stringify({ status: "candidate-integrity-collected-not-a-result-v7", records: result.records, integrity: result.integrity.status, receipt: result.receipt_file })); })().catch(e => { console.error(`live-candidate: ${e.message}`); process.exitCode = 1; }); }
