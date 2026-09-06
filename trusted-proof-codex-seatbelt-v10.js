@@ -146,9 +146,11 @@ function offlineProbeReport({ run, codexPath, repositoryFile, memoryFile, datase
   const allowedWrite = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/sh", args: ["-c", `printf permitted > ${JSON.stringify(outputTarget)}`] });
   const allowedStateWrite = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/sh", args: ["-c", `printf permitted > ${JSON.stringify(stateTarget)}`] });
   const deniedWrite = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/sh", args: ["-c", `printf forbidden > ${JSON.stringify(outsideWriteFile)}`] });
-  const checks = Object.freeze({ runtime_start: runtimeStart, tls_runtime_read: tlsReads, repository_read: deniedRead(repositoryFile), memory_read: deniedRead(memoryFile), dataset_or_evaluator_read: deniedRead(datasetOrEvaluatorFile), outside_write: deniedWrite, sealed_input_read: allowedInput, declared_output_write: allowedWrite, private_state_write: allowedStateWrite });
+  const undeclaredRootTarget = path.join(run.run_root, "undeclared-write.txt");
+  const deniedUndeclaredWrite = runSeatbeltProbe({ profile, cwd: run.run_root, command: "/bin/sh", args: ["-c", `printf forbidden > ${JSON.stringify(undeclaredRootTarget)}`] });
+  const checks = Object.freeze({ runtime_start: runtimeStart, tls_runtime_read: tlsReads, repository_read: deniedRead(repositoryFile), memory_read: deniedRead(memoryFile), dataset_or_evaluator_read: deniedRead(datasetOrEvaluatorFile), outside_write: deniedWrite, undeclared_sealed_root_write: deniedUndeclaredWrite, sealed_input_read: allowedInput, declared_output_write: allowedWrite, private_state_write: allowedStateWrite });
   const denied = check => check.status !== 0;
-  if (![checks.repository_read, checks.memory_read, checks.dataset_or_evaluator_read, checks.outside_write].every(denied)) throw Error("Seatbelt preflight did not deny every protected host access");
+  if (![checks.repository_read, checks.memory_read, checks.dataset_or_evaluator_read, checks.outside_write, checks.undeclared_sealed_root_write].every(denied)) throw Error("Seatbelt preflight did not deny every protected host access");
   if (checks.runtime_start.status !== 0 || checks.tls_runtime_read.some(check => check.status !== 0) || checks.sealed_input_read.status !== 0 || checks.declared_output_write.status !== 0 || checks.private_state_write.status !== 0 || !fs.existsSync(outputTarget) || !fs.existsSync(stateTarget)) throw Error("Seatbelt preflight did not permit declared isolated runtime/input/output/state");
   return Object.freeze({ status: "seatbelt-preflight-passed-no-provider-call-v10", checks });
 }

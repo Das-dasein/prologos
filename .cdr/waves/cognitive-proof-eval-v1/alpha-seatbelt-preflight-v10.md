@@ -6,8 +6,8 @@ executes) a Codex invocation with `-C <fresh-root>`,
 `--skip-git-repo-check`, `--ignore-user-config`, and Codex's `workspace-write`
 sandbox. This inner workspace is the fresh sealed root, so Codex can create
 ephemeral state; the outer default-deny `sandbox-exec` profile is the binding
-host boundary and limits reads to declared
-runtime roots plus sealed input, and writes to declared output only. Runtime
+host boundary and limits reads to declared runtime roots plus sealed input, and
+writes to declared output and private state only. Runtime
 roots are not caller-configurable: the declared Codex executable parent is
 checked after realpath resolution and rejected if it overlaps the repository,
 CDR evidence/dataset root, or user-memory root.
@@ -26,8 +26,9 @@ literal files. Before any live
 child, the offline preflight verifies that the resolved
 Codex executable can start with `--version` and that those declared TLS files
 are readable. The test also executes actual Seatbelt probes: host
-repository-file, `MEMORY.md`, dataset/evaluator-file reads and an outside-root
-write all fail; sealed-input read and output write succeed. It makes no
+repository-file, `MEMORY.md`, dataset/evaluator-file reads, an outside-root
+write, and a write to an undeclared path inside the sealed root all fail;
+sealed-input read plus output/state writes succeed. It makes no
 provider, auth, model, Docker, AST, or effect claim. Authentication is
 intentionally absent from committed config:
 Codex documents that `--ignore-user-config` still uses `CODEX_HOME` for auth,

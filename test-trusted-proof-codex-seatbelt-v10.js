@@ -14,7 +14,7 @@ try {
   const run = api.createFreshSealedRunRoot(parent);
   const report = api.offlineProbeReport({ run, codexPath: "/bin/echo", repositoryFile, memoryFile, datasetOrEvaluatorFile: datasetFile, outsideWriteFile: outside });
   assert.equal(report.status, "seatbelt-preflight-passed-no-provider-call-v10");
-  for (const key of ["repository_read", "memory_read", "dataset_or_evaluator_read", "outside_write"]) assert.notEqual(report.checks[key].status, 0, `${key} must be denied`);
+  for (const key of ["repository_read", "memory_read", "dataset_or_evaluator_read", "outside_write", "undeclared_sealed_root_write"]) assert.notEqual(report.checks[key].status, 0, `${key} must be denied`);
   assert.equal(report.checks.runtime_start.status, 0, "offline runtime startup must be permitted");
   assert.ok(report.checks.tls_runtime_read.every(check => check.status === 0), "declared TLS runtime files must be permitted");
   assert.equal(report.checks.sealed_input_read.status, 0); assert.equal(report.checks.declared_output_write.status, 0); assert.equal(report.checks.private_state_write.status, 0);
