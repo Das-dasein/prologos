@@ -1,7 +1,7 @@
 # Alpha implementation — v10 Seatbelt preflight
 
 This implementation is an offline macOS preflight only. It creates a fresh
-sealed root with distinct `input` and `output` children, and builds (but never
+sealed root with distinct `input`, `output`, and private `state` children, and builds (but never
 executes) a Codex invocation with `-C <fresh-root>`,
 `--skip-git-repo-check`, `--ignore-user-config`, and Codex's `read-only`
 sandbox. An outer default-deny `sandbox-exec` profile limits reads to declared
@@ -29,8 +29,11 @@ write all fail; sealed-input read and output write succeed. It makes no
 provider, auth, model, Docker, AST, or effect claim. Authentication is
 intentionally absent from committed config:
 Codex documents that `--ignore-user-config` still uses `CODEX_HOME` for auth,
-so a future runtime must provide exactly `CODEX_HOME/auth.json`; it is never
-copied, emitted, or recorded in artifacts. This is an accepted credential-
+so a future runtime must provide exactly `CODEX_HOME/auth.json`. At launch,
+exactly that file is copied with private permissions into the per-run `state`
+child and `CODEX_HOME` points there; the external home directory is never
+granted. The copied credential is never emitted, referenced by an artifact,
+or committed. This is an accepted credential-
 surface limitation, not a scientific-quality boundary: an outer process
 sandbox cannot distinguish the Codex parent from inherited child processes,
 so this preflight makes no claim that tool children cannot read that exact
