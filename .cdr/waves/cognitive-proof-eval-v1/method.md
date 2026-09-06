@@ -133,6 +133,14 @@ effective context budget `E` is also a non-negative safe integer and exactly
 the provider-native `input_tokens`; intake never derives, rounds, or replaces
 it from configuration. The committed synthetic non-result uses the explicit
 all-zero shape. Versions v1 through v5 are invalid v6 inputs. This is local
+
+Receipt intake v7 is a forward-only re-registration of the same native-usage
+and inherited receipt gates after PR #48 repaired the pinned OpenAI Responses
+usage-shape normalizer. It seals the current hashes of exactly the two wire
+authority sources, preserves byte-for-byte prompt identities and sampling, and
+still records only canonical input/output/total counters with E = input.
+It does not collect data or call a provider; versions v1 through v6 are invalid
+v7 inputs.
 preparation only, not collection, aggregation, or an effectiveness claim.
 
 ## Actual assembled-prompt binding amendment (issue #35)
