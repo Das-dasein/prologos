@@ -15,7 +15,8 @@
 - Independent method review: `.cdd/waves/representation-world-generator-v1/beta-review-r2.md` — APPROVE
 - Live evaluator: commits `c87ae82` and `ba7556a`
 - Independent evaluator review: `.cdd/waves/representation-live-evaluator-v1/beta-review-r2.md` — APPROVE
-- Final Astra audit: `.cdd/waves/representation-live-evaluator-v1/astra-final-audit.md` — APPROVE, bounded to method/code
+- Sealed Codex transport: commit `ccdcbf3`
+- Independent Codex-transport review: `.cdd/waves/representation-codex-seatbelt-v1/beta-review-r1.md` — APPROVE
 
 ## Gate
 
