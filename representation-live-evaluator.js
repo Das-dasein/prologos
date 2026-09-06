@@ -181,6 +181,9 @@ function stringLeaves(value, out = []) {
   else if (value && typeof value === "object") for (const item of Object.values(value)) stringLeaves(item, out);
   return out;
 }
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 function parseCodexJsonl(stdoutFile, prohibitedPaths) {
   const raw = fs.readFileSync(stdoutFile, "utf8");
   const lines = raw.split(/\r?\n/).filter(Boolean);
@@ -207,22 +210,24 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   if (!lines.length) throw new Error("Codex JSONL trace is empty");
   let events;
   try { events = lines.map(line => JSON.parse(line)); } catch { throw new Error("Codex JSONL trace is malformed"); }
+  const sealedBroker = path.resolve(brokerPath);
+  const brokerState = path.dirname(sealedBroker);
+  const allowedP2PathValue = value => value === sealedBroker || value === brokerState || new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(value);
   const protectedPaths = [...new Set(prohibitedPaths.map(value => path.resolve(value)))];
-  for (const event of events) for (const value of stringLeaves(event)) if (value !== path.resolve(brokerPath)) for (const protectedPath of protectedPaths) if (value === protectedPath || value.includes(protectedPath)) throw new Error(`prohibited host path exposed in Codex JSONL: ${protectedPath}`);
+  for (const event of events) for (const value of stringLeaves(event)) if (!allowedP2PathValue(value)) for (const protectedPath of protectedPaths) if (value === protectedPath || value.includes(protectedPath)) throw new Error(`prohibited host path exposed in Codex JSONL: ${protectedPath}`);
   const calls = events.filter(event => /(?:command_execution|function_call|\btool\b)/i.test(JSON.stringify(event)));
   if (calls.length !== 1) throw new Error(`P2 trace must contain exactly one broker action, got ${calls.length}`);
-  const callText = stringLeaves(calls[0]).find(value => value === brokerPath || value.includes(brokerPath));
-  if (!callText || callText !== brokerPath) throw new Error("P2 trace contains a foreign or parameterized command");
-  const hasNonEmptyBrokerArguments = value => {
-    if (Array.isArray(value)) return value.length > 0 || value.some(hasNonEmptyBrokerArguments);
-    if (!value || typeof value !== "object") return false;
-    for (const [key, child] of Object.entries(value)) {
-      if ((key === "args" || key === "arguments") && ((Array.isArray(child) && child.length > 0) || (typeof child === "string" && child.length > 0) || (child && typeof child === "object" && !Array.isArray(child) && Object.keys(child).length > 0))) return true;
-      if (hasNonEmptyBrokerArguments(child)) return true;
-    }
-    return false;
-  };
-  if (hasNonEmptyBrokerArguments(calls[0])) throw new Error("P2 trace contains non-empty broker arguments");
+  const commandEvent = calls[0];
+  const item = commandEvent && commandEvent.item;
+  const command = item && item.command;
+  const args = item && item.args;
+  const shellLine = typeof command === "string" && new RegExp(`^/bin/zsh -(?:c|lc) ${escapeRegExp(sealedBroker)}$`).test(command);
+  const argv = command === "/bin/zsh" && Array.isArray(args) && args.length === 2 && /^(?:-c|-lc)$/.test(args[0]) && args[1] === sealedBroker;
+  if (!shellLine && !argv) throw new Error("P2 trace contains a foreign or parameterized command; expected /bin/zsh -c|-lc with the sealed broker path");
+  for (const [key, value] of Object.entries(item || {})) {
+    if (key !== "type" && key !== "command" && key !== "args") throw new Error("P2 trace contains unexpected command fields");
+    if (key === "args" && !argv && value !== undefined) throw new Error("P2 trace contains command arguments outside the sealed shell wrapper");
+  }
   const completed = events.filter(event => event && event.type === "turn.completed");
   if (completed.length !== 1 || !completed[0].usage || typeof completed[0].usage !== "object") throw new Error("Codex JSONL must contain exactly one completed turn with native usage");
   const usage = completed[0].usage;
