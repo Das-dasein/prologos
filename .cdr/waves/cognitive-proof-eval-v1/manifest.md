@@ -3,10 +3,9 @@
 Status: prospective offline preparation; no provider call, candidate receipt,
 CDR receipt, result, or effectiveness claim.
 
-Historical offline-fixture source snapshot:
-`82bcc82fca8d8ebb2734e1006b754a6d4e31b4ac`. It is provenance for the
-offline fixture only, not evidence of, or authority for, the current live
-transport.
+Source implementation snapshot: `82bcc82fca8d8ebb2734e1006b754a6d4e31b4ac`
+This historical source snapshot is offline-fixture provenance only, not
+evidence of, or authority for, the current live transport.
 Dataset: `dataset.json`.
 Dataset.json SHA-256: 63d68d4decad2dcdadbfc1204c58cec2650a46a90442cb63889e3d7989e07e51
 Slot registration SHA-256: 4d05d2176f4e629370771925543d4670259e15b633c5ef3be47803c6c9bf9a46
