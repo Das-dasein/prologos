@@ -35,6 +35,7 @@ try {
   assert.equal(invocation.args.includes(process.cwd()), false);
   assert.match(invocation.profile, /\(allow network-outbound\)/);
   assert.match(invocation.profile, /\/private\/etc\/codex\/requirements\.toml/);
+  assert.match(invocation.profile, /\/etc\/codex\/requirements\.toml/);
   assert.throws(() => api.buildCodexInvocation({ run: invocationRun, sealed, codexPath: "/bin/echo", model: "x", authFile: path.join(host, "missing-auth") }), /auth_file/);
   console.log("ok: Codex v10 Seatbelt preflight denies host reads/writes and emits no provider call");
 } finally { fs.rmSync(fixture, { recursive: true, force: true }); }
