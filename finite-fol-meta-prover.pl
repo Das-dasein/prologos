@@ -10,7 +10,7 @@
 api_documentation(finite_status/6, finite_classical_model_check, example(finite_status([domain(person,[ada])], [atom(ready,[ada])], atom(ready,[ada]), 32, Status, Certificate))).
 api_documentation(finite_sat_status/5, symbolic_classical_model_check, example(finite_sat_status([domain(person,[ada])], [atom(ready,[ada])], atom(ready,[ada]), Status, Certificate))).
 api_documentation(labelled_semantic_status/3, labelled_agent_program_symbolic_check, example(labelled_semantic_status(ready(ada), Status, Certificate))).
-api_documentation(labelled_explanation/3, labelled_status_with_subset_minimal_conflict_core, example(labelled_explanation(ready(ada), Status, Package))).
+api_documentation(labelled_explanation/3, labelled_status_with_conflict_core_and_goal_signature_audit, example(labelled_explanation(ready(ada), Status, Package))).
 api_documentation(semantic_status/3, unlabelled_agent_program_model_check, example(semantic_status(ready(ada), Status, Certificate))).
 api_documentation(semantic_slice_status/3, monadic_relevance_sliced_model_check, example(semantic_slice_status(ready(ada), Status, Certificate))).
 api_documentation(audit_trace/2, labelled_forward_horn_trace_only, example(audit_trace(ready(ada), Result))).
@@ -57,12 +57,13 @@ labelled_explanation(Goal, Status, Package) :-
     ; Result = valid,
       pairs_keys(Compiled, SourceIds),
       pairs_values(Compiled, Axioms),
+      signature_audit(CompiledGoal, Axioms, SignatureAudit),
       finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner),
       ( Status = conflict ->
           subset_minimal_conflict_core(Domains, Compiled, Core),
           pairs_keys(Core, CoreIds),
-          Package = explanation(status(conflict), source_axioms(SourceIds), subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
-      ; Package = explanation(status(Status), source_axioms(SourceIds), certificate(Inner))
+          Package = explanation(status(conflict), source_axioms(SourceIds), SignatureAudit, subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
+      ; Package = explanation(status(Status), source_axioms(SourceIds), SignatureAudit, certificate(Inner))
       )
     ).
 labelled_compilation(Goal, Domains, Compiled, CompiledGoal, Result) :-
@@ -85,6 +86,31 @@ pairs_keys([], []).
 pairs_keys([Key-_|Rest], [Key|Keys]) :- pairs_keys(Rest, Keys).
 pairs_values([], []).
 pairs_values([_-Value|Rest], [Value|Values]) :- pairs_values(Rest, Values).
+
+% This is an audit of the agent's submitted language, not an additional
+% logical assumption.  A symbol occurring only in Goal is legal object FOL:
+% it simply means the supplied world puts no direct constraint on it.  Keeping
+% that fact in the evidence package makes a trivial unknown inspectable.
+signature_audit(Goal, Axioms, signature_audit(goal_predicates(GoalSymbols), world_predicates(WorldSymbols), only_in_goal(OnlyInGoal))) :-
+    formula_predicates(Goal, RawGoalSymbols),
+    formulas_predicates(Axioms, RawWorldSymbols),
+    sort(RawGoalSymbols, GoalSymbols),
+    sort(RawWorldSymbols, WorldSymbols),
+    subtract(GoalSymbols, WorldSymbols, OnlyInGoal).
+formulas_predicates([], []).
+formulas_predicates([Formula|Rest], Symbols) :-
+    formula_predicates(Formula, First),
+    formulas_predicates(Rest, Remaining),
+    append(First, Remaining, Symbols).
+formula_predicates(atom(true, []), []) :- !.
+formula_predicates(atom(Name, Arguments), [Name/Arity]) :- !, length(Arguments, Arity).
+formula_predicates(neg(Formula), Symbols) :- !, formula_predicates(Formula, Symbols).
+formula_predicates(forall(_, Formula), Symbols) :- !, formula_predicates(Formula, Symbols).
+formula_predicates(exists(_, Formula), Symbols) :- !, formula_predicates(Formula, Symbols).
+formula_predicates(and(Left, Right), Symbols) :- !, formula_predicates(Left, LeftSymbols), formula_predicates(Right, RightSymbols), append(LeftSymbols, RightSymbols, Symbols).
+formula_predicates(or(Left, Right), Symbols) :- !, formula_predicates(Left, LeftSymbols), formula_predicates(Right, RightSymbols), append(LeftSymbols, RightSymbols, Symbols).
+formula_predicates(xor(Left, Right), Symbols) :- !, formula_predicates(Left, LeftSymbols), formula_predicates(Right, RightSymbols), append(LeftSymbols, RightSymbols, Symbols).
+formula_predicates(implies(Left, Right), Symbols) :- !, formula_predicates(Left, LeftSymbols), formula_predicates(Right, RightSymbols), append(LeftSymbols, RightSymbols, Symbols).
 
 satisfiable(Domains, Axioms, Assumption, Vocabulary, Model) :-
     pairs_for_vocabulary(Vocabulary, Pairs),
