@@ -10,7 +10,7 @@
 api_documentation(finite_status/6, finite_classical_model_check, example(finite_status([domain(person,[ada])], [atom(ready,[ada])], atom(ready,[ada]), 32, Status, Certificate))).
 api_documentation(finite_sat_status/5, symbolic_classical_model_check, example(finite_sat_status([domain(person,[ada])], [atom(ready,[ada])], atom(ready,[ada]), Status, Certificate))).
 api_documentation(labelled_semantic_status/3, labelled_agent_program_symbolic_check, example(labelled_semantic_status(ready(ada), Status, Certificate))).
-api_documentation(labelled_explanation/3, labelled_status_with_conflict_core_and_goal_signature_audit, example(labelled_explanation(ready(ada), Status, Package))).
+api_documentation(labelled_explanation/3, labelled_status_with_conflict_core_signature_and_domain_audits, example(labelled_explanation(ready(ada), Status, Package))).
 api_documentation(semantic_status/3, unlabelled_agent_program_model_check, example(semantic_status(ready(ada), Status, Certificate))).
 api_documentation(semantic_slice_status/3, monadic_relevance_sliced_model_check, example(semantic_slice_status(ready(ada), Status, Certificate))).
 api_documentation(audit_trace/2, labelled_forward_horn_trace_only, example(audit_trace(ready(ada), Result))).
@@ -58,12 +58,13 @@ labelled_explanation(Goal, Status, Package) :-
       pairs_keys(Compiled, SourceIds),
       pairs_values(Compiled, Axioms),
       signature_audit(CompiledGoal, Axioms, SignatureAudit),
+      domain_audit(Domains, Compiled, CompiledGoal, DomainAudit),
       finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner),
       ( Status = conflict ->
           subset_minimal_conflict_core(Domains, Compiled, Core),
           pairs_keys(Core, CoreIds),
-          Package = explanation(status(conflict), source_axioms(SourceIds), SignatureAudit, subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
-      ; Package = explanation(status(Status), source_axioms(SourceIds), SignatureAudit, certificate(Inner))
+          Package = explanation(status(conflict), source_axioms(SourceIds), SignatureAudit, DomainAudit, subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
+      ; Package = explanation(status(Status), source_axioms(SourceIds), SignatureAudit, DomainAudit, certificate(Inner))
       )
     ).
 labelled_compilation(Goal, Domains, Compiled, CompiledGoal, Result) :-
@@ -111,6 +112,37 @@ formula_predicates(and(Left, Right), Symbols) :- !, formula_predicates(Left, Lef
 formula_predicates(or(Left, Right), Symbols) :- !, formula_predicates(Left, LeftSymbols), formula_predicates(Right, RightSymbols), append(LeftSymbols, RightSymbols, Symbols).
 formula_predicates(xor(Left, Right), Symbols) :- !, formula_predicates(Left, LeftSymbols), formula_predicates(Right, RightSymbols), append(LeftSymbols, RightSymbols, Symbols).
 formula_predicates(implies(Left, Right), Symbols) :- !, formula_predicates(Left, LeftSymbols), formula_predicates(Right, RightSymbols), append(LeftSymbols, RightSymbols, Symbols).
+
+% Domain completeness is observable structural evidence.  It deliberately
+% reports rather than repairs: an agent must decide whether a name belongs to
+% a declared quantified sort.  The report names the affected source clauses.
+domain_audit(Domains, Labelled, Goal, domain_audit(declared_domains(Domains), outside_declared_domains(Outside), quantified_rules(QuantifiedIds))) :-
+    domain_values(Domains, DomainValues),
+    labelled_constants(Labelled, ConstantSources),
+    formula_constants_list(Goal, GoalConstants),
+    append(GoalConstants, ConstantSources, AllConstants), sort(AllConstants, Constants),
+    outside_constants(Constants, DomainValues, Labelled, GoalConstants, Outside),
+    quantified_source_ids(Labelled, QuantifiedIds).
+domain_values([], []).
+domain_values([domain(_, Values)|Rest], AllValues) :- domain_values(Rest, Remaining), append(Values, Remaining, AllValues).
+labelled_constants([], []).
+labelled_constants([_-Formula|Rest], Constants) :- formula_constants_list(Formula, First), labelled_constants(Rest, Remaining), append(First, Remaining, Constants).
+formula_constants_list(Formula, Constants) :- findall(Constant, formula_constants(Formula, Constant), Constants).
+outside_constants([], _, _, _, []).
+outside_constants([Constant|Rest], DomainValues, Labelled, GoalConstants, Outside) :-
+    outside_constants(Rest, DomainValues, Labelled, GoalConstants, Remaining),
+    ( memberchk(Constant, DomainValues) -> Outside = Remaining
+    ; source_ids_for_constant(Constant, Labelled, Ids), ( memberchk(Constant, GoalConstants) -> InGoal = true ; InGoal = false ), Outside = [constant(Constant, source_axioms(Ids), goal(InGoal))|Remaining]
+    ).
+source_ids_for_constant(Constant, Labelled, Ids) :- findall(Id, (member(Id-Formula, Labelled), formula_constants(Formula, Constant)), RawIds), sort(RawIds, Ids).
+quantified_source_ids(Labelled, Ids) :- findall(Id, (member(Id-Formula, Labelled), contains_quantifier(Formula)), RawIds), sort(RawIds, Ids).
+contains_quantifier(forall(_, _)) :- !.
+contains_quantifier(exists(_, _)) :- !.
+contains_quantifier(neg(Formula)) :- !, contains_quantifier(Formula).
+contains_quantifier(and(Left, Right)) :- !, (contains_quantifier(Left); contains_quantifier(Right)).
+contains_quantifier(or(Left, Right)) :- !, (contains_quantifier(Left); contains_quantifier(Right)).
+contains_quantifier(xor(Left, Right)) :- !, (contains_quantifier(Left); contains_quantifier(Right)).
+contains_quantifier(implies(Left, Right)) :- !, (contains_quantifier(Left); contains_quantifier(Right)).
 
 satisfiable(Domains, Axioms, Assumption, Vocabulary, Model) :-
     pairs_for_vocabulary(Vocabulary, Pairs),

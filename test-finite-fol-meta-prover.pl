@@ -32,17 +32,20 @@ test(symbolic_solver_finds_xor_countermodel_without_enumeration_budget) :-
     finite_sat_status([domain(person, [michelle])], Axioms, atom(creative, [michelle]), contradicted, _).
 
 test(labelled_explanation_returns_subset_minimal_conflict_core, [setup(plunit_finite_fol_meta_prover:setup_conflict_core_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
-    labelled_explanation(ready(ada), conflict, explanation(status(conflict), source_axioms([s1, s2, s3]), signature_audit(_, _, _), subset_minimal_conflict_core(core_ids(CoreIds), _), certificate(conflict(no_admissible_model)))),
+    labelled_explanation(ready(ada), conflict, explanation(status(conflict), source_axioms([s1, s2, s3]), signature_audit(_, _, _), domain_audit(_, outside_declared_domains([]), quantified_rules([])), subset_minimal_conflict_core(core_ids(CoreIds), _), certificate(conflict(no_admissible_model)))),
     assertion(CoreIds == [s1, s2]).
 
 test(labelled_explanation_accepts_documented_reified_formula_surface, [setup(plunit_finite_fol_meta_prover:setup_reified_conflict_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
-    labelled_explanation(ready(ada), conflict, explanation(status(conflict), _, signature_audit(_, _, _), subset_minimal_conflict_core(core_ids([s1, s2]), _), _)).
+    labelled_explanation(ready(ada), conflict, explanation(status(conflict), _, signature_audit(_, _, _), domain_audit(_, outside_declared_domains([]), quantified_rules([])), subset_minimal_conflict_core(core_ids([s1, s2]), _), _)).
 
 test(labelled_explanation_audits_predicates_only_introduced_by_goal, [setup(plunit_finite_fol_meta_prover:setup_goal_only_predicate_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
-    labelled_explanation(and(curiosity(ada), ready(ada)), unknown, explanation(status(unknown), _, signature_audit(goal_predicates(GoalSymbols), world_predicates(WorldSymbols), only_in_goal(OnlyInGoal)), _)),
+    labelled_explanation(and(curiosity(ada), ready(ada)), unknown, explanation(status(unknown), _, signature_audit(goal_predicates(GoalSymbols), world_predicates(WorldSymbols), only_in_goal(OnlyInGoal)), domain_audit(_, outside_declared_domains([]), _), _)),
     assertion(GoalSymbols == [curiosity/1, ready/1]),
     assertion(WorldSymbols == [calm/1, ready/1]),
     assertion(OnlyInGoal == [curiosity/1]).
+
+test(labelled_explanation_reports_constants_outside_domain_with_sources, [setup(plunit_finite_fol_meta_prover:setup_outside_domain_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
+    labelled_explanation(ready(dash), unknown, explanation(status(unknown), _, _, domain_audit(declared_domains([domain(person, [ada])]), outside_declared_domains([constant(dash, source_axioms([s1]), goal(true))]), quantified_rules([s2])), _)).
 
 setup_conflict_core_world :-
     assertz(user:domain(person, [ada])),
@@ -56,6 +59,10 @@ setup_reified_conflict_world :-
 setup_goal_only_predicate_world :-
     assertz(user:domain(person, [ada])),
     assertz(user:axiom(s1, calm(ada))),
+    assertz(user:axiom(s2, rule([calm(X)], ready(X)))).
+setup_outside_domain_world :-
+    assertz(user:domain(person, [ada])),
+    assertz(user:axiom(s1, calm(dash))),
     assertz(user:axiom(s2, rule([calm(X)], ready(X)))).
 clear_labelled_world :-
     retractall(user:domain(_, _)),
