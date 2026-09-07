@@ -1,7 +1,7 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, semantic_status/3, semantic_slice_status/3, audit_trace/2]).
+:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, semantic_status/3, semantic_slice_status/3, audit_trace/2]).
 :- use_module(library(clpb)).
 
 % Symbolic finite-model status. Unlike finite_status/6 it delegates Boolean
@@ -19,6 +19,22 @@ truth_witness(_, _, _, _, none).
 classify_sat_witnesses(witness(_), none, entailed, model_check(no_countermodel)).
 classify_sat_witnesses(none, witness(_), contradicted, model_check(no_supporting_model)).
 classify_sat_witnesses(witness(True), witness(False), unknown, open_pair(true_model(True), false_model(False))).
+
+% The complete-trace interface preserves source IDs all the way to the result.
+% The current certificate names every accepted source axiom; later conflict-core
+% minimisation can safely refine it without changing the agent-facing program.
+labelled_semantic_status(Goal, Status, Certificate) :-
+    findall(domain(Type, Values), user:domain(Type, Values), Domains),
+    findall(label(Id, Clause), user:axiom(Id, Clause), Labelled),
+    catch((validate_domains(Domains), maplist(compile_labelled_axiom, Labelled, Compiled), pairs_values(Compiled, Axioms), compile_surface(Goal, [], CompiledGoal)), error(invalid_surface(Reason), _), invalid(Reason)),
+    ( Compiled = invalid(Reason) -> Status = invalid_program, Certificate = validation(Reason)
+    ; pairs_keys(Compiled, SourceIds), finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner), Certificate = source_trace(source_axioms(SourceIds), Inner)
+    ).
+compile_labelled_axiom(label(Id, Surface), Id-Compiled) :- atom(Id), compile_axiom(Surface, Compiled).
+pairs_keys([], []).
+pairs_keys([Key-_|Rest], [Key|Keys]) :- pairs_keys(Rest, Keys).
+pairs_values([], []).
+pairs_values([_-Value|Rest], [Value|Values]) :- pairs_values(Rest, Values).
 
 satisfiable(Domains, Axioms, Assumption, Vocabulary, Model) :-
     pairs_for_vocabulary(Vocabulary, Pairs),
@@ -180,6 +196,7 @@ close_rule(_, [], Formula, Formula).
 close_rule(AllVariables, [Variable|Rest], Formula, forall(var(Name, person), Closed)) :- variable_name(Variable, AllVariables, Name), close_rule(AllVariables, Rest, Formula, Closed).
 
 compile_surface(not(Formula), Variables, neg(Compiled)) :- !, compile_surface(Formula, Variables, Compiled).
+compile_surface((Left, Right), Variables, and(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
 compile_surface(and(Left, Right), Variables, and(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
 compile_surface(or(Left, Right), Variables, or(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
 compile_surface(xor(Left, Right), Variables, xor(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
