@@ -1,7 +1,7 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, meta_signatures/1, meta_help/2]).
+:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, meta_signatures/1, meta_help/2]).
 :- use_module(library(clpb)).
 
 % Read-only self-description for an agent running inside the same Prolog image.
@@ -10,6 +10,7 @@
 api_documentation(finite_status/6, finite_classical_model_check, example(finite_status([domain(person,[ada])], [atom(ready,[ada])], atom(ready,[ada]), 32, Status, Certificate))).
 api_documentation(finite_sat_status/5, symbolic_classical_model_check, example(finite_sat_status([domain(person,[ada])], [atom(ready,[ada])], atom(ready,[ada]), Status, Certificate))).
 api_documentation(labelled_semantic_status/3, labelled_agent_program_symbolic_check, example(labelled_semantic_status(ready(ada), Status, Certificate))).
+api_documentation(labelled_explanation/3, labelled_status_with_subset_minimal_conflict_core, example(labelled_explanation(ready(ada), Status, Package))).
 api_documentation(semantic_status/3, unlabelled_agent_program_model_check, example(semantic_status(ready(ada), Status, Certificate))).
 api_documentation(semantic_slice_status/3, monadic_relevance_sliced_model_check, example(semantic_slice_status(ready(ada), Status, Certificate))).
 api_documentation(audit_trace/2, labelled_forward_horn_trace_only, example(audit_trace(ready(ada), Result))).
@@ -45,6 +46,40 @@ labelled_semantic_status(Goal, Status, Certificate) :-
     ( Compiled = invalid(Reason) -> Status = invalid_program, Certificate = validation(Reason)
     ; pairs_keys(Compiled, SourceIds), finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner), Certificate = source_trace(source_axioms(SourceIds), Inner)
     ).
+% Conflict diagnostics for a labelled agent program.  A returned core is
+% subset-minimal: deleting any one remaining labelled formula restores a model.
+% It is not claimed to be minimum-cardinality and no proof tree is fabricated.
+labelled_explanation(Goal, Status, Package) :-
+    labelled_compilation(Goal, Domains, Compiled, CompiledGoal, Result),
+    ( Result = invalid(Reason) ->
+        Status = invalid_program,
+        Package = explanation(status(invalid_program), validation(Reason))
+    ; Result = valid,
+      pairs_keys(Compiled, SourceIds),
+      pairs_values(Compiled, Axioms),
+      finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner),
+      ( Status = conflict ->
+          subset_minimal_conflict_core(Domains, Compiled, Core),
+          pairs_keys(Core, CoreIds),
+          Package = explanation(status(conflict), source_axioms(SourceIds), subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
+      ; Package = explanation(status(Status), source_axioms(SourceIds), certificate(Inner))
+      )
+    ).
+labelled_compilation(Goal, Domains, Compiled, CompiledGoal, Result) :-
+    findall(domain(Type, Values), user:domain(Type, Values), Domains),
+    findall(label(Id, Clause), user:axiom(Id, Clause), Labelled),
+    catch((validate_domains(Domains), maplist(compile_labelled_axiom, Labelled, Compiled), compile_surface(Goal, [], CompiledGoal), Result = valid), error(invalid_surface(Reason), _), Result = invalid(Reason)).
+subset_minimal_conflict_core(Domains, Labelled, Core) :-
+    reduce_conflict(Domains, Labelled, Core).
+reduce_conflict(Domains, Current, Core) :-
+    select(_, Current, Without),
+    labelled_inconsistent(Domains, Without), !,
+    reduce_conflict(Domains, Without, Core).
+reduce_conflict(_, Core, Core).
+labelled_inconsistent(Domains, Labelled) :-
+    pairs_values(Labelled, Axioms),
+    vocabulary(Domains, Axioms, atom(true, []), Vocabulary),
+    \+ satisfiable(Domains, Axioms, atom(true, []), Vocabulary, _).
 compile_labelled_axiom(label(Id, Surface), Id-Compiled) :- atom(Id), compile_axiom(Surface, Compiled).
 pairs_keys([], []).
 pairs_keys([Key-_|Rest], [Key|Keys]) :- pairs_keys(Rest, Keys).

@@ -31,4 +31,8 @@ test(symbolic_solver_finds_xor_countermodel_without_enumeration_budget) :-
     Axioms = [atom(inspires, [michelle]), atom(joy, [michelle]), implies(atom(creative, [michelle]), xor(atom(inspires, [michelle]), atom(joy, [michelle])))],
     finite_sat_status([domain(person, [michelle])], Axioms, atom(creative, [michelle]), contradicted, _).
 
+test(labelled_explanation_returns_subset_minimal_conflict_core, [setup((assertz(user:domain(person, [ada])), assertz(user:axiom(s1, ready(ada))), assertz(user:axiom(s2, not(ready(ada)))), assertz(user:axiom(s3, unrelated(ada)))), cleanup((retractall(user:domain(_, _)), retractall(user:axiom(_, _))))]) :-
+    labelled_explanation(ready(ada), conflict, explanation(status(conflict), source_axioms([s1, s2, s3]), subset_minimal_conflict_core(core_ids(CoreIds), _), certificate(conflict(no_admissible_model)))),
+    assertion(CoreIds == [s1, s2]).
+
 :- end_tests(finite_fol_meta_prover).
