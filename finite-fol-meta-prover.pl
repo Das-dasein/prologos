@@ -1,7 +1,55 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, semantic_status/3, semantic_slice_status/3, audit_trace/2]).
+:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, semantic_status/3, semantic_slice_status/3, audit_trace/2]).
+:- use_module(library(clpb)).
+
+% Symbolic finite-model status. Unlike finite_status/6 it delegates Boolean
+% search to SWI's CLP(B) solver, so it does not enumerate every valuation first.
+finite_sat_status(Domains, Axioms, Goal, Status, Certificate) :-
+    vocabulary(Domains, Axioms, Goal, Vocabulary),
+    ( satisfiable(Domains, Axioms, atom(true, []), Vocabulary, _BaseModel) ->
+        truth_witness(Domains, Axioms, Goal, Vocabulary, Positive),
+        truth_witness(Domains, Axioms, neg(Goal), Vocabulary, Negative),
+        classify_sat_witnesses(Positive, Negative, Status, Certificate)
+    ; Status = conflict, Certificate = conflict(no_admissible_model)
+    ).
+truth_witness(Domains, Axioms, Formula, Vocabulary, witness(Model)) :- satisfiable(Domains, Axioms, Formula, Vocabulary, Model), !.
+truth_witness(_, _, _, _, none).
+classify_sat_witnesses(witness(_), none, entailed, model_check(no_countermodel)).
+classify_sat_witnesses(none, witness(_), contradicted, model_check(no_supporting_model)).
+classify_sat_witnesses(witness(True), witness(False), unknown, open_pair(true_model(True), false_model(False))).
+
+satisfiable(Domains, Axioms, Assumption, Vocabulary, Model) :-
+    pairs_for_vocabulary(Vocabulary, Pairs),
+    axiom_expressions(Axioms, Domains, Pairs, AxiomExpressions),
+    formula_expression(Assumption, Domains, [], Pairs, AssumptionExpression),
+    conjoin([AssumptionExpression|AxiomExpressions], Constraint),
+    sat(Constraint), term_variables(Pairs, Variables), labeling(Variables),
+    findall(Atom, member(Atom-1, Pairs), Model).
+pairs_for_vocabulary([], []).
+pairs_for_vocabulary([Atom|Rest], [Atom-Value|Pairs]) :- pairs_for_vocabulary(Rest, Pairs).
+axiom_expressions([], _, _, []).
+axiom_expressions([Formula|Rest], Domains, Pairs, [Expression|Expressions]) :- formula_expression(Formula, Domains, [], Pairs, Expression), axiom_expressions(Rest, Domains, Pairs, Expressions).
+formula_expression(atom(true, []), _, _, _, 1) :- !.
+formula_expression(atom(Name, Args), _, Environment, Pairs, Value) :- instantiate_args(Args, Environment, GroundArgs), memberchk(holds(Name, GroundArgs)-Value, Pairs).
+formula_expression(neg(F), D, E, P, Expression) :- formula_expression(F, D, E, P, Inner), Expression =.. ['~', Inner].
+formula_expression(and(L, R), D, E, P, Expression) :- formula_expression(L, D, E, P, Left), formula_expression(R, D, E, P, Right), Expression =.. ['*', Left, Right].
+formula_expression(or(L, R), D, E, P, Expression) :- formula_expression(L, D, E, P, Left), formula_expression(R, D, E, P, Right), Expression =.. ['+', Left, Right].
+formula_expression(xor(L, R), D, E, P, Expression) :- formula_expression(L, D, E, P, Left), formula_expression(R, D, E, P, Right), Expression =.. ['#', Left, Right].
+formula_expression(implies(L, R), D, E, P, Expression) :- formula_expression(L, D, E, P, Left), formula_expression(R, D, E, P, Right), NotLeft =.. ['~', Left], Expression =.. ['+', NotLeft, Right].
+formula_expression(forall(var(Name, Type), F), D, E, P, Expression) :- domain_values(Type, D, Constants), quantified_expressions(Constants, Name, F, D, E, P, Expressions), conjoin(Expressions, Expression).
+formula_expression(exists(var(Name, Type), F), D, E, P, Expression) :- domain_values(Type, D, Constants), quantified_expressions(Constants, Name, F, D, E, P, Expressions), disjoin(Expressions, Expression).
+quantified_expressions([], _, _, _, _, _, []).
+quantified_expressions([Constant|Rest], Name, Formula, Domains, Environment, Pairs, [Expression|Expressions]) :- formula_expression(Formula, Domains, [binding(Name, Constant)|Environment], Pairs, Expression), quantified_expressions(Rest, Name, Formula, Domains, Environment, Pairs, Expressions).
+conjoin([], 1).
+conjoin([One|Rest], Expression) :- fold_conjunction(Rest, One, Expression).
+fold_conjunction([], Current, Current).
+fold_conjunction([Next|Rest], Current, Expression) :- Combined =.. ['*', Current, Next], fold_conjunction(Rest, Combined, Expression).
+disjoin([], 0).
+disjoin([One|Rest], Expression) :- fold_disjunction(Rest, One, Expression).
+fold_disjunction([], Current, Current).
+fold_disjunction([Next|Rest], Current, Expression) :- Combined =.. ['+', Current, Next], fold_disjunction(Rest, Combined, Expression).
 
 % A deliberately small, human-auditable forward trace over labelled ordinary
 % facts and rules. It does not pretend that XOR/disjunction/negation are Horn

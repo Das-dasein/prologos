@@ -27,4 +27,8 @@ test(candidate_budget_is_explicit) :-
     Axioms = [or(atom(a, [ada]), atom(b, [ada]))],
     finite_status([domain(person, [ada])], Axioms, atom(a, [ada]), 2, budget_exhausted, budget(candidate_models(4), maximum(2))).
 
+test(symbolic_solver_finds_xor_countermodel_without_enumeration_budget) :-
+    Axioms = [atom(inspires, [michelle]), atom(joy, [michelle]), implies(atom(creative, [michelle]), xor(atom(inspires, [michelle]), atom(joy, [michelle])))],
+    finite_sat_status([domain(person, [michelle])], Axioms, atom(creative, [michelle]), contradicted, _).
+
 :- end_tests(finite_fol_meta_prover).
