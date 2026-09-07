@@ -1,0 +1,57 @@
+<div id="pam-run-241" style="font-family:ui-sans-serif,system-ui,sans-serif;color:var(--foreground);max-width:1100px">
+  <style>
+    #pam-run-241{font-size:14px} #pam-run-241 h2{margin:0 0 8px} #pam-run-241 h3{font-size:14px;margin:18px 0 6px} #pam-run-241 .flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:650} #pam-run-241 .box{border:1px solid var(--border);padding:10px;margin:7px 0;background:transparent} #pam-run-241 pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font:12px/1.45 ui-monospace,SFMono-Regular,monospace} #pam-run-241 .ok{border-left:4px solid #16a34a}.bad{border-left:4px solid #dc2626}.warn{border-left:4px solid #d97706}.muted{opacity:.8} #pam-run-241 summary{cursor:pointer;font-weight:650}
+  </style>
+  <h2>ProverQA hard #241 — полный след одного запуска</h2>
+  <div class="flow"><span>English world + question</span><span>→</span><span>gpt-5.4-mini</span><span>→</span><span>ordinary Prolog</span><span>→</span><span>SWI audit_trace/2</span></div>
+  <h3>1. Вход модели</h3>
+  <div class="box"><pre>Question: Based on the above information, is the following statement true, false, or uncertain? Michelle is creative.</pre></div>
+  <details class="box"><summary>World: 35 английских предложений, переданных модели</summary><pre>If Alia either embraces uncertainty or thinks outside the box (but not both), then she is able to find unique solutions.
+If Alia pursues her passions, then she values diversity and is open-minded.
+Michelle is artistic. Clementine is not able to express herself. Michelle embraces uncertainty.
+If Michelle either embraces uncertainty or thinks outside the box (but not both), then she is able to find unique solutions.
+If Michelle either plays an instrument or writes poetry (but not both), then she brings joy to adults.
+If Michelle pursues her passions, then she values diversity and is open-minded. Aurora values diversity.
+Michelle is curious or explores new ideas. If Alia is creative, then she can either inspire children or bring joy to adults, but not both.
+Anyone who captures imaginations either tells stories or sparks curiosity (or both). Michelle does not spark curiosity.
+If Aurora is artistic, then she either captures imaginations or inspires children. If someone has imagination, then they think outside the box and enjoy exploring.
+If Michelle is artistic, then she either captures imaginations or inspires children.
+Everyone who either thinks outside the box or brings joy to adults is able to express themselves.
+Clementine is curious or explores new ideas. Michelle paints vibrantly. Clementine does not explore new ideas.
+If Michelle is open-minded, then she is either curious or able to find unique solutions (but not both). Michelle cannot connect with others.
+If Michelle is creative, then she can either inspire children or bring joy to adults, but not both.
+Aurora paints vibrantly. If Michelle either enjoys learning or embraces change (but not both), then she is open-minded.
+Aurora is artistic. Alia does not spark curiosity. Everyone who asks questions either loves learning or is curious (or both).
+Michelle does not explore new ideas. Aurora cannot connect with others. Michelle is not able to express herself.
+If someone tells stories and paints vibrantly, then they can connect with others. Michelle values diversity.
+If Aurora is open-minded, then she is either curious or able to find unique solutions (but not both). Michelle pursues her passions.</pre></details>
+  <h3>2. Точный добавочный промпт режима трассы</h3>
+  <div class="box"><pre>Write a complete auditable formalization: do not select a relevant fragment and do not answer the English question yourself. Give every source sentence an ID in an ordinary Prolog declaration, for example axiom(s1, fact(calm(ada))). or axiom(s2, rule([calm(X)], ready(X))). Preserve XOR, disjunction, and explicit negation visibly as xor(...), or(...), and not(...). Then return the bare query audit_trace(Goal, Result), where Goal is the question's ground predicate. The trace runtime will show a human-readable fact/rule path or no_forward_trace; it deliberately will not fake Horn proof steps for XOR, disjunction, or negation.</pre></div>
+  <h3>3. Что вернула модель</h3>
+  <div class="box ok"><pre>query: audit_trace(creative(michelle), Result)
+
+s3:  axiom(s3, fact(artistic(michelle))).
+s16: axiom(s16, rule([artistic(michelle)], or(captures_imaginations(michelle), inspires_children(michelle)))).
+s23: axiom(s23, rule([creative(michelle)], xor(inspires_children(michelle), brings_joy_to_adults(michelle)))).
+s35: axiom(s35, fact(pursues_passions(michelle))).
+
+Всего: s1…s35. Никакого shell/network/tool вызова модель не делала: она вернула только JSON {program, query}.</pre></div>
+  <h3>4. Что именно исполнил рантайм</h3>
+  <div class="box"><pre>preloaded trusted module: finite_fol_meta_prover
+candidate program: 35 axiom/2 declarations
+call made by runner: audit_trace(creative(michelle), Result)
+time limit: 5 seconds
+host/network authority: none</pre></div>
+  <h3>5. Результат и проверяемая причина</h3>
+  <div class="box bad"><pre>PAM_DIAGNOSTIC_BINDINGS:
+audit_trace(creative(michelle), no_forward_trace(no_supported_rule_path))</pre></div>
+  <div class="box warn"><pre>Граф зависимостей:
+
+artistic(michelle) ──s16──→ captures_imaginations(michelle) OR inspires_children(michelle)
+
+creative(michelle) ──s23──→ inspires_children(michelle) XOR brings_joy_to_adults(michelle)
+
+Вопрос стоит слева от s23. Forward-трассировщик не может идти назад по s23
+и не имеет права подменять XOR контрапозицией. Поэтому путь к creative не найден.</pre></div>
+  <p class="muted">Gold, source reasoning и nl2fol были скрыты от модели; этот экран показывает только фактический ввод, её ответ и локальное исполнение.</p>
+</div>
