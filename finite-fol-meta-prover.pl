@@ -42,7 +42,7 @@ classify_sat_witnesses(witness(True), witness(False), unknown, open_pair(true_mo
 labelled_semantic_status(Goal, Status, Certificate) :-
     findall(domain(Type, Values), user:domain(Type, Values), Domains),
     findall(label(Id, Clause), user:axiom(Id, Clause), Labelled),
-    catch((validate_domains(Domains), maplist(compile_labelled_axiom, Labelled, Compiled), pairs_values(Compiled, Axioms), compile_surface(Goal, [], CompiledGoal)), error(invalid_surface(Reason), _), Compiled = invalid(Reason)),
+    catch((validate_domains(Domains), maplist(compile_labelled_axiom, Labelled, Compiled), validate_labelled_quantifier_domains(Domains, Compiled), pairs_values(Compiled, Axioms), compile_surface(Goal, [], CompiledGoal), validate_quantifier_domains(Domains, CompiledGoal)), error(invalid_surface(Reason), _), Compiled = invalid(Reason)),
     ( Compiled = invalid(Reason) -> Status = invalid_program, Certificate = validation(Reason)
     ; pairs_keys(Compiled, SourceIds), finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner), Certificate = source_trace(source_axioms(SourceIds), Inner)
     ).
@@ -70,7 +70,7 @@ labelled_explanation(Goal, Status, Package) :-
 labelled_compilation(Goal, Domains, Compiled, CompiledGoal, Result) :-
     findall(domain(Type, Values), user:domain(Type, Values), Domains),
     findall(label(Id, Clause), user:axiom(Id, Clause), Labelled),
-    catch((validate_domains(Domains), maplist(compile_labelled_axiom, Labelled, Compiled), compile_surface(Goal, [], CompiledGoal), Result = valid), error(invalid_surface(Reason), _), Result = invalid(Reason)).
+    catch((validate_domains(Domains), maplist(compile_labelled_axiom, Labelled, Compiled), validate_labelled_quantifier_domains(Domains, Compiled), compile_surface(Goal, [], CompiledGoal), validate_quantifier_domains(Domains, CompiledGoal), Result = valid), error(invalid_surface(Reason), _), Result = invalid(Reason)).
 subset_minimal_conflict_core(Domains, Labelled, Core) :-
     reduce_conflict(Domains, Labelled, Core).
 reduce_conflict(Domains, Current, Core) :-
@@ -136,6 +136,21 @@ outside_constants([Constant|Rest], DomainValues, Labelled, GoalConstants, Outsid
     ).
 source_ids_for_constant(Constant, Labelled, Ids) :- findall(Id, (member(Id-Formula, Labelled), formula_constants(Formula, Constant)), RawIds), sort(RawIds, Ids).
 quantified_source_ids(Labelled, Ids) :- findall(Id, (member(Id-Formula, Labelled), contains_quantifier(Formula)), RawIds), sort(RawIds, Ids).
+validate_labelled_quantifier_domains(Domains, Labelled) :-
+    forall(member(Id-Formula, Labelled), validate_quantifier_domains(Domains, Formula, Id)).
+validate_quantifier_domains(Domains, Formula) :- validate_quantifier_domains(Domains, Formula, goal).
+validate_quantifier_domains(Domains, forall(var(_, Type), Formula), Source) :- !,
+    findall(Declared, member(domain(Declared, _), Domains), Types),
+    ( memberchk(domain(Type, _), Domains) -> validate_quantifier_domains(Domains, Formula, Source) ; throw(error(invalid_surface(undeclared_quantifier_domain(Type, source_axioms([Source]), declared_types(Types))), _)) ).
+validate_quantifier_domains(Domains, exists(var(_, Type), Formula), Source) :- !,
+    findall(Declared, member(domain(Declared, _), Domains), Types),
+    ( memberchk(domain(Type, _), Domains) -> validate_quantifier_domains(Domains, Formula, Source) ; throw(error(invalid_surface(undeclared_quantifier_domain(Type, source_axioms([Source]), declared_types(Types))), _)) ).
+validate_quantifier_domains(Domains, neg(Formula), Source) :- !, validate_quantifier_domains(Domains, Formula, Source).
+validate_quantifier_domains(Domains, and(L, R), Source) :- !, validate_quantifier_domains(Domains, L, Source), validate_quantifier_domains(Domains, R, Source).
+validate_quantifier_domains(Domains, or(L, R), Source) :- !, validate_quantifier_domains(Domains, L, Source), validate_quantifier_domains(Domains, R, Source).
+validate_quantifier_domains(Domains, xor(L, R), Source) :- !, validate_quantifier_domains(Domains, L, Source), validate_quantifier_domains(Domains, R, Source).
+validate_quantifier_domains(Domains, implies(L, R), Source) :- !, validate_quantifier_domains(Domains, L, Source), validate_quantifier_domains(Domains, R, Source).
+validate_quantifier_domains(_, _, _).
 contains_quantifier(forall(_, _)) :- !.
 contains_quantifier(exists(_, _)) :- !.
 contains_quantifier(neg(Formula)) :- !, contains_quantifier(Formula).
