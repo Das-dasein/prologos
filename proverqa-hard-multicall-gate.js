@@ -23,7 +23,7 @@ function parseMulticallJsonl(stdoutFile, { brokerPaths, maxCalls = 3, prohibited
   if (!Number.isSafeInteger(maxCalls) || maxCalls < 1 || maxCalls > 3) throw new Error("multicall maxCalls must be an integer from 1 to 3");
   const lines = fs.readFileSync(stdoutFile, "utf8").split(/\r?\n/).filter(Boolean); if (!lines.length) throw new Error("Codex JSONL trace is empty");
   let events; try { events = lines.map(line => JSON.parse(line)); } catch { throw new Error("Codex JSONL trace is malformed"); }
-  const brokers = new Set(brokerPaths.map(canonical)), allowedPaths = new Set([...brokers, ...additionalAllowedPaths.map(canonical)]), protectedPaths = prohibitedPaths.map(path.resolve);
+  const brokers = new Set(brokerPaths.map(value => canonical(value))), allowedPaths = new Set([...brokers, ...additionalAllowedPaths.map(value => canonical(value))]), protectedPaths = prohibitedPaths.map(value => path.resolve(value));
   const lifecycle = events.filter(event => event && /^item\.(?:started|completed)$/.test(event.type) && event.item && event.item.type === "command_execution");
   const otherAction = events.filter(event => !lifecycle.includes(event) && /(?:command_execution|function_call|\btool\b)/i.test(JSON.stringify(event)));
   if (otherAction.length) throw new Error(`multicall trace contains foreign action events: ${otherAction.length}`);
