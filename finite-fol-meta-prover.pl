@@ -1,7 +1,71 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6]).
+:- module(finite_fol_meta_prover, [finite_status/6, semantic_status/3]).
+
+% Agent-facing convenience layer.  The candidate remains normal Prolog:
+%   domain(person, [ada]).
+%   axiom(fact(calm(ada))).
+%   axiom(rule([calm(X)], ready(X))).
+%   semantic_status(ready(ada), Status, Certificate).
+% It is intentionally a small observed surface, compiled internally to the
+% object formulas below.  Bad surface programs become data, not runtime errors.
+semantic_status(Goal, Status, Certificate) :-
+    findall(domain(Type, Values), user:domain(Type, Values), Domains),
+    findall(Axiom, user:axiom(Axiom), SurfaceAxioms),
+    catch((compile_agent_program(Domains, SurfaceAxioms, Goal, CompiledAxioms, CompiledGoal), Compiled = compiled(CompiledAxioms, CompiledGoal)), error(invalid_surface(Reason), _), Compiled = invalid(Reason)),
+    ( Compiled = invalid(Reason) ->
+        Status = invalid_program,
+        Certificate = validation(Reason)
+    ; Compiled = compiled(ProgramAxioms, ProgramGoal),
+      finite_status(Domains, ProgramAxioms, ProgramGoal, 256, Status, Certificate)
+    ).
+
+compile_agent_program(Domains, SurfaceAxioms, Goal, CompiledAxioms, CompiledGoal) :-
+    validate_domains(Domains),
+    maplist(compile_axiom, SurfaceAxioms, CompiledAxioms),
+    compile_surface(Goal, [], CompiledGoal).
+
+validate_domains([]) :- throw(error(invalid_surface(no_domain_declarations), _)).
+validate_domains([domain(Type, Values)|Rest]) :-
+    ( atom(Type), is_list(Values), Values \= [], maplist(atom, Values) -> true ; throw(error(invalid_surface(bad_domain(Type, Values)), _)) ),
+    validate_domains_tail(Rest).
+validate_domains_tail([]).
+validate_domains_tail([domain(Type, Values)|Rest]) :-
+    ( atom(Type), is_list(Values), Values \= [], maplist(atom, Values) -> true ; throw(error(invalid_surface(bad_domain(Type, Values)), _)) ),
+    validate_domains_tail(Rest).
+
+compile_axiom(fact(Formula), Compiled) :- !, compile_surface(Formula, [], Compiled).
+compile_axiom(rule(Body, Head), Compiled) :- !,
+    ( is_list(Body) -> true ; throw(error(invalid_surface(rule_body_must_be_list(Body)), _)) ),
+    term_variables(rule(Body, Head), Variables),
+    compile_body(Body, Variables, CompiledBody),
+    compile_surface(Head, Variables, CompiledHead),
+    close_rule(Variables, Variables, implies(CompiledBody, CompiledHead), Compiled).
+compile_axiom(Axiom, _) :- throw(error(invalid_surface(expected_fact_or_rule(Axiom)), _)).
+
+compile_body([], _, atom(true, [])).
+compile_body([Formula], Variables, Compiled) :- !, compile_surface(Formula, Variables, Compiled).
+compile_body([Formula|Rest], Variables, and(Compiled, More)) :- compile_surface(Formula, Variables, Compiled), compile_body(Rest, Variables, More).
+close_rule(_, [], Formula, Formula).
+close_rule(AllVariables, [Variable|Rest], Formula, forall(var(Name, person), Closed)) :- variable_name(Variable, AllVariables, Name), close_rule(AllVariables, Rest, Formula, Closed).
+
+compile_surface(not(Formula), Variables, neg(Compiled)) :- !, compile_surface(Formula, Variables, Compiled).
+compile_surface(and(Left, Right), Variables, and(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
+compile_surface(or(Left, Right), Variables, or(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
+compile_surface(xor(Left, Right), Variables, xor(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
+compile_surface(implies(Left, Right), Variables, implies(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
+compile_surface(Formula, Variables, atom(Name, Arguments)) :-
+    compound(Formula), Formula =.. [Name|RawArguments], atom(Name),
+    compile_arguments(RawArguments, Variables, Arguments), !.
+compile_surface(Formula, _, _) :- throw(error(invalid_surface(bad_formula(Formula)), _)).
+
+compile_arguments([], _, []).
+compile_arguments([Argument|Rest], Variables, [Compiled|CompiledRest]) :- compile_argument(Argument, Variables, Compiled), compile_arguments(Rest, Variables, CompiledRest).
+compile_argument(Argument, Variables, var(Name)) :- var(Argument), !, variable_name(Argument, Variables, Name).
+compile_argument(Argument, _, Argument) :- atom(Argument), !.
+compile_argument(Argument, _, _) :- throw(error(invalid_surface(non_atomic_argument(Argument)), _)).
+variable_name(Variable, Variables, Name) :- nth1(Index, Variables, Existing), Variable == Existing, atom_concat(v, Index, Name).
 
 % finite_status(+Domains, +Axioms, +Goal, +MaxCandidateModels,
 %               -Status, -Certificate).
