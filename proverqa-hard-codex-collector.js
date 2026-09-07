@@ -51,6 +51,12 @@ function buildP2Broker(run, item, broker, swiplPath) {
 function protectedPaths({ fixtureFile, authFile, swiplPath, invocation }) {
   return [...new Set([__dirname, fixtureFile, authFile, swiplPath, invocation.private_auth_file, invocation.private_auth_file && path.dirname(invocation.private_auth_file)].filter(Boolean).map(value => path.resolve(value)))];
 }
+function discardPrivateAuth(invocation, run) {
+  if (!invocation) return;
+  const file = invocation.private_auth_file;
+  if (typeof file !== "string" || path.dirname(file) !== run.state_dir || path.basename(file) !== "auth.json") throw new Error("refusing to remove a non-private Codex auth file");
+  fs.rmSync(file, { force: true });
+}
 function validateFixture(fixture) {
   if (!fixture || fixture.schema_version !== "proverqa-hard-hybrid-fixture-v1" || !Array.isArray(fixture.cases) || fixture.cases.length !== 12) throw new Error("expected a validated 12-case ProverQA-hard hybrid fixture");
   for (const item of fixture.cases) if (!item.p0 || !item.p1 || !Array.isArray(item.private_formulas) || !["A", "B", "C"].includes(item.source_answer)) throw new Error(`malformed fixture case ${item && item.case_id}`);
@@ -67,9 +73,9 @@ async function collectCodexSubscription({ fixtureFile, rawRoot, model, codexPath
     const run = seatbelt.createFreshSealedRunRoot(rawRoot), p2 = entry.condition === "P2" ? buildP2Broker(run, entry.case, broker, swipl) : null;
     const prompt = entry.condition === "P0" ? `World:\n${entry.case.p0.context}\nQuestion: ${entry.case.p0.question}\nAnswer with exactly one line: RESULT: A, RESULT: B, or RESULT: C.\n` : entry.condition === "P1" ? `World as Prolog terms:\n${entry.case.p1.representation}\n${entry.case.p1.query_term}\nQuestion: ${entry.case.p0.question}\nAnswer with exactly one line: RESULT: A, RESULT: B, or RESULT: C.\n` : p2Prompt(entry.case, p2.brokerFile, p2.selected);
     const sealed = seatbelt.writeSealedInput(run, { prompt, schema: stable(OUTPUT_SCHEMA) });
-    let response = null, inspection = null, transportError = null, rawResponse;
+    let response = null, inspection = null, transportError = null, rawResponse, invocation = null;
     try {
-      const invocation = seatbelt.buildTraceAuditedInvocation({ run, sealed, codexPath: codex, model, authFile: auth });
+      invocation = seatbelt.buildTraceAuditedInvocation({ run, sealed, codexPath: codex, model, authFile: auth });
       const raw = await invokeCodex({ invocation, spawnImpl });
       const parsed = entry.condition === "P2" ? parseP2CodexJsonl(raw.stdout_file, protectedPaths({ fixtureFile: fixturePath, authFile: auth, swiplPath: swipl, invocation }), p2.brokerFile) : parseCodexJsonl(raw.stdout_file, protectedPaths({ fixtureFile: fixturePath, authFile: auth, swiplPath: swipl, invocation }));
       const receipt = entry.condition === "P2" ? readBrokerResult(p2.receiptFile) : null;
@@ -78,7 +84,7 @@ async function collectCodexSubscription({ fixtureFile, rawRoot, model, codexPath
     } catch (error) {
       transportError = String(error && (error.stack || error.message) || error);
       rawResponse = path.join(run.output_dir, "collector-rejection.txt"); writeExclusive(rawResponse, transportError + "\n");
-    }
+    } finally { discardPrivateAuth(invocation, run); }
     const answer = parse(response && response.answer);
     const record = { record_id: `${entry.case.case_id}-${entry.condition.toLowerCase()}`, case_id: entry.case.case_id, condition: entry.condition, fixture_sha256: fixtureSha, prompt_sha256: sha256(prompt), prompt: artifact(rawRoot, sealed.prompt_file), source_answer: entry.case.source_answer, answer, format_valid: Boolean(answer), broker_receipt: response && response.receipt ? { status: response.receipt, goal_id: p2.selected.goal_id, goal: p2.selected.goal, selection: p2.selected.selection } : null, usage: response && response.usage, inspection, raw_response: artifact(rawRoot, rawResponse), raw: { schema: artifact(rawRoot, sealed.schema_file), stdout: artifact(rawRoot, path.join(run.output_dir, "codex-stdout.jsonl")), stderr: artifact(rawRoot, path.join(run.output_dir, "codex-stderr.txt")), final_output: artifact(rawRoot, path.join(run.output_dir, "final-output.txt")) }, transport_error: transportError };
     writeExclusive(path.join(run.output_dir, "record.json"), stable(record)); records.push(Object.freeze(record));
@@ -94,7 +100,7 @@ function parseArgs(argv) {
   for (const key of ["fixtureFile", "rawRoot", "model", "codexPath", "authFile"]) if (!out[key]) throw new Error(`missing --${key.replace(/[A-Z]/g, value => `-${value.toLowerCase()}`)}`);
   return out;
 }
-module.exports = { buildP2Broker, collectCodexSubscription, parseArgs, p2Prompt, validateFixture };
+module.exports = { buildP2Broker, collectCodexSubscription, discardPrivateAuth, parseArgs, p2Prompt, validateFixture };
 if (require.main === module) {
   (async () => { const options = parseArgs(process.argv.slice(2)); const result = await collectCodexSubscription(options); console.log(JSON.stringify({ status: "collected-not-a-cdr-receipt", records: result.records.length })); })().catch(error => { console.error(`proverqa-hard-codex-collector: ${error.stack || error.message}`); process.exitCode = 1; });
 }
