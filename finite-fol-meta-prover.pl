@@ -1,8 +1,23 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, semantic_status/3, semantic_slice_status/3, audit_trace/2]).
+:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, meta_signatures/1, meta_help/2]).
 :- use_module(library(clpb)).
+
+% Read-only self-description for an agent running inside the same Prolog image.
+% These facts are the human-facing contract; meta_signatures/1 filters them
+% against the module's real exported predicates, so stale docs are visible.
+api_documentation(finite_status/6, finite_classical_model_check, example(finite_status([domain(person,[ada])], [atom(ready,[ada])], atom(ready,[ada]), 32, Status, Certificate))).
+api_documentation(finite_sat_status/5, symbolic_classical_model_check, example(finite_sat_status([domain(person,[ada])], [atom(ready,[ada])], atom(ready,[ada]), Status, Certificate))).
+api_documentation(labelled_semantic_status/3, labelled_agent_program_symbolic_check, example(labelled_semantic_status(ready(ada), Status, Certificate))).
+api_documentation(semantic_status/3, unlabelled_agent_program_model_check, example(semantic_status(ready(ada), Status, Certificate))).
+api_documentation(semantic_slice_status/3, monadic_relevance_sliced_model_check, example(semantic_slice_status(ready(ada), Status, Certificate))).
+api_documentation(audit_trace/2, labelled_forward_horn_trace_only, example(audit_trace(ready(ada), Result))).
+api_documentation(meta_signatures/1, list_live_trusted_api_signatures, example(meta_signatures(Signatures))).
+api_documentation(meta_help/2, show_contract_for_signature_or_all, example(meta_help(all, Documentation))).
+meta_signatures(Signatures) :- findall(Signature, (api_documentation(Signature, _, _), Signature = Name/Arity, current_predicate(Name/Arity)), Signatures).
+meta_help(all, Documentation) :- findall(documentation(Signature, Purpose, Example), api_documentation(Signature, Purpose, Example), Documentation).
+meta_help(Signature, documentation(Signature, Purpose, Example)) :- api_documentation(Signature, Purpose, Example).
 
 % Symbolic finite-model status. Unlike finite_status/6 it delegates Boolean
 % search to SWI's CLP(B) solver, so it does not enumerate every valuation first.

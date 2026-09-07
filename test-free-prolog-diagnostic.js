@@ -29,5 +29,8 @@ const { runFreePrologDiagnostic } = require("./free-prolog-diagnostic");
   const counter = await runFreePrologDiagnostic({ caseId: "labelled-xor-countermodel", program: counterProgram, query: "labelled_semantic_status(creative(michelle), Status, Certificate)", timeoutMs: 1500 });
   assert.equal(counter.execution_outcome, "succeeded");
   assert.match(counter.runtime.transcript.transcript, /labelled_semantic_status\(creative\(michelle\),contradicted,source_trace\(source_axioms\(\[s1,s2,s3\]\)/);
+  const reflection = await runFreePrologDiagnostic({ caseId: "trusted-reflection", program: "probe.\n", query: "meta_help(all, Documentation)", timeoutMs: 1500 });
+  assert.equal(reflection.execution_outcome, "succeeded");
+  assert.match(reflection.runtime.transcript.transcript, /meta_signatures\/1/);
   console.log("free-prolog-diagnostic ok: ordinary agent-style Prolog executes as isolated non-scoring evidence");
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
