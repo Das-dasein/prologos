@@ -1,7 +1,37 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, semantic_status/3, semantic_slice_status/3]).
+:- module(finite_fol_meta_prover, [finite_status/6, semantic_status/3, semantic_slice_status/3, audit_trace/2]).
+
+% A deliberately small, human-auditable forward trace over labelled ordinary
+% facts and rules. It does not pretend that XOR/disjunction/negation are Horn
+% proof steps: those remain visible in the program but yield no fabricated path.
+% Candidate form: axiom(s1, fact(calm(ada))).
+%                 axiom(s2, rule([calm(X)], ready(X))).
+audit_trace(Goal, Result) :-
+    findall(item(Id, Clause), user:axiom(Id, Clause), Items),
+    ( Items = [] -> Result = invalid_program(requires_labelled_axiom_2)
+    ; ground(Goal) -> initial_trace_items(Items, Known), trace_until(Goal, Items, Known, 64, Result)
+    ; Result = invalid_goal(requires_ground_goal(Goal))
+    ).
+
+initial_trace_items([], []).
+initial_trace_items([item(Id, fact(Literal))|Rest], [known(Literal, fact(Id))|KnownRest]) :- trace_literal(Literal), !, initial_trace_items(Rest, KnownRest).
+initial_trace_items([_|Rest], Known) :- initial_trace_items(Rest, Known).
+trace_literal(Literal) :- compound(Literal), Literal =.. [Name|_], \+ memberchk(Name, [not, and, or, xor, implies, forall, exists]).
+trace_until(Goal, _, Known, _, proof(Goal, Trace)) :- member(known(Fact, Trace), Known), Fact = Goal, !.
+trace_until(_, _, _, 0, no_forward_trace(depth_limit)).
+trace_until(Goal, Items, Known, Remaining, Result) :-
+    trace_extensions(Items, Known, Extensions),
+    exclude(already_known(Known), Extensions, Fresh),
+    ( Fresh = [] -> Result = no_forward_trace(no_supported_rule_path)
+    ; NextRemaining is Remaining - 1, append(Known, Fresh, Next), trace_until(Goal, Items, Next, NextRemaining, Result)
+    ).
+already_known(Known, known(Fact, _)) :- member(known(Existing, _), Known), Existing =@= Fact.
+trace_extensions(Items, Known, Extensions) :-
+    findall(known(Head, step(Id, BodyTraces)), (member(item(Id, rule(Body, Head)), Items), is_list(Body), trace_literal(Head), trace_body(Body, Known, BodyTraces)), Extensions).
+trace_body([], _, []).
+trace_body([Need|Rest], Known, [Trace|Traces]) :- trace_literal(Need), member(known(Have, Trace), Known), Need = Have, trace_body(Rest, Known, Traces).
 
 % Agent-facing convenience layer.  The candidate remains normal Prolog:
 %   domain(person, [ada]).

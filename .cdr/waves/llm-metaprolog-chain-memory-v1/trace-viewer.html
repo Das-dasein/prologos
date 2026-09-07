@@ -1,0 +1,30 @@
+<div id="pam-trace-viewer" style="font-family:ui-sans-serif,system-ui,sans-serif;color:var(--foreground);max-width:920px">
+  <style>
+    #pam-trace-viewer .lane{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start}
+    #pam-trace-viewer h3{font-size:14px;margin:0 0 8px} #pam-trace-viewer .node{border:1px solid var(--border);padding:9px 10px;margin:7px 0;font:12px ui-monospace,SFMono-Regular,monospace}
+    #pam-trace-viewer .source{border-left:4px solid #6b7280}.proof{border-left:4px solid #16a34a}.missing{border-left:4px solid #dc2626}.unsupported{border-left:4px solid #d97706}
+    #pam-trace-viewer .edge{font:18px ui-monospace,monospace;text-align:center;color:var(--foreground);margin:3px 0} #pam-trace-viewer button{background:transparent;color:inherit;border:1px solid var(--border);padding:5px 8px;margin:0 5px 10px 0}
+    #pam-trace-viewer .detail{min-height:42px;font:12px ui-monospace,SFMono-Regular,monospace;padding:8px;border:1px solid var(--border)}
+    @media(max-width:640px){#pam-trace-viewer .lane{grid-template-columns:1fr}}
+  </style>
+  <h3>Трасса: исходный текст → Prolog → доказательство</h3>
+  <button type="button" data-mode="proof">Найденный путь</button><button type="button" data-mode="missing">Потерянное правило</button><button type="button" data-mode="unsupported">XOR / не-Horn</button>
+  <div class="lane">
+    <section><h3>Источник</h3><div id="tv-source"></div></section>
+    <section><h3>Программа</h3><div id="tv-program"></div></section>
+    <section><h3>Результат</h3><div id="tv-result"></div></section>
+  </div>
+  <div class="detail" id="tv-detail" aria-live="polite"></div>
+  <script>
+    (() => {
+      const root=document.getElementById('pam-trace-viewer');
+      const states={
+        proof:{source:['s1  Ada спокойна.','s2  Если кто-то спокоен, он готов.'],program:['axiom(s1, fact(calm(ada))).','axiom(s2, rule([calm(X)], ready(X))).'],result:['ready(ada)','step s2 ← fact s1'],cls:'proof',detail:'Доказательство: s1 даёт calm(ada); s2 подставляет X=ada и выводит ready(ada).'},
+        missing:{source:['s17  Если Michelle creative, то XOR(...).'],program:['— правила s17 нет в программе модели —'],result:['unknown','no_forward_trace'],cls:'missing',detail:'Текстовое правило потеряно до исполнения. Рантайм не имеет права восстановить его из воздуха.'},
+        unsupported:{source:['s9  Ровно одно: A или B.'],program:['axiom(s9, fact(xor(a(ada), b(ada)))).'],result:['видимо, не Horn-шаг','требуется семантический модуль'],cls:'unsupported',detail:'XOR сохранён как видимое утверждение. Простой forward-trace не выдаёт ложную цепочку; его разбирает отдельный семантический исполнитель.'}
+      };
+      function draw(mode){const s=states[mode];root.querySelector('#tv-source').innerHTML=s.source.map(x=>`<div class="node source">${x}</div>`).join('');root.querySelector('#tv-program').innerHTML=s.program.map(x=>`<div class="node ${s.cls}">${x}</div>`).join('');root.querySelector('#tv-result').innerHTML=s.result.map(x=>`<div class="node ${s.cls}">${x}</div>`).join('');root.querySelector('#tv-detail').textContent=s.detail;root.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));}
+      root.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>draw(b.dataset.mode)));draw('proof');
+    })();
+  </script>
+</div>
