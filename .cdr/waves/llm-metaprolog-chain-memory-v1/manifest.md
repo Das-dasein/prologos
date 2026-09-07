@@ -5,10 +5,11 @@ ProverQA P0/P1/P2 runs nor their artifacts. It tests a different claim.
 
 ## Claim under test
 
-The LLM is the semantic reasoner. A bounded meta-Prolog memory can help it
-retain, inspect, and reuse explicit chains of facts and rules without claiming
-to decide arbitrary first-order logic or to replace the LLM's interpretation
-of language, quantifiers, ambiguity, or `unknown`.
+The LLM is the semantic reasoner. It must itself retain an explicit semantic
+representation of language, quantifiers, Boolean structure, ambiguity, and
+`unknown`. A bounded meta-Prolog memory can help it retain, inspect, and reuse
+the chainable part of that representation without claiming to decide arbitrary
+first-order logic or to replace LLM interpretation.
 
 The causal question is therefore not “does Prolog solve ProverQA?” but:
 
@@ -19,7 +20,14 @@ The causal question is therefore not “does Prolog solve ProverQA?” but:
 
 ## Scope and semantic boundary
 
-The executable fragment is deliberately finite and explicit:
+The agent-authored semantic layer is deliberately richer than the executable
+fragment. It accepts a closed AST containing `atom`, `neg`, `and`, `or`, `xor`,
+`implies`, `forall`, and `exists`, all tied to English source spans. This AST
+is returned verbatim to the LLM on Turn 2 in M1 and M2. It is the LLM's own
+working representation, not a benchmark-supplied FOL formula and not a claim
+that the runtime decides those operators.
+
+The executable meta-Prolog projection is deliberately finite and explicit:
 
 - signed ground facts: `fact(Id, positive|negative, Atom, Provenance)`;
 - forward rules with a conjunctive body and one signed head;
@@ -28,9 +36,9 @@ The executable fragment is deliberately finite and explicit:
   `unknown` when neither requested signed literal is derivable.
 
 This is **not** a general FOL theorem prover. The LLM retains responsibility
-for natural-language interpretation, quantifier scope, XOR/OR semantics,
+for interpreting its own semantic AST: quantifier scope, XOR/OR semantics,
 non-Horn constructs, and deciding which Horn-like chains are worth entering
-into the memory. The runtime never interprets absence as classical negation.
+into memory. The runtime never interprets absence as classical negation.
 
 ## Held-out task source
 
@@ -54,8 +62,8 @@ benchmark gold.
 | Condition | Turn 1 | Between turns | Turn 2 |
 | --- | --- | --- | --- |
 | M0 natural scratch | LLM writes a plain-language working note and tentative chain hypotheses | no executable action | LLM reads its note and answers A/B/C |
-| M1 structured scratch | LLM emits a validated signed-fact/rule/hypothesis JSON plan | JSON is retained verbatim; no inference | LLM reads its plan and answers A/B/C |
-| M2 meta-Prolog memory | exactly the M1 JSON schema | deterministic runtime validates it, computes bounded closure, and returns only proofs/conflicts/unknown for the agent-selected goals | LLM reads its own plan plus runtime evidence and answers A/B/C |
+| M1 structured scratch | LLM emits a validated semantic-AST plus signed-fact/rule/hypothesis JSON plan | JSON is retained verbatim; no inference | LLM reads its own semantic AST and chain plan, then answers A/B/C |
+| M2 meta-Prolog memory | exactly the M1 JSON schema | deterministic runtime validates the chain projection, computes bounded closure, and returns only proofs/conflicts/unknown for the agent-selected goals | LLM reads its own semantic AST, chain plan, and runtime evidence, then answers A/B/C |
 
 M1 versus M2 is the primary comparison: both get an extra LLM turn and the
 same self-authored formal memory; only M2 gets executable chain evidence.
@@ -67,16 +75,22 @@ Turn 1 may produce only:
 
 ```json
 {
+  "semantic_forms": [{
+    "id":"s1",
+    "ast":{"op":"forall","var":"x","body":{"op":"implies","left":{"op":"atom","name":"calm","args":["x"]},"right":{"op":"atom","name":"ready","args":["x"]}}},
+    "source_spans":[2]
+  }],
   "facts": [{"id":"f1","polarity":"positive","atom":"calm(ada)","source_spans":[1]}],
   "rules": [{"id":"r1","body":["calm(ada)"],"head":{"polarity":"positive","atom":"ready(ada)"},"source_spans":[2]}],
   "goals": [{"id":"g1","polarity":"positive","atom":"ready(ada)","why":"tests the readiness chain"}]
 }
 ```
 
-The collector validates a closed atom grammar, unique ids, finite size limits,
-groundness, references to source-span indices, and a maximum of three distinct
-goals. It does not accept arbitrary Prolog code, a filesystem path, shell
-command, source gold, or a query created after runtime feedback.
+The collector validates the closed semantic-AST grammar, closed atom grammar,
+unique ids, finite size limits, groundness of the executable projection,
+references to source-span indices, and a maximum of three distinct goals. It
+does not accept arbitrary Prolog code, a filesystem path, shell command,
+source gold, or a query created after runtime feedback.
 
 For M2 the LLM must choose one to three of its own declared goal ids in Turn
 1. The runtime executes those goals before Turn 2. A plan with zero goals,
