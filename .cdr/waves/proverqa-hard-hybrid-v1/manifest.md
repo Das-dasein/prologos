@@ -37,8 +37,9 @@ the OpenAI API. A collection remains opt-in through
 a fresh raw directory.
 
 For P0/P1, any native command or tool event in Codex JSONL invalidates the
-record. For P2, the prompt names one private `/bin/zsh -lc PATH` command and
-the trace must contain exactly that one no-argument broker lifecycle pair.
+record. For P2, the prompt names one private script path with an explicit ban
+on a shell prefix, quotes, or arguments. Codex's native shell wrapper is then
+audited as exactly one `/bin/zsh -lc PATH` broker lifecycle pair.
 The broker has a fixed Horn projection and a deterministic preselected goal:
 it chooses a grounded rule head when available (otherwise a grounded fact),
 never source gold, a free-form query, program, path, or shell arguments.

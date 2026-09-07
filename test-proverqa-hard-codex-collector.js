@@ -47,8 +47,8 @@ function fakeSpawn(seen) {
     assert.ok(p2.prompt.ref && p2.raw.stdout && p2.raw.stderr && p2.raw.final_output, "successful Codex run must retain raw trace artifacts");
     assert.equal(JSON.stringify(p2).includes("auth.json"), false, "credential paths must not enter collected evidence");
     assert.equal(fs.readdirSync(rawRoot).filter(name => name.startsWith("codex-v10-sealed-")).every(name => !fs.existsSync(path.join(rawRoot, name, "state", "auth.json"))), true, "temporary copied auth must not remain in raw evidence");
-    const p2Prompt = fs.readdirSync(rawRoot).filter(name => name.startsWith("codex-v10-sealed-")).map(name => fs.readFileSync(path.join(rawRoot, name, "input", "sealed-prompt.txt"), "utf8")).find(prompt => prompt.includes("must run exactly this one private command"));
-    assert.match(p2Prompt, /must run exactly this one private command/); assert.match(p2Prompt, /Interpret quantifiers and every non-Horn construct yourself/);
+    const p2Prompt = fs.readdirSync(rawRoot).filter(name => name.startsWith("codex-v10-sealed-")).map(name => fs.readFileSync(path.join(rawRoot, name, "input", "sealed-prompt.txt"), "utf8")).find(prompt => prompt.includes("must execute exactly this private script path"));
+    assert.match(p2Prompt, /must execute exactly this private script path/); assert.match(p2Prompt, /no arguments, shell prefix, quotes/); assert.match(p2Prompt, /Interpret quantifiers and every non-Horn construct yourself/);
     assert.match(fs.readFileSync(path.join(rawRoot, "transport.json"), "utf8"), /"api_key": false/);
     console.log("proverqa-hard-codex-collector ok: subscription-only P0/P1 isolation and forced one-call P2 broker");
   } finally { fs.rmSync(parent, { recursive: true, force: true }); }

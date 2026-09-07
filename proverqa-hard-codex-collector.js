@@ -32,7 +32,7 @@ function artifact(root, file) {
   return Object.freeze({ ref: `local://${path.relative(root, file).split(path.sep).join("/")}`, sha256: sha256(bytes) });
 }
 function p2Prompt(item, brokerPath, selected) {
-  return `World as Prolog terms:\n${item.p1.representation}\n${item.p1.query_term}\nA bounded chain subproblem was predeclared as ${selected.goal_id}; it is not an answer to the whole FOL question. You must run exactly this one private command, with no added arguments or commands:\n/bin/zsh -lc ${brokerPath}\nInterpret quantifiers and every non-Horn construct yourself.\nQuestion: ${item.p0.question}\nAnswer with exactly one line: RESULT: A, RESULT: B, or RESULT: C.\n`;
+  return `World as Prolog terms:\n${item.p1.representation}\n${item.p1.query_term}\nA bounded chain subproblem was predeclared as ${selected.goal_id}; it is not an answer to the whole FOL question. You must execute exactly this private script path, with no arguments, shell prefix, quotes, or any other command:\n${brokerPath}\nInterpret quantifiers and every non-Horn construct yourself.\nQuestion: ${item.p0.question}\nAnswer with exactly one line: RESULT: A, RESULT: B, or RESULT: C.\n`;
 }
 function buildP2Broker(run, item, broker, swiplPath) {
   const selected = broker.predeclaredGoal(item.case_id);
