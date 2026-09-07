@@ -35,7 +35,7 @@ formula_true(Domains, Model, Formula) :-
     eval_formula(Formula, Domains, [], Model, true).
 
 model_for([], []).
-model_for([Atom|Rest], Model) :- model_for(Rest, Model).
+model_for([_Atom|Rest], Model) :- model_for(Rest, Model).
 model_for([Atom|Rest], [Atom|Model]) :- model_for(Rest, Model).
 
 classify_models(_, _, [], conflict, conflict(no_admissible_model)).

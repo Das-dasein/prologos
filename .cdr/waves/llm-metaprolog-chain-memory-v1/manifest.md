@@ -1,16 +1,16 @@
 # CDR wave manifest: llm-metaprolog-chain-memory-v1
 
-Status: `design; free-Prolog diagnostic required before collection`. This
+Status: `free-Prolog diagnostic observed; no benchmark collection`. This
 supersedes neither the historical ProverQA P0/P1/P2 runs nor their artifacts.
 It tests a different claim.
 
 ## Claim under test
 
 The LLM is the semantic reasoner and formalizer: it interprets English,
-writes a restricted Prolog logic program, and chooses which hypotheses to ask
-about. Meta-Prolog is the deterministic evaluator and provenance memory for
-that program; it evaluates quantifiers and Boolean operators rather than
-asking the LLM to simulate them in working memory.
+writes ordinary Prolog, and chooses which hypotheses to ask about. Meta-Prolog
+is a callable deterministic evaluator and provenance memory; it evaluates
+finite-domain quantifiers and Boolean operators when the LLM chooses to invoke
+it, rather than asking the LLM to simulate them in working memory.
 
 The causal question is therefore not “does Prolog solve ProverQA?” but:
 
@@ -21,17 +21,16 @@ The causal question is therefore not “does Prolog solve ProverQA?” but:
 
 ## Scope and semantic boundary
 
-The LLM-authored language is a restricted Prolog source file. It contains only
-`domain/2`, `axiom/2`, and `goal/2` declarations plus comments carrying source
-spans. Formula syntax is native-looking Prolog: predicate terms, `not/1`,
-`and/2`, `or/2`, `xor/2`, `implies/2`, `all/3`, and `some/3`. The parser
-converts those declarations to internal terms; the model never emits JSON AST.
-The same source is returned verbatim to the LLM on Turn 2 in M1 and M2. It is
-never a benchmark-supplied FOL formula.
+The LLM-authored interface is ordinary Prolog source. There is no JSON AST and
+no active declaration grammar. A trusted optional library exports
+`finite_status/6`; it accepts Prolog terms describing a finite model and
+returns an explicit status and certificate. The library's formula terms are an
+API for a chosen call, not a replacement language for the rest of the agent's
+program. The same source is returned verbatim to the LLM on Turn 2 in M1 and
+M2. It is never a benchmark-supplied FOL formula.
 
-M2 implements the AST as a finite-domain object-logic evaluator. It grounds
-each quantifier over the declared typed domain, then evaluates the accepted
-formulas under the locked profile in
+When called, M2 grounds each quantifier over the declared typed domain, then
+evaluates the supplied formulas under the locked profile in
 [`finite-fol-profile-v1.md`](finite-fol-profile-v1.md). It returns a
 derivation certificate, countermodel, open pair, or conflict certificate for
 the LLM-selected goals.
@@ -89,9 +88,11 @@ Only after inspecting the diagnostic programs may we version a minimal input
 contract. The contract must be justified by observed failures or a stated
 reproducibility need, rather than designed in advance for convenience.
 
-## Candidate later Prolog contract
+## Deferred reproducibility contract
 
-Turn 1 may produce only declarations of this form:
+No restrictive language contract is active. If a later benchmark requires
+reproducibility beyond raw ordinary Prolog, this is one possible declaration
+format to test rather than impose:
 
 ```prolog
 % source: [1]
@@ -102,8 +103,8 @@ axiom(s1, all(person, x, implies(calm(x), ready(x)))).
 goal(g1, ready(ada)).
 ```
 
-This is a candidate reproducible contract, not yet an active restriction. If
-adopted after the diagnostic, the collector parses source as data and validates
+This is a candidate reproducible contract, not an active restriction. If
+adopted after broader diagnostics, the collector parses source as data and validates
 the declaration set, predicate arity, finite typed domain, bounded formula
 depth, variable binding, source-span comments, and a maximum of three goals.
 The exact exclusions must be recorded with their diagnostic justification.

@@ -9,8 +9,13 @@ const { runFreePrologDiagnostic } = require("./free-prolog-diagnostic");
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const stable = value => JSON.stringify(value, null, 2) + "\n";
-function promptFor(item) {
-  return `Read this logical world and question. Write ordinary SWI-Prolog source that you believe helps test one relevant hypothesis, plus one Prolog query to execute. You may use normal facts, rules, helper predicates, and built-ins; do not call the shell, read files, use network, or add directives. This is an exploratory diagnostic, not a request for a final A/B/C answer. Return JSON only: {"program":"...","query":"..."}.\n\nWorld:\n${item.context}\n\nQuestion:\n${item.question}\n`;
+function promptFor(item, promptVersion = "v1") {
+  const common = `Read this logical world and question. Write ordinary SWI-Prolog source that you believe helps test one relevant hypothesis, plus one bare callable Prolog query to execute. The query is an API argument, not a console command: never include ?- or a trailing period. You may use normal facts, rules, helper predicates, and built-ins; do not call the shell, read files, use network, or add directives. This is an exploratory diagnostic, not a request for a final A/B/C answer.`;
+  const r2 = ` Before returning, self-check that every predicate called in a rule body is defined or intentionally supplied by SWI-Prolog. For “either/or, but not both”, encode both directions or an explicit exclusivity relation; do not silently reduce it to one implication. Negation-as-failure is allowed only when you intend its closed-world meaning.`;
+  const r3 = ` A trusted finite-model semantics helper is preloaded and optional: finite_status(Domains, Axioms, Goal, MaxCandidateModels, Status, Certificate). Domains are e.g. [domain(person,[ada,ben])]. Its formula terms are atom(Name,Args), neg(F), and(F,G), or(F,G), xor(F,G), implies(F,G), forall(var(Name,Type),F), exists(var(Name,Type),F); variables in formula arguments use var(Name), constants may be atoms. It returns entailed, contradicted, unknown, conflict, or budget_exhausted. Use this helper when its classical finite semantics fits the question; otherwise write ordinary Prolog. Do not fake classical negation with \\+ unless you truly mean closed-world failure.`;
+  if (!new Set(["v1", "v2-self-check", "v3-optional-semantics"]).has(promptVersion)) throw new Error("unsupported free-Prolog diagnostic prompt version");
+  const addon = promptVersion === "v2-self-check" ? r2 : promptVersion === "v3-optional-semantics" ? r3 : "";
+  return `${common}${addon} Return JSON only: {"program":"...","query":"..."}.\n\nWorld:\n${item.context}\n\nQuestion:\n${item.question}\n`;
 }
 function validateFixture(fixture) {
   if (!fixture || fixture.schema_version !== "free-prolog-diagnostic-fixture-v1" || !Array.isArray(fixture.cases) || fixture.cases.length < 1) throw new Error("expected non-empty free-Prolog diagnostic fixture");
@@ -21,11 +26,11 @@ function validateFixture(fixture) {
   }
 }
 function freshRoot(rawRoot) { if (typeof rawRoot !== "string" || !path.isAbsolute(rawRoot) || fs.existsSync(rawRoot) || !fs.existsSync(path.dirname(rawRoot))) throw new Error("rawRoot must be a fresh absolute path with an existing parent"); fs.mkdirSync(rawRoot, { mode: 0o700 }); }
-async function collect({ fixture, rawRoot, generate, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
+async function collect({ fixture, rawRoot, generate, promptVersion = "v1", timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
   validateFixture(fixture); freshRoot(rawRoot); if (typeof generate !== "function") throw new Error("generate must be a function");
   const fixtureText = stable(fixture), fixtureSha = sha256(fixtureText), records = [];
   for (const item of fixture.cases) {
-    const prompt = promptFor(item); let generated, observation = null, transportError = null;
+    const prompt = promptFor(item, promptVersion); let generated, observation = null, transportError = null;
     try {
       generated = await generate({ caseId: item.case_id, prompt });
       if (!generated || typeof generated.program !== "string" || typeof generated.query !== "string") throw new Error("generator must return program and query strings");
@@ -34,7 +39,7 @@ async function collect({ fixture, rawRoot, generate, timeoutMs = 1500, maxOutput
     const record = Object.freeze({ case_id: item.case_id, fixture_sha256: fixtureSha, prompt_sha256: sha256(prompt), generated: generated ? { program: generated.program, query: generated.query } : null, observation, transport_error: transportError });
     fs.writeFileSync(path.join(rawRoot, `${item.case_id}.json`), stable(record), { encoding: "utf8", flag: "wx", mode: 0o600 }); records.push(record);
   }
-  const result = Object.freeze({ schema_version: "free-prolog-diagnostic-run-v1", status: "observed-not-scored", fixture_sha256: fixtureSha, records: Object.freeze(records) });
+  const result = Object.freeze({ schema_version: "free-prolog-diagnostic-run-v1", status: "observed-not-scored", prompt_version: promptVersion, fixture_sha256: fixtureSha, records: Object.freeze(records) });
   fs.writeFileSync(path.join(rawRoot, "aggregate-not-a-score.json"), stable(result), { encoding: "utf8", flag: "wx", mode: 0o600 }); return result;
 }
 module.exports = { collect, promptFor, validateFixture };

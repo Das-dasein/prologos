@@ -3,7 +3,7 @@
 // later reproducible evaluator, this deliberately accepts the program text as
 // written and runs it only as an isolated, untrusted thought.
 const crypto = require("node:crypto");
-const { createSnapshot, createCandidate, runThought } = require("./cognitive-memory");
+const { FINITE_FOL_PRELUDE, createSnapshot, createCandidate, runThought } = require("./cognitive-memory");
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 function nonempty(value, label) { if (typeof value !== "string" || !value.trim()) throw new Error(`${label} must be non-empty text`); return value; }
@@ -18,7 +18,7 @@ async function runFreePrologDiagnostic({ caseId, program, query, source = "agent
   nonempty(caseId, "caseId"); nonempty(program, "program"); nonempty(query, "query"); nonempty(source, "source");
   const snapshot = createSnapshot({ id: `free-prolog:${caseId}:empty` });
   const candidate = createCandidate({ id: `free-prolog:${caseId}:candidate`, program, source });
-  const result = await runThought({ snapshot, candidate, goal: query, timeoutMs, maxOutputBytes });
+  const result = await runThought({ snapshot, candidate, goal: query, preludeFiles: [FINITE_FOL_PRELUDE], timeoutMs, maxOutputBytes });
   return Object.freeze({
     schema_version: "free-prolog-diagnostic-v1",
     status: "observed-not-scored",

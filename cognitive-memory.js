@@ -9,6 +9,7 @@ const os = require("node:os");
 const path = require("node:path");
 const THOUGHT_RUNNER = path.join(__dirname, "cognitive-runner.pl");
 const TRUSTED_QUERY_RUNNER = path.join(__dirname, "trusted-query-runner.pl");
+const FINITE_FOL_PRELUDE = path.join(__dirname, "finite-fol-meta-prover.pl");
 const SWIPL = process.env.SWIPL_BIN || "swipl";
 const SANDBOX = "/usr/bin/sandbox-exec";
 
@@ -120,8 +121,9 @@ function executeProcess(inputDir, runnerFile, argsAfterRunner, timeoutMs, maxOut
     });
   });
 }
-async function runThought({ snapshot, candidate, goal, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
+async function runThought({ snapshot, candidate, goal, preludeFiles = [], timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
   if (!snapshot || !candidate) throw new Error("snapshot and candidate are required"); text(goal, "query goal");
+  if (!Array.isArray(preludeFiles) || preludeFiles.some(file => typeof file !== "string" || !path.isAbsolute(file) || !fs.existsSync(file))) throw new Error("preludeFiles must be existing absolute paths");
   if (process.platform !== "darwin" || !fs.existsSync(SANDBOX)) throw new Error("capability-empty runtime unavailable: macOS sandbox-exec is required");
   const swipl = executablePath(SWIPL), runtimeRoots = runtimeReadRoots(swipl);
   const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pam-thought-")));
@@ -129,9 +131,13 @@ async function runThought({ snapshot, candidate, goal, timeoutMs = 1500, maxOutp
   fs.mkdirSync(inputDir, { mode: 0o700 });
   const snapshotFile = path.join(inputDir, "snapshot.pl"), candidateFile = path.join(inputDir, "candidate.pl"), runnerFile = path.join(inputDir, "thought-runner.pl");
   try {
+    const preludePaths = preludeFiles.map((source, index) => {
+      const destination = path.join(inputDir, `trusted-prelude-${index}.pl`);
+      fs.copyFileSync(source, destination); fs.chmodSync(destination, 0o444); return destination;
+    });
     fs.writeFileSync(snapshotFile, serializeSnapshot(snapshot), { mode: 0o444 }); fs.writeFileSync(candidateFile, candidate.program, { mode: 0o444 }); fs.copyFileSync(THOUGHT_RUNNER, runnerFile);
     fs.chmodSync(snapshotFile, 0o444); fs.chmodSync(candidateFile, 0o444); fs.chmodSync(runnerFile, 0o444); fs.chmodSync(inputDir, 0o555);
-    const transcript = await executeProcess(inputDir, runnerFile, [snapshotFile, candidateFile, goal], timeoutMs, maxOutputBytes, runtimeRoots, swipl, false);
+    const transcript = await executeProcess(inputDir, runnerFile, [snapshotFile, candidateFile, goal, ...preludePaths], timeoutMs, maxOutputBytes, runtimeRoots, swipl, false);
     return Object.freeze({ candidate: { id: candidate.id, status: "candidate", sha256: candidate.sha256, source: candidate.source }, snapshot: { id: snapshot.id, sha256: snapshot.sha256 }, runEvidence: Object.freeze({ runtime: "swi-prolog-isolated", timeoutMs, maxOutputBytes, transcript, trust: "untrusted" }) });
   } finally { fs.chmodSync(inputDir, 0o700); fs.rmSync(dir, { recursive: true, force: true }); }
 }
@@ -162,4 +168,4 @@ function directConflicts(snapshot) {
   for (let i = 0; i < active.length; i += 1) for (let j = i + 1; j < active.length; j += 1) { const [left, right] = [active[i], active[j]]; if (left.proposition === right.proposition && left.polarity !== right.polarity && overlaps(left, right)) found.push({ type: "direct-polarity", proposition: left.proposition, left: { id: left.id, source: left.source }, right: { id: right.id, source: right.source } }); }
   return found;
 }
-module.exports = { createSnapshot, createCandidate, runThought, runTrustedQuery, admitCandidate, activeItems, directConflicts };
+module.exports = { FINITE_FOL_PRELUDE, createSnapshot, createCandidate, runThought, runTrustedQuery, admitCandidate, activeItems, directConflicts };
