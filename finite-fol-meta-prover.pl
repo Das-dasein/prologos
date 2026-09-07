@@ -26,7 +26,7 @@ classify_sat_witnesses(witness(True), witness(False), unknown, open_pair(true_mo
 labelled_semantic_status(Goal, Status, Certificate) :-
     findall(domain(Type, Values), user:domain(Type, Values), Domains),
     findall(label(Id, Clause), user:axiom(Id, Clause), Labelled),
-    catch((validate_domains(Domains), maplist(compile_labelled_axiom, Labelled, Compiled), pairs_values(Compiled, Axioms), compile_surface(Goal, [], CompiledGoal)), error(invalid_surface(Reason), _), invalid(Reason)),
+    catch((validate_domains(Domains), maplist(compile_labelled_axiom, Labelled, Compiled), pairs_values(Compiled, Axioms), compile_surface(Goal, [], CompiledGoal)), error(invalid_surface(Reason), _), Compiled = invalid(Reason)),
     ( Compiled = invalid(Reason) -> Status = invalid_program, Certificate = validation(Reason)
     ; pairs_keys(Compiled, SourceIds), finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner), Certificate = source_trace(source_axioms(SourceIds), Inner)
     ).
@@ -44,7 +44,7 @@ satisfiable(Domains, Axioms, Assumption, Vocabulary, Model) :-
     sat(Constraint), term_variables(Pairs, Variables), labeling(Variables),
     findall(Atom, member(Atom-1, Pairs), Model).
 pairs_for_vocabulary([], []).
-pairs_for_vocabulary([Atom|Rest], [Atom-Value|Pairs]) :- pairs_for_vocabulary(Rest, Pairs).
+pairs_for_vocabulary([Atom|Rest], [Atom-_Value|Pairs]) :- pairs_for_vocabulary(Rest, Pairs).
 axiom_expressions([], _, _, []).
 axiom_expressions([Formula|Rest], Domains, Pairs, [Expression|Expressions]) :- formula_expression(Formula, Domains, [], Pairs, Expression), axiom_expressions(Rest, Domains, Pairs, Expressions).
 formula_expression(atom(true, []), _, _, _, 1) :- !.
@@ -187,7 +187,7 @@ compile_axiom(rule(Body, Head), Compiled) :- !,
     compile_body(Body, Variables, CompiledBody),
     compile_surface(Head, Variables, CompiledHead),
     close_rule(Variables, Variables, implies(CompiledBody, CompiledHead), Compiled).
-compile_axiom(Axiom, _) :- throw(error(invalid_surface(expected_fact_or_rule(Axiom)), _)).
+compile_axiom(Axiom, Compiled) :- compile_surface(Axiom, [], Compiled).
 
 compile_body([], _, atom(true, [])).
 compile_body([Formula], Variables, Compiled) :- !, compile_surface(Formula, Variables, Compiled).
