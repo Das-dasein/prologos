@@ -26,6 +26,11 @@ function freshRoot(value) {
   fs.mkdirSync(value, { mode: 0o700 });
 }
 function writeExclusive(file, content, mode = 0o600) { fs.writeFileSync(file, content, { encoding: "utf8", flag: "wx", mode }); return file; }
+function artifact(root, file) {
+  if (!fs.existsSync(file)) return null;
+  const bytes = fs.readFileSync(file, "utf8");
+  return Object.freeze({ ref: `local://${path.relative(root, file).split(path.sep).join("/")}`, sha256: sha256(bytes) });
+}
 function p2Prompt(item, brokerPath, selected) {
   return `World as Prolog terms:\n${item.p1.representation}\n${item.p1.query_term}\nA bounded chain subproblem was predeclared as ${selected.goal_id}; it is not an answer to the whole FOL question. You must run exactly this one private command, with no added arguments or commands:\n/bin/zsh -lc ${brokerPath}\nInterpret quantifiers and every non-Horn construct yourself.\nQuestion: ${item.p0.question}\nAnswer with exactly one line: RESULT: A, RESULT: B, or RESULT: C.\n`;
 }
@@ -74,8 +79,8 @@ async function collectCodexSubscription({ fixtureFile, rawRoot, model, codexPath
       transportError = String(error && (error.stack || error.message) || error);
       rawResponse = path.join(run.output_dir, "collector-rejection.txt"); writeExclusive(rawResponse, transportError + "\n");
     }
-    const answer = parse(response && response.answer), rawBytes = fs.readFileSync(rawResponse, "utf8");
-    const record = { record_id: `${entry.case.case_id}-${entry.condition.toLowerCase()}`, case_id: entry.case.case_id, condition: entry.condition, fixture_sha256: fixtureSha, prompt_sha256: sha256(prompt), source_answer: entry.case.source_answer, answer, format_valid: Boolean(answer), broker_receipt: response && response.receipt ? { status: response.receipt, goal_id: p2.selected.goal_id, goal: p2.selected.goal, selection: p2.selected.selection } : null, usage: response && response.usage, inspection, raw_response_sha256: sha256(rawBytes), transport_error: transportError };
+    const answer = parse(response && response.answer);
+    const record = { record_id: `${entry.case.case_id}-${entry.condition.toLowerCase()}`, case_id: entry.case.case_id, condition: entry.condition, fixture_sha256: fixtureSha, prompt_sha256: sha256(prompt), prompt: artifact(rawRoot, sealed.prompt_file), source_answer: entry.case.source_answer, answer, format_valid: Boolean(answer), broker_receipt: response && response.receipt ? { status: response.receipt, goal_id: p2.selected.goal_id, goal: p2.selected.goal, selection: p2.selected.selection } : null, usage: response && response.usage, inspection, raw_response: artifact(rawRoot, rawResponse), raw: { schema: artifact(rawRoot, sealed.schema_file), stdout: artifact(rawRoot, path.join(run.output_dir, "codex-stdout.jsonl")), stderr: artifact(rawRoot, path.join(run.output_dir, "codex-stderr.txt")), final_output: artifact(rawRoot, path.join(run.output_dir, "final-output.txt")) }, transport_error: transportError };
     writeExclusive(path.join(run.output_dir, "record.json"), stable(record)); records.push(Object.freeze(record));
   }
   const result = Object.freeze({ schema_version: "proverqa-hard-codex-subscription-run-v1", cdr_status: "not-a-cdr-receipt", fixture_sha256: fixtureSha, model, records: Object.freeze(records) });

@@ -44,6 +44,8 @@ function fakeSpawn(seen) {
     const [p0, p1, p2] = result.records;
     assert.equal(p0.inspection.tool_events_observed, 0); assert.equal(p1.inspection.tool_events_observed, 0);
     assert.equal(p2.inspection.tool_events_observed, 1); assert.deepEqual(p2.broker_receipt, { status: "entailed", goal_id: "g3", goal: "ready('Ada')", selection: "rule-head" });
+    assert.ok(p2.prompt.ref && p2.raw.stdout && p2.raw.stderr && p2.raw.final_output, "successful Codex run must retain raw trace artifacts");
+    assert.equal(JSON.stringify(p2).includes("auth.json"), false, "credential paths must not enter collected evidence");
     const p2Prompt = fs.readdirSync(rawRoot).filter(name => name.startsWith("codex-v10-sealed-")).map(name => fs.readFileSync(path.join(rawRoot, name, "input", "sealed-prompt.txt"), "utf8")).find(prompt => prompt.includes("must run exactly this one private command"));
     assert.match(p2Prompt, /must run exactly this one private command/); assert.match(p2Prompt, /Interpret quantifiers and every non-Horn construct yourself/);
     assert.match(fs.readFileSync(path.join(rawRoot, "transport.json"), "utf8"), /"api_key": false/);
