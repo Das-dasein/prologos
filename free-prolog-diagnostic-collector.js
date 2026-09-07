@@ -9,8 +9,9 @@ const { runFreePrologDiagnostic } = require("./free-prolog-diagnostic");
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const stable = value => JSON.stringify(value, null, 2) + "\n";
+const CAPABILITY_MANIFEST = `Trusted Prolog capabilities (callable signatures): audit_trace(+GroundGoal, -Result); labelled_semantic_status(+GoalFormula, -Status, -Certificate); semantic_status(+Goal, -Status, -Certificate); semantic_slice_status(+Goal, -Status, -Certificate); finite_status(+Domains, +Axioms, +Goal, +MaxCandidateModels, -Status, -Certificate); finite_sat_status(+Domains, +Axioms, +Goal, -Status, -Certificate). Formulas accepted by the semantic helpers: atom(Name, Args), not(F), and(F,G), or(F,G), xor(F,G), implies(F,G), forall(var(Name,Type),F), exists(var(Name,Type),F). Ordinary Prolog predicates may also be defined by your own source.`;
 function promptFor(item, promptVersion = "v1") {
-  const common = `Read this logical world and question. Write ordinary SWI-Prolog source that you believe helps test one relevant hypothesis, plus one bare callable Prolog query to execute. The query is an API argument, not a console command: never include ?- or a trailing period. You may use normal facts, rules, helper predicates, and built-ins; do not call the shell, read files, use network, or add directives. This is an exploratory diagnostic, not a request for a final A/B/C answer.`;
+  const common = `Read this logical world and question. Write ordinary SWI-Prolog source that you believe helps test one relevant hypothesis, plus one bare callable Prolog query to execute. The query is an API argument, not a console command: never include ?- or a trailing period. You may use normal facts, rules, helper predicates, and built-ins; do not call the shell, read files, use network, or add directives. This is an exploratory diagnostic, not a request for a final A/B/C answer.\n\n${CAPABILITY_MANIFEST}`;
   const r2 = ` Before returning, self-check that every predicate called in a rule body is defined or intentionally supplied by SWI-Prolog. For “either/or, but not both”, encode both directions or an explicit exclusivity relation; do not silently reduce it to one implication. Negation-as-failure is allowed only when you intend its closed-world meaning.`;
   const r3 = ` A trusted finite-model semantics helper is preloaded and optional: finite_status(Domains, Axioms, Goal, MaxCandidateModels, Status, Certificate). Domains are e.g. [domain(person,[ada,ben])]. Its formula terms are atom(Name,Args), neg(F), and(F,G), or(F,G), xor(F,G), implies(F,G), forall(var(Name,Type),F), exists(var(Name,Type),F); variables in formula arguments use var(Name), constants may be atoms. It returns entailed, contradicted, unknown, conflict, or budget_exhausted. Use this helper when its classical finite semantics fits the question; otherwise write ordinary Prolog. Do not fake classical negation with \\+ unless you truly mean closed-world failure.`;
   const r4 = ` A trusted semantic Prolog API is preloaded and optional. Prefer this ordinary-Prolog surface when you need finite classical negation, XOR, or universal rules:\n\ndomain(person, [ada]).\naxiom(fact(calm(ada))).\naxiom(rule([calm(X)], ready(X))).\nsemantic_status(ready(ada), Status, Certificate).\n\nWrite domain/2 and axiom/1 declarations in your program; then query semantic_status(Goal, Status, Certificate). A fact may use ordinary predicate syntax, not(F), and(F,G), or(F,G), xor(F,G), or implies(F,G). A rule is rule([BodyLiteral,...], HeadFormula); its variables are universally quantified over person. The call returns entailed, contradicted, unknown, conflict, budget_exhausted, or invalid_program with a validation reason. Do not call finite_status/6 directly and do not use \\+ for classical negation.`;
@@ -21,6 +22,15 @@ function promptFor(item, promptVersion = "v1") {
   const addon = promptVersion === "v2-self-check" ? r2 : promptVersion === "v3-optional-semantics" ? r3 : promptVersion === "v4-surface-semantics" ? r4 : promptVersion === "v5-relevant-slice" ? r5 : promptVersion === "v6-complete-trace" ? r6 : promptVersion === "v7-labelled-countermodel" ? r7 : "";
   return `${common}${addon} Return JSON only: {"program":"...","query":"..."}.\n\nWorld:\n${item.context}\n\nQuestion:\n${item.question}\n`;
 }
+function repairPrompt(item, previous, observation, transportError) {
+  return `You previously wrote an ordinary Prolog program for this world. The isolated runtime returned the evidence below. Repair the program and query yourself; do not change the English world, invent facts, read files, call the shell/network, or answer A/B/C. Preserve useful source labels. Return JSON only: {"program":"...","query":"..."}.\n\n${CAPABILITY_MANIFEST}\n\nWorld:\n${item.context}\n\nQuestion:\n${item.question}\n\nPrevious program:\n${previous.program}\n\nPrevious query:\n${previous.query}\n\nRuntime evidence:\n${observation ? observation.runtime.transcript.transcript : transportError || "no runtime evidence"}\n`;
+}
+function needsRepair(observation, transportError) {
+  if (transportError) return true;
+  const outcome = observation && observation.execution_outcome || "";
+  const transcript = observation && observation.runtime && observation.runtime.transcript && observation.runtime.transcript.transcript || "";
+  return outcome.startsWith("error:") || transcript.includes("invalid_program");
+}
 function validateFixture(fixture) {
   if (!fixture || fixture.schema_version !== "free-prolog-diagnostic-fixture-v1" || !Array.isArray(fixture.cases) || fixture.cases.length < 1) throw new Error("expected non-empty free-Prolog diagnostic fixture");
   const ids = new Set();
@@ -30,20 +40,26 @@ function validateFixture(fixture) {
   }
 }
 function freshRoot(rawRoot) { if (typeof rawRoot !== "string" || !path.isAbsolute(rawRoot) || fs.existsSync(rawRoot) || !fs.existsSync(path.dirname(rawRoot))) throw new Error("rawRoot must be a fresh absolute path with an existing parent"); fs.mkdirSync(rawRoot, { mode: 0o700 }); }
-async function collect({ fixture, rawRoot, generate, promptVersion = "v1", timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
+async function collect({ fixture, rawRoot, generate, promptVersion = "v1", maxRepairAttempts = 0, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
   validateFixture(fixture); freshRoot(rawRoot); if (typeof generate !== "function") throw new Error("generate must be a function");
+  if (!Number.isSafeInteger(maxRepairAttempts) || maxRepairAttempts < 0 || maxRepairAttempts > 3) throw new Error("maxRepairAttempts must be an integer from 0 to 3");
   const fixtureText = stable(fixture), fixtureSha = sha256(fixtureText), records = [];
   for (const item of fixture.cases) {
-    const prompt = promptFor(item, promptVersion); let generated, observation = null, transportError = null;
-    try {
-      generated = await generate({ caseId: item.case_id, prompt });
-      if (!generated || typeof generated.program !== "string" || typeof generated.query !== "string") throw new Error("generator must return program and query strings");
-      observation = await runFreePrologDiagnostic({ caseId: item.case_id, program: generated.program, query: generated.query, source: "diagnostic-agent", timeoutMs, maxOutputBytes });
-    } catch (error) { transportError = String(error && (error.stack || error.message) || error); }
-    const record = Object.freeze({ case_id: item.case_id, fixture_sha256: fixtureSha, prompt_sha256: sha256(prompt), generated: generated ? { program: generated.program, query: generated.query } : null, observation, transport_error: transportError });
+    let prompt = promptFor(item, promptVersion), generated, observation = null, transportError = null; const attempts = [];
+    for (let attempt = 0; attempt <= maxRepairAttempts; attempt += 1) {
+      try {
+        generated = await generate({ caseId: item.case_id, prompt, stage: attempt === 0 ? "initial" : "repair", attempt });
+        if (!generated || typeof generated.program !== "string" || typeof generated.query !== "string") throw new Error("generator must return program and query strings");
+        observation = await runFreePrologDiagnostic({ caseId: item.case_id, program: generated.program, query: generated.query, source: "diagnostic-agent", timeoutMs, maxOutputBytes }); transportError = null;
+      } catch (error) { transportError = String(error && (error.stack || error.message) || error); observation = null; }
+      attempts.push(Object.freeze({ stage: attempt === 0 ? "initial" : "repair", prompt_sha256: sha256(prompt), generated: generated ? { program: generated.program, query: generated.query } : null, observation, transport_error: transportError }));
+      if (!needsRepair(observation, transportError) || attempt === maxRepairAttempts) break;
+      prompt = repairPrompt(item, generated, observation, transportError);
+    }
+    const record = Object.freeze({ case_id: item.case_id, fixture_sha256: fixtureSha, prompt_sha256: attempts[0].prompt_sha256, generated: generated ? { program: generated.program, query: generated.query } : null, observation, transport_error: transportError, attempts: Object.freeze(attempts) });
     fs.writeFileSync(path.join(rawRoot, `${item.case_id}.json`), stable(record), { encoding: "utf8", flag: "wx", mode: 0o600 }); records.push(record);
   }
   const result = Object.freeze({ schema_version: "free-prolog-diagnostic-run-v1", status: "observed-not-scored", prompt_version: promptVersion, fixture_sha256: fixtureSha, records: Object.freeze(records) });
   fs.writeFileSync(path.join(rawRoot, "aggregate-not-a-score.json"), stable(result), { encoding: "utf8", flag: "wx", mode: 0o600 }); return result;
 }
-module.exports = { collect, promptFor, validateFixture };
+module.exports = { CAPABILITY_MANIFEST, collect, needsRepair, promptFor, repairPrompt, validateFixture };
