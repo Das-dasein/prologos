@@ -1,7 +1,7 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, semantic_status/3]).
+:- module(finite_fol_meta_prover, [finite_status/6, semantic_status/3, semantic_slice_status/3]).
 
 % Agent-facing convenience layer.  The candidate remains normal Prolog:
 %   domain(person, [ada]).
@@ -11,15 +11,66 @@
 % It is intentionally a small observed surface, compiled internally to the
 % object formulas below.  Bad surface programs become data, not runtime errors.
 semantic_status(Goal, Status, Certificate) :-
-    findall(domain(Type, Values), user:domain(Type, Values), Domains),
-    findall(Axiom, user:axiom(Axiom), SurfaceAxioms),
-    catch((compile_agent_program(Domains, SurfaceAxioms, Goal, CompiledAxioms, CompiledGoal), Compiled = compiled(CompiledAxioms, CompiledGoal)), error(invalid_surface(Reason), _), Compiled = invalid(Reason)),
+    semantic_status_with_budget(Goal, 256, Status, Certificate).
+
+% Like semantic_status/3, but first removes disconnected predicates and, for
+% monadic rule worlds only, irrelevant individuals.  The certificate records
+% the slice; if its safety preconditions do not hold it reports that fact rather
+% than silently changing the model.
+semantic_slice_status(Goal, Status, Certificate) :-
+    semantic_program(Goal, Compiled, Domains),
+    ( Compiled = invalid(Reason) -> Status = invalid_program, Certificate = validation(Reason)
+    ; Compiled = compiled(Axioms, CompiledGoal),
+      ( monadic_program(Axioms, CompiledGoal) ->
+          relevant_axioms(Axioms, CompiledGoal, RelevantAxioms),
+          relevant_domains(Domains, RelevantAxioms, CompiledGoal, RelevantDomains),
+          finite_status(RelevantDomains, RelevantAxioms, CompiledGoal, 65536, Status, Inner),
+          length(Axioms, Total), length(RelevantAxioms, Kept),
+          Certificate = sliced(total_axioms(Total), kept_axioms(Kept), Inner)
+      ; Status = slice_not_applicable,
+        Certificate = validation(requires_monadic_predicates)
+      )
+    ).
+
+semantic_status_with_budget(Goal, MaxModels, Status, Certificate) :-
+    semantic_program(Goal, Compiled, Domains),
     ( Compiled = invalid(Reason) ->
         Status = invalid_program,
         Certificate = validation(Reason)
     ; Compiled = compiled(ProgramAxioms, ProgramGoal),
-      finite_status(Domains, ProgramAxioms, ProgramGoal, 256, Status, Certificate)
+      finite_status(Domains, ProgramAxioms, ProgramGoal, MaxModels, Status, Certificate)
     ).
+
+semantic_program(Goal, Compiled, Domains) :-
+    findall(domain(Type, Values), user:domain(Type, Values), Domains),
+    findall(Axiom, user:axiom(Axiom), SurfaceAxioms),
+    catch((compile_agent_program(Domains, SurfaceAxioms, Goal, CompiledAxioms, CompiledGoal), Compiled = compiled(CompiledAxioms, CompiledGoal)), error(invalid_surface(Reason), _), Compiled = invalid(Reason)).
+
+formula_signatures(atom(Name, Args), [Name/Arity]) :- length(Args, Arity).
+formula_signatures(neg(F), S) :- formula_signatures(F, S).
+formula_signatures(forall(_, F), S) :- formula_signatures(F, S).
+formula_signatures(exists(_, F), S) :- formula_signatures(F, S).
+formula_signatures(and(L, R), S) :- formula_signatures(L, LS), formula_signatures(R, RS), append(LS, RS, All), sort(All, S).
+formula_signatures(or(L, R), S) :- formula_signatures(L, LS), formula_signatures(R, RS), append(LS, RS, All), sort(All, S).
+formula_signatures(xor(L, R), S) :- formula_signatures(L, LS), formula_signatures(R, RS), append(LS, RS, All), sort(All, S).
+formula_signatures(implies(L, R), S) :- formula_signatures(L, LS), formula_signatures(R, RS), append(LS, RS, All), sort(All, S).
+monadic_program(Axioms, Goal) :- append(Axioms, [Goal], Formulas), forall(member(F, Formulas), (formula_signatures(F, S), forall(member(_/Arity, S), Arity =< 1))).
+relevant_axioms(Axioms, Goal, Relevant) :- formula_signatures(Goal, Start), expand_relevance(Axioms, Start, Signatures), include(relevant_to(Signatures), Axioms, Relevant).
+expand_relevance(Axioms, Current, Final) :- findall(S, (member(A, Axioms), formula_signatures(A, S), intersects(S, Current)), Nested), append([Current|Nested], All), sort(All, Next), ( Next == Current -> Final = Current ; expand_relevance(Axioms, Next, Final) ).
+intersects(Left, Right) :- member(X, Left), memberchk(X, Right), !.
+relevant_to(Signatures, Formula) :- formula_signatures(Formula, Here), intersects(Signatures, Here).
+relevant_domains(Domains, Axioms, Goal, [domain(person, Constants)]) :-
+    append(Axioms, [Goal], Formulas), findall(Constant, (member(F, Formulas), formula_constants(F, Constant)), Found), sort(Found, Constants), Constants \= [], !,
+    memberchk(domain(person, _), Domains).
+relevant_domains(Domains, _, _, Domains).
+formula_constants(atom(_, Args), Constant) :- member(Constant, Args), atom(Constant).
+formula_constants(neg(F), C) :- formula_constants(F, C).
+formula_constants(forall(_, F), C) :- formula_constants(F, C).
+formula_constants(exists(_, F), C) :- formula_constants(F, C).
+formula_constants(and(L, R), C) :- (formula_constants(L, C); formula_constants(R, C)).
+formula_constants(or(L, R), C) :- (formula_constants(L, C); formula_constants(R, C)).
+formula_constants(xor(L, R), C) :- (formula_constants(L, C); formula_constants(R, C)).
+formula_constants(implies(L, R), C) :- (formula_constants(L, C); formula_constants(R, C)).
 
 compile_agent_program(Domains, SurfaceAxioms, Goal, CompiledAxioms, CompiledGoal) :-
     validate_domains(Domains),

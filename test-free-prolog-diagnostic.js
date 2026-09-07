@@ -18,5 +18,8 @@ const { runFreePrologDiagnostic } = require("./free-prolog-diagnostic");
   const surface = await runFreePrologDiagnostic({ caseId: "surface-semantics", program: surfaceProgram, query: "semantic_status(writes(ada), Status, Certificate)", timeoutMs: 1500 });
   assert.equal(surface.execution_outcome, "succeeded");
   assert.match(surface.runtime.transcript.transcript, /semantic_status\(writes\(ada\),contradicted,/);
+  const sliced = await runFreePrologDiagnostic({ caseId: "sliced-semantics", program: surfaceProgram, query: "semantic_slice_status(writes(ada), Status, Certificate)", timeoutMs: 1500 });
+  assert.equal(sliced.execution_outcome, "succeeded");
+  assert.match(sliced.runtime.transcript.transcript, /semantic_slice_status\(writes\(ada\),contradicted,sliced/);
   console.log("free-prolog-diagnostic ok: ordinary agent-style Prolog executes as isolated non-scoring evidence");
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });

@@ -33,3 +33,24 @@ honest result under the fixed limit, not an answer class.
 The next runtime improvement is relevance slicing or symbolic/forward proof
 search with explicit countermodel handling.  It is a runtime scalability task,
 separate from text-to-Prolog faithfulness and from benchmark correctness.
+
+## Follow-up: runtime relevance slice
+
+`semantic_slice_status/3` now computes a predicate-dependency component itself
+and, only for monadic worlds, narrows the finite domain to the constants in
+that component.  On a fresh one-call generation for the same held-out model
+input, the model used the new API correctly and the runtime returned:
+
+```text
+semantic_slice_status(creative(michelle), unknown,
+  sliced(total_axioms(22), kept_axioms(0),
+    open_pair(true_model([holds(creative,[michelle])]), false_model([]))))
+```
+
+This avoids the prior model-enumeration explosion, but it is not a correct
+answer to the benchmark case.  Inspection of the model-authored program found
+that it omitted the English rule whose antecedent is `creative(michelle)` and
+whose XOR consequence is required for the source's false conclusion.  With no
+axiom mentioning `creative`, the deterministic slicer correctly retained zero
+axioms and reported `unknown`.  This separates two failures: runtime scaling
+is improved, while text-to-Prolog faithfulness remains independently auditable.
