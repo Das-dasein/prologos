@@ -101,6 +101,8 @@ function buildFixture({ sourceBytes, sourceManifest, seed = DEFAULT_SEED }) {
         question: row.question,
         query_term: `query(${queryTerm}).`
       },
+      // Private compiler input; never part of a P0/P1 provider prompt.
+      private_formulas: formulas.map(item => item.fol),
       source_formula_count: formulas.length
     };
   });
@@ -120,6 +122,7 @@ function validateFixture(fixture) {
   for (const item of fixture.cases) {
     if (item.p0.question !== item.p1.question) throw new Error(`${item.case_id}: P0/P1 question mismatch`);
     if (!/^query\(.+\)\.$/s.test(item.p1.query_term) || !item.p1.representation.includes("statement(")) throw new Error(`${item.case_id}: malformed Prolog-term carrier`);
+    if (!Array.isArray(item.private_formulas) || item.private_formulas.length !== item.source_formula_count) throw new Error(`${item.case_id}: broker source formulas missing`);
   }
   return true;
 }
