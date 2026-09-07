@@ -23,6 +23,11 @@ meta_help(Signature, documentation(Signature, Purpose, Example)) :- api_document
 % Symbolic finite-model status. Unlike finite_status/6 it delegates Boolean
 % search to SWI's CLP(B) solver, so it does not enumerate every valuation first.
 finite_sat_status(Domains, Axioms, Goal, Status, Certificate) :-
+    solver_validation(Domains, Axioms, Goal, Validation),
+    ( Validation = invalid(Reason) -> Status = invalid_program, Certificate = validation(Reason)
+    ; finite_sat_status_valid(Domains, Axioms, Goal, Status, Certificate)
+    ).
+finite_sat_status_valid(Domains, Axioms, Goal, Status, Certificate) :-
     vocabulary(Domains, Axioms, Goal, Vocabulary),
     ( satisfiable(Domains, Axioms, atom(true, []), Vocabulary, _BaseModel) ->
         truth_witness(Domains, Axioms, Goal, Vocabulary, Positive),
@@ -59,12 +64,13 @@ labelled_explanation(Goal, Status, Package) :-
       pairs_values(Compiled, Axioms),
       signature_audit(CompiledGoal, Axioms, SignatureAudit),
       domain_audit(Domains, Compiled, CompiledGoal, DomainAudit),
+      quantifier_audit(Compiled, CompiledGoal, QuantifierAudit),
       finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner),
       ( Status = conflict ->
           subset_minimal_conflict_core(Domains, Compiled, Core),
           pairs_keys(Core, CoreIds),
-          Package = explanation(status(conflict), source_axioms(SourceIds), SignatureAudit, DomainAudit, subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
-      ; Package = explanation(status(Status), source_axioms(SourceIds), SignatureAudit, DomainAudit, certificate(Inner))
+          Package = explanation(status(conflict), source_axioms(SourceIds), SignatureAudit, DomainAudit, QuantifierAudit, subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
+      ; Package = explanation(status(Status), source_axioms(SourceIds), SignatureAudit, DomainAudit, QuantifierAudit, certificate(Inner))
       )
     ).
 labelled_compilation(Goal, Domains, Compiled, CompiledGoal, Result) :-
@@ -139,18 +145,65 @@ quantified_source_ids(Labelled, Ids) :- findall(Id, (member(Id-Formula, Labelled
 validate_labelled_quantifier_domains(Domains, Labelled) :-
     forall(member(Id-Formula, Labelled), validate_quantifier_domains(Domains, Formula, Id)).
 validate_quantifier_domains(Domains, Formula) :- validate_quantifier_domains(Domains, Formula, goal).
-validate_quantifier_domains(Domains, forall(var(_, Type), Formula), Source) :- !,
+validate_quantifier_domains(Domains, Formula, Source) :-
+    ( ground(Formula) -> validate_closed_formula(Formula, Domains, [], Source)
+    ; throw(error(invalid_surface(nonground_formula(source_axioms([Source]))), _)) ).
+
+% Every public finite solver accepts closed object formulas. Failure to build
+% a Boolean expression is a contract error, never evidence of inconsistency.
+solver_validation(Domains, Axioms, Goal, Result) :-
+    catch((validate_domains(Domains),
+           ( is_list(Axioms) -> true ; throw(error(invalid_surface(axioms_must_be_list), _)) ),
+           forall(nth1(Index, Axioms, Formula), validate_quantifier_domains(Domains, Formula, axiom(Index))),
+           validate_quantifier_domains(Domains, Goal), Result = valid),
+          error(invalid_surface(Reason), _), Result = invalid(Reason)).
+validate_closed_formula(atom(Name, Args), _, Bound, Source) :- !,
+    ( atom(Name), is_list(Args) -> maplist(validate_closed_argument(Bound, Source), Args)
+    ; throw(error(invalid_surface(bad_reified_atom(Name, Args)), _)) ).
+validate_closed_formula(Formula, Domains, Bound, Source) :-
+    Formula =.. [Kind, var(Name, Type), Body], memberchk(Kind, [forall, exists]), !,
+    ( atom(Name), atom(Type) -> true ; throw(error(invalid_surface(bad_quantifier(Name, Type)), _)) ),
     findall(Declared, member(domain(Declared, _), Domains), Types),
-    ( memberchk(domain(Type, _), Domains) -> validate_quantifier_domains(Domains, Formula, Source) ; throw(error(invalid_surface(undeclared_quantifier_domain(Type, source_axioms([Source]), declared_types(Types))), _)) ).
-validate_quantifier_domains(Domains, exists(var(_, Type), Formula), Source) :- !,
-    findall(Declared, member(domain(Declared, _), Domains), Types),
-    ( memberchk(domain(Type, _), Domains) -> validate_quantifier_domains(Domains, Formula, Source) ; throw(error(invalid_surface(undeclared_quantifier_domain(Type, source_axioms([Source]), declared_types(Types))), _)) ).
-validate_quantifier_domains(Domains, neg(Formula), Source) :- !, validate_quantifier_domains(Domains, Formula, Source).
-validate_quantifier_domains(Domains, and(L, R), Source) :- !, validate_quantifier_domains(Domains, L, Source), validate_quantifier_domains(Domains, R, Source).
-validate_quantifier_domains(Domains, or(L, R), Source) :- !, validate_quantifier_domains(Domains, L, Source), validate_quantifier_domains(Domains, R, Source).
-validate_quantifier_domains(Domains, xor(L, R), Source) :- !, validate_quantifier_domains(Domains, L, Source), validate_quantifier_domains(Domains, R, Source).
-validate_quantifier_domains(Domains, implies(L, R), Source) :- !, validate_quantifier_domains(Domains, L, Source), validate_quantifier_domains(Domains, R, Source).
-validate_quantifier_domains(_, _, _).
+    ( memberchk(domain(Type, _), Domains) -> validate_closed_formula(Body, Domains, [Name|Bound], Source)
+    ; throw(error(invalid_surface(undeclared_quantifier_domain(Type, source_axioms([Source]), declared_types(Types))), _)) ).
+validate_closed_formula(neg(Body), Domains, Bound, Source) :- !, validate_closed_formula(Body, Domains, Bound, Source).
+validate_closed_formula(Formula, Domains, Bound, Source) :-
+    Formula =.. [Kind, Left, Right], memberchk(Kind, [and, or, xor, implies]), !,
+    validate_closed_formula(Left, Domains, Bound, Source), validate_closed_formula(Right, Domains, Bound, Source).
+validate_closed_formula(Formula, _, _, _) :- throw(error(invalid_surface(bad_formula(Formula)), _)).
+validate_closed_argument(Bound, Source, var(Name)) :- atom(Name), !,
+    ( memberchk(Name, Bound) -> true ; throw(error(invalid_surface(free_variable(Name, source_axioms([Source]))), _)) ).
+validate_closed_argument(_, _, const(Value)) :- atom(Value), !.
+validate_closed_argument(_, _, Value) :- atom(Value), !.
+validate_closed_argument(_, _, Argument) :- throw(error(invalid_surface(non_atomic_argument(Argument)), _)).
+
+% Vacuous binders and same-named constants are legal. Report their structure
+% without guessing intent or rewriting constants. Paths distinguish binders
+% even when nested quantifiers shadow the same object-variable name.
+quantifier_audit(Labelled, Goal, quantifier_audit(Findings)) :-
+    findall(Finding, (member(Source-Formula, Labelled), quantifier_finding(Formula, source_axiom(Source), [], Finding)), WorldFindings),
+    findall(Finding, quantifier_finding(Goal, goal, [], Finding), GoalFindings),
+    append(WorldFindings, GoalFindings, Findings).
+quantifier_finding(Formula, Source, Path, Finding) :-
+    Formula =.. [Kind, var(Name, Type), Body], memberchk(Kind, [forall, exists]), !,
+    ( \+ bound_occurrence(Body, Name), Finding = vacuous_quantifier(Source, path(Path), Kind, variable(Name), sort(Type))
+    ; formula_constants_list(Body, Constants), memberchk(Name, Constants), Finding = constant_matches_binder_name(Source, binder_path(Path), constant(Name))
+    ; append(Path, [body], Next), quantifier_finding(Body, Source, Next, Finding)
+    ).
+quantifier_finding(neg(Body), Source, Path, Finding) :- !,
+    append(Path, [body], Next), quantifier_finding(Body, Source, Next, Finding).
+quantifier_finding(Formula, Source, Path, Finding) :-
+    Formula =.. [Kind, Left, Right], memberchk(Kind, [and, or, xor, implies]),
+    ( append(Path, [left], Next), quantifier_finding(Left, Source, Next, Finding)
+    ; append(Path, [right], Next), quantifier_finding(Right, Source, Next, Finding) ).
+bound_occurrence(atom(_, Args), Name) :- memberchk(var(Name), Args).
+bound_occurrence(neg(Body), Name) :- bound_occurrence(Body, Name).
+bound_occurrence(Formula, Name) :-
+    Formula =.. [Kind, var(InnerName, _), Body], memberchk(Kind, [forall, exists]),
+    InnerName \== Name, bound_occurrence(Body, Name).
+bound_occurrence(Formula, Name) :-
+    Formula =.. [Kind, Left, Right], memberchk(Kind, [and, or, xor, implies]),
+    ( bound_occurrence(Left, Name) ; bound_occurrence(Right, Name) ).
 contains_quantifier(forall(_, _)) :- !.
 contains_quantifier(exists(_, _)) :- !.
 contains_quantifier(neg(Formula)) :- !, contains_quantifier(Formula).
@@ -292,7 +345,9 @@ formula_constants(implies(L, R), C) :- (formula_constants(L, C); formula_constan
 compile_agent_program(Domains, SurfaceAxioms, Goal, CompiledAxioms, CompiledGoal) :-
     validate_domains(Domains),
     maplist(compile_axiom, SurfaceAxioms, CompiledAxioms),
-    compile_surface(Goal, [], CompiledGoal).
+    compile_surface(Goal, [], CompiledGoal),
+    forall(nth1(Index, CompiledAxioms, Formula), validate_quantifier_domains(Domains, Formula, axiom(Index))),
+    validate_quantifier_domains(Domains, CompiledGoal).
 
 validate_domains([]) :- throw(error(invalid_surface(no_domain_declarations), _)).
 validate_domains([domain(Type, Values)|Rest]) :-
@@ -353,6 +408,11 @@ variable_name(Variable, Variables, Name) :- nth1(Index, Variables, Existing), Va
 % exists(var(Name, Type), Formula). Arguments are constants or var(Name).
 finite_status(Domains, Axioms, Goal, MaxModels, Status, Certificate) :-
     must_be(nonneg, MaxModels),
+    solver_validation(Domains, Axioms, Goal, Validation),
+    ( Validation = invalid(Reason) -> Status = invalid_program, Certificate = validation(Reason)
+    ; finite_status_valid(Domains, Axioms, Goal, MaxModels, Status, Certificate)
+    ).
+finite_status_valid(Domains, Axioms, Goal, MaxModels, Status, Certificate) :-
     vocabulary(Domains, Axioms, Goal, Vocabulary),
     length(Vocabulary, AtomCount),
     power_of_two(AtomCount, CandidateCount),
