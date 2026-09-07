@@ -53,17 +53,22 @@ function compileHorn(formulas) {
 function createBroker(fixture) {
   const cases = new Map((fixture.cases || []).map(item => {
     const compiled = compileHorn(item.private_formulas || []), goalIds = new Map(compiled.goals.map((goal, index) => [`g${index + 1}`, goal]));
-    const preferred = compiled.chain_goals.length ? compiled.chain_goals : compiled.goals;
-    const chosen = preferred.length ? preferred[parseInt(crypto.createHash("sha256").update(`proverqa-chain:${item.case_id}`).digest("hex").slice(0, 8), 16) % preferred.length] : null;
-    const selectedGoalId = [...goalIds.entries()].find(([, goal]) => goal === chosen)?.[0] || null;
-    return [item.case_id, { compiled, goals: goalIds, selectedGoalId }];
+    const idForGoal = goal => [...goalIds.entries()].find(([, value]) => value === goal)?.[0] || null;
+    const ranked = goals => [...goals].sort((left, right) => crypto.createHash("sha256").update(`proverqa-chain:${item.case_id}:${left}`).digest("hex").localeCompare(crypto.createHash("sha256").update(`proverqa-chain:${item.case_id}:${right}`).digest("hex")));
+    const chain = ranked(compiled.chain_goals), fallback = ranked(compiled.goals.filter(goal => !chain.includes(goal)));
+    return [item.case_id, { compiled, goals: goalIds, chain, fallback, idForGoal }];
   }));
   return Object.freeze({
     catalog(caseId) { const entry = cases.get(caseId); if (!entry) throw new Error("unknown broker case"); return Object.freeze([...entry.goals.keys()]); },
     predeclaredGoal(caseId) {
+      return this.predeclaredGoals(caseId, 1)[0];
+    },
+    predeclaredGoals(caseId, count) {
       const entry = cases.get(caseId); if (!entry) throw new Error("unknown broker case");
-      if (!entry.selectedGoalId) throw new Error("broker case has no Horn goal");
-      return Object.freeze({ goal_id: entry.selectedGoalId, goal: entry.goals.get(entry.selectedGoalId), selection: entry.compiled.chain_goals.length ? "rule-head" : "fact-fallback" });
+      if (!Number.isSafeInteger(count) || count < 1 || count > 3) throw new Error("predeclared goal count must be an integer from 1 to 3");
+      const selected = [...entry.chain.map(goal => ({ goal, selection: "rule-head" })), ...entry.fallback.map(goal => ({ goal, selection: "fact-fallback" }))].slice(0, count).map(item => ({ goal_id: entry.idForGoal(item.goal), goal: item.goal, selection: item.selection }));
+      if (!selected.length || selected.some(item => !item.goal_id)) throw new Error("broker case has no Horn goal");
+      return Object.freeze(selected.map(Object.freeze));
     },
     compiledProgram(caseId) {
       const entry = cases.get(caseId); if (!entry) throw new Error("unknown broker case");
