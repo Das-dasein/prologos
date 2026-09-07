@@ -33,11 +33,11 @@ function repairPrompt(item, previous, observation, transportError, frozenPrompt 
   const instruction = frozenPrompt ? frozenPrompt.repair_instruction : `You previously wrote an ordinary Prolog program for this world. The isolated runtime returned the evidence below. Repair the program and query yourself; do not change the English world, invent facts, read files, call the shell/network, or answer A/B/C. Preserve useful source labels. Return JSON only: {"program":"...","query":"..."}.`;
   return `${instruction}\n\n${CAPABILITY_MANIFEST}\n\nWorld:\n${item.context}\n\nQuestion:\n${item.question}\n\nPrevious program:\n${previous.program}\n\nPrevious query:\n${previous.query}\n\nRuntime evidence:\n${observation ? observation.runtime.transcript.transcript : transportError || "no runtime evidence"}\n`;
 }
-function needsRepair(observation, transportError) {
+function needsRepair(observation, transportError, retryOnConflict = false) {
   if (transportError) return true;
   const outcome = observation && observation.execution_outcome || "";
   const transcript = observation && observation.runtime && observation.runtime.transcript && observation.runtime.transcript.transcript || "";
-  return outcome.startsWith("error:") || transcript.includes("invalid_program") || transcript.includes("budget_exhausted");
+  return outcome.startsWith("error:") || transcript.includes("invalid_program") || transcript.includes("budget_exhausted") || (retryOnConflict && transcript.includes(",conflict,"));
 }
 function validateFixture(fixture) {
   if (!fixture || fixture.schema_version !== "free-prolog-diagnostic-fixture-v1" || !Array.isArray(fixture.cases) || fixture.cases.length < 1) throw new Error("expected non-empty free-Prolog diagnostic fixture");
@@ -48,7 +48,7 @@ function validateFixture(fixture) {
   }
 }
 function freshRoot(rawRoot) { if (typeof rawRoot !== "string" || !path.isAbsolute(rawRoot) || fs.existsSync(rawRoot) || !fs.existsSync(path.dirname(rawRoot))) throw new Error("rawRoot must be a fresh absolute path with an existing parent"); fs.mkdirSync(rawRoot, { mode: 0o700 }); }
-async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promptFile = null, provenance = null, maxRepairAttempts = 0, forceRepairAfterInitial = false, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
+async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promptFile = null, provenance = null, maxRepairAttempts = 0, forceRepairAfterInitial = false, retryOnConflict = false, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
   validateFixture(fixture); freshRoot(rawRoot); if (typeof generate !== "function") throw new Error("generate must be a function");
   if (!Number.isSafeInteger(maxRepairAttempts) || maxRepairAttempts < 0 || maxRepairAttempts > 7) throw new Error("maxRepairAttempts must be an integer from 0 to 7");
   const frozenPrompt = promptFile ? loadFrozenPrompt(promptFile) : null;
@@ -62,7 +62,7 @@ async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promp
         observation = await runFreePrologDiagnostic({ caseId: item.case_id, program: generated.program, query: generated.query, source: "diagnostic-agent", timeoutMs, maxOutputBytes }); transportError = null;
       } catch (error) { transportError = String(error && (error.stack || error.message) || error); observation = null; }
       attempts.push(Object.freeze({ stage: attempt === 0 ? "initial" : "repair", prompt_sha256: sha256(prompt), generated: generated ? { program: generated.program, query: generated.query } : null, observation, transport_error: transportError }));
-      if ((!needsRepair(observation, transportError) && !(forceRepairAfterInitial && attempt === 0)) || attempt === maxRepairAttempts) break;
+      if ((!needsRepair(observation, transportError, retryOnConflict) && !(forceRepairAfterInitial && attempt === 0)) || attempt === maxRepairAttempts) break;
       prompt = repairPrompt(item, generated, observation, transportError, frozenPrompt);
     }
     const record = Object.freeze({ case_id: item.case_id, fixture_sha256: fixtureSha, prompt_sha256: attempts[0].prompt_sha256, generated: generated ? { program: generated.program, query: generated.query } : null, observation, transport_error: transportError, attempts: Object.freeze(attempts) });
