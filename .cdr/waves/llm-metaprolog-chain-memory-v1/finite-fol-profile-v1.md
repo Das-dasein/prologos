@@ -1,6 +1,6 @@
 # Finite FOL execution profile v1
 
-Status: `design lock; implementation and source-semantic audit pending`.
+Status: `candidate profile; free-Prolog diagnostic and source-semantic audit pending`.
 
 This is the object logic executed by meta-Prolog in M2. It is deliberately
 finite, typed, and bounded. It must not be represented as a claim about
@@ -15,9 +15,11 @@ F ::= atom(name, args)
     | forall({name, type}, F) | exists({name, type}, F)
 ```
 
-Atoms have fixed predicate arity. A variable must be bound by an enclosing
-quantifier; atom arguments otherwise name constants from the declared domain.
-Every semantic form and goal has English source-span references.
+The external syntax is restricted Prolog: `all(Type, Name, Formula)` and
+`some(Type, Name, Formula)` denote quantifiers, while a lower-case `Name` in
+an atom denotes that bound variable. The parser converts it to the internal
+formula representation before evaluation. Atoms have fixed predicate arity;
+every declaration has English source-span references.
 
 ## Domain and models
 
