@@ -28,6 +28,23 @@ P0 and P1 must never contain source gold, source reasoning, a proof, a solver
 result, or tool instructions. P2/P2-hybrid broker receipts are private raw
 evidence, never P0/P1 input.
 
+## Codex subscription transport
+
+The live transport is `proverqa-hard-codex-collector.js`: it invokes the
+locally authenticated `codex exec` CLI and does not use an OpenAI API key or
+the OpenAI API. A collection remains opt-in through
+`--allow-codex-subscription`, records its explicit model name, and writes into
+a fresh raw directory.
+
+For P0/P1, any native command or tool event in Codex JSONL invalidates the
+record. For P2, the prompt names one private `/bin/zsh -lc PATH` command and
+the trace must contain exactly that one no-argument broker lifecycle pair.
+The broker has a fixed Horn projection and a deterministic preselected goal:
+it chooses a grounded rule head when available (otherwise a grounded fact),
+never source gold, a free-form query, program, path, or shell arguments.
+Its receipt is an auxiliary chain result, not an answer to the FOL question;
+the model still handles quantifiers and non-Horn operators.
+
 ## Fixture and gold gates
 
 The fixture selects exactly 12 hard cases: four source `A` (true), four `B`
