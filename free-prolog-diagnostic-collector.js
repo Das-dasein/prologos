@@ -37,7 +37,7 @@ function needsRepair(observation, transportError, retryOnConflict = false) {
   if (transportError) return true;
   const outcome = observation && observation.execution_outcome || "";
   const transcript = observation && observation.runtime && observation.runtime.transcript && observation.runtime.transcript.transcript || "";
-  return outcome.startsWith("error:") || transcript.includes("invalid_program") || transcript.includes("budget_exhausted") || (retryOnConflict && transcript.includes(",conflict,"));
+  return outcome !== "succeeded" || transcript.includes("invalid_program") || transcript.includes("budget_exhausted") || (retryOnConflict && transcript.includes(",conflict,"));
 }
 function validateFixture(fixture) {
   if (!fixture || fixture.schema_version !== "free-prolog-diagnostic-fixture-v1" || !Array.isArray(fixture.cases) || fixture.cases.length < 1) throw new Error("expected non-empty free-Prolog diagnostic fixture");

@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { collect, promptFor } = require("./free-prolog-diagnostic-collector");
+const { collect, needsRepair, promptFor } = require("./free-prolog-diagnostic-collector");
 
 (async () => {
   const fixture = { schema_version: "free-prolog-diagnostic-fixture-v1", cases: [{ case_id: "small", context: "Ada is ready.", question: "Is Ada ready?" }] };
@@ -18,6 +18,7 @@ const { collect, promptFor } = require("./free-prolog-diagnostic-collector");
     assert.equal(reflected.records[0].attempts.length, 2);
     assert.match(reflected.records[0].attempts[0].observation.runtime.transcript.transcript, /documentation\(finite_status\/6/);
     assert.equal(reflected.records[0].observation.execution_outcome, "succeeded");
+    assert.equal(needsRepair({ execution_outcome: "failed", runtime: { transcript: { transcript: "" } } }, null), true);
     console.log("free-prolog-diagnostic-collector ok: raw ordinary Prolog observation remains non-scoring");
   } finally { fs.rmSync(parent, { recursive: true, force: true }); }
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
