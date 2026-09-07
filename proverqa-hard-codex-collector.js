@@ -61,6 +61,19 @@ function validateFixture(fixture) {
   if (!fixture || fixture.schema_version !== "proverqa-hard-hybrid-fixture-v1" || !Array.isArray(fixture.cases) || fixture.cases.length !== 12) throw new Error("expected a validated 12-case ProverQA-hard hybrid fixture");
   for (const item of fixture.cases) if (!item.p0 || !item.p1 || !Array.isArray(item.private_formulas) || !["A", "B", "C"].includes(item.source_answer)) throw new Error(`malformed fixture case ${item && item.case_id}`);
 }
+function summarize(fixture, records) {
+  const expected = new Set(fixture.cases.map(item => item.case_id));
+  if (!Array.isArray(records) || records.length !== fixture.cases.length * CONDITIONS.length) throw new Error("summary requires one record for every fixture case and condition");
+  const summary = {};
+  for (const condition of CONDITIONS) {
+    const rows = records.filter(item => item.condition === condition), valid = rows.filter(item => item.format_valid && !item.transport_error), correct = valid.filter(item => item.answer === item.source_answer);
+    if (rows.length !== fixture.cases.length || new Set(rows.map(item => item.case_id)).size !== expected.size || rows.some(item => !expected.has(item.case_id))) throw new Error(`${condition}: summary records do not cover fixture exactly once`);
+    summary[condition] = Object.freeze({ planned: fixture.cases.length, recorded: rows.length, protocol_valid: valid.length, protocol_invalid: rows.length - valid.length, correct_among_valid: correct.length, accuracy_among_valid: valid.length ? correct.length / valid.length : null });
+  }
+  const hybrid = new Set(fixture.cases.filter(item => item.hybrid_quantifier_case).map(item => item.case_id)), p2 = records.filter(item => item.condition === "P2" && hybrid.has(item.case_id)), validP2 = p2.filter(item => item.format_valid && !item.transport_error), correctP2 = validP2.filter(item => item.answer === item.source_answer);
+  summary.P2_hybrid_quantified_subset = Object.freeze({ planned: hybrid.size, recorded: p2.length, protocol_valid: validP2.length, protocol_invalid: p2.length - validP2.length, correct_among_valid: correctP2.length, accuracy_among_valid: validP2.length ? correctP2.length / validP2.length : null });
+  return Object.freeze(summary);
+}
 async function collectCodexSubscription({ fixtureFile, rawRoot, model, codexPath, authFile, swiplPath, spawnImpl = childProcess.spawn }) {
   const fixturePath = absoluteFile(fixtureFile, "fixtureFile"), fixtureBytes = fs.readFileSync(fixturePath, "utf8"), fixture = JSON.parse(fixtureBytes);
   validateFixture(fixture); freshRoot(rawRoot);
@@ -89,7 +102,7 @@ async function collectCodexSubscription({ fixtureFile, rawRoot, model, codexPath
     const record = { record_id: `${entry.case.case_id}-${entry.condition.toLowerCase()}`, case_id: entry.case.case_id, condition: entry.condition, fixture_sha256: fixtureSha, prompt_sha256: sha256(prompt), prompt: artifact(rawRoot, sealed.prompt_file), source_answer: entry.case.source_answer, answer, format_valid: Boolean(answer), broker_receipt: response && response.receipt ? { status: response.receipt, goal_id: p2.selected.goal_id, goal: p2.selected.goal, selection: p2.selected.selection } : null, usage: response && response.usage, inspection, raw_response: artifact(rawRoot, rawResponse), raw: { schema: artifact(rawRoot, sealed.schema_file), stdout: artifact(rawRoot, path.join(run.output_dir, "codex-stdout.jsonl")), stderr: artifact(rawRoot, path.join(run.output_dir, "codex-stderr.txt")), final_output: artifact(rawRoot, path.join(run.output_dir, "final-output.txt")) }, transport_error: transportError };
     writeExclusive(path.join(run.output_dir, "record.json"), stable(record)); records.push(Object.freeze(record));
   }
-  const result = Object.freeze({ schema_version: "proverqa-hard-codex-subscription-run-v1", cdr_status: "not-a-cdr-receipt", fixture_sha256: fixtureSha, model, records: Object.freeze(records) });
+  const result = Object.freeze({ schema_version: "proverqa-hard-codex-subscription-run-v1", cdr_status: "not-a-cdr-receipt", fixture_sha256: fixtureSha, model, summary: summarize(fixture, records), records: Object.freeze(records) });
   writeExclusive(path.join(rawRoot, "aggregate-not-a-cdr-receipt.json"), stable(result));
   return result;
 }
@@ -100,7 +113,7 @@ function parseArgs(argv) {
   for (const key of ["fixtureFile", "rawRoot", "model", "codexPath", "authFile"]) if (!out[key]) throw new Error(`missing --${key.replace(/[A-Z]/g, value => `-${value.toLowerCase()}`)}`);
   return out;
 }
-module.exports = { buildP2Broker, collectCodexSubscription, discardPrivateAuth, parseArgs, p2Prompt, validateFixture };
+module.exports = { buildP2Broker, collectCodexSubscription, discardPrivateAuth, parseArgs, p2Prompt, summarize, validateFixture };
 if (require.main === module) {
   (async () => { const options = parseArgs(process.argv.slice(2)); const result = await collectCodexSubscription(options); console.log(JSON.stringify({ status: "collected-not-a-cdr-receipt", records: result.records.length })); })().catch(error => { console.error(`proverqa-hard-codex-collector: ${error.stack || error.message}`); process.exitCode = 1; });
 }

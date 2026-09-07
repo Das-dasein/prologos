@@ -41,6 +41,7 @@ function fakeSpawn(seen) {
     fs.writeFileSync(fixtureFile, JSON.stringify(fixture)); fs.writeFileSync(authFile, "not-a-real-credential", { mode: 0o600 });
     const seen = [], result = await collectCodexSubscription({ fixtureFile, rawRoot, model: "fake-codex", codexPath: "/bin/echo", authFile, swiplPath: "/usr/bin/false", spawnImpl: fakeSpawn(seen) });
     assert.equal(result.records.length, 36); assert.equal(seen.length, 36);
+    assert.deepEqual(result.summary, { P0: { planned: 12, recorded: 12, protocol_valid: 12, protocol_invalid: 0, correct_among_valid: 4, accuracy_among_valid: 1 / 3 }, P1: { planned: 12, recorded: 12, protocol_valid: 12, protocol_invalid: 0, correct_among_valid: 4, accuracy_among_valid: 1 / 3 }, P2: { planned: 12, recorded: 12, protocol_valid: 12, protocol_invalid: 0, correct_among_valid: 4, accuracy_among_valid: 1 / 3 }, P2_hybrid_quantified_subset: { planned: 6, recorded: 6, protocol_valid: 6, protocol_invalid: 0, correct_among_valid: 4, accuracy_among_valid: 2 / 3 } });
     const [p0, p1, p2] = result.records;
     assert.equal(p0.inspection.tool_events_observed, 0); assert.equal(p1.inspection.tool_events_observed, 0);
     assert.equal(p2.inspection.tool_events_observed, 1); assert.deepEqual(p2.broker_receipt, { status: "entailed", goal_id: "g3", goal: "ready('Ada')", selection: "rule-head" });
