@@ -246,6 +246,15 @@ close_rule(_, [], Formula, Formula).
 close_rule(AllVariables, [Variable|Rest], Formula, forall(var(Name, person), Closed)) :- variable_name(Variable, AllVariables, Name), close_rule(AllVariables, Rest, Formula, Closed).
 
 compile_surface(not(Formula), Variables, neg(Compiled)) :- !, compile_surface(Formula, Variables, Compiled).
+% The symbolic API publishes this canonical reified formula surface itself.
+% Accept it in labelled programs as well, so source IDs and explanations are
+% preserved when an agent uses the documented atom(Name, [Args]) notation.
+compile_surface(atom(Name, RawArguments), Variables, atom(Name, Arguments)) :- !,
+    ( atom(Name), is_list(RawArguments) -> compile_arguments(RawArguments, Variables, Arguments) ; throw(error(invalid_surface(bad_reified_atom(Name, RawArguments)), _)) ).
+compile_surface(forall(var(Name, Type), Formula), Variables, forall(var(Name, Type), Compiled)) :- !,
+    ( atom(Name), atom(Type) -> compile_surface(Formula, Variables, Compiled) ; throw(error(invalid_surface(bad_quantifier(Name, Type)), _)) ).
+compile_surface(exists(var(Name, Type), Formula), Variables, exists(var(Name, Type), Compiled)) :- !,
+    ( atom(Name), atom(Type) -> compile_surface(Formula, Variables, Compiled) ; throw(error(invalid_surface(bad_quantifier(Name, Type)), _)) ).
 compile_surface((Left, Right), Variables, and(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
 compile_surface(and(Left, Right), Variables, and(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
 compile_surface(or(Left, Right), Variables, or(CompiledLeft, CompiledRight)) :- !, compile_surface(Left, Variables, CompiledLeft), compile_surface(Right, Variables, CompiledRight).
@@ -259,6 +268,7 @@ compile_surface(Formula, _, _) :- throw(error(invalid_surface(bad_formula(Formul
 compile_arguments([], _, []).
 compile_arguments([Argument|Rest], Variables, [Compiled|CompiledRest]) :- compile_argument(Argument, Variables, Compiled), compile_arguments(Rest, Variables, CompiledRest).
 compile_argument(Argument, Variables, var(Name)) :- var(Argument), !, variable_name(Argument, Variables, Name).
+compile_argument(var(Name), _, var(Name)) :- atom(Name), !.
 compile_argument(Argument, _, Argument) :- atom(Argument), !.
 compile_argument(Argument, _, _) :- throw(error(invalid_surface(non_atomic_argument(Argument)), _)).
 variable_name(Variable, Variables, Name) :- nth1(Index, Variables, Existing), Variable == Existing, atom_concat(v, Index, Name).

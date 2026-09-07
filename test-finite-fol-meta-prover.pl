@@ -35,4 +35,7 @@ test(labelled_explanation_returns_subset_minimal_conflict_core, [setup((assertz(
     labelled_explanation(ready(ada), conflict, explanation(status(conflict), source_axioms([s1, s2, s3]), subset_minimal_conflict_core(core_ids(CoreIds), _), certificate(conflict(no_admissible_model)))),
     assertion(CoreIds == [s1, s2]).
 
+test(labelled_explanation_accepts_documented_reified_formula_surface, [setup((assertz(user:domain(person, [ada])), assertz(user:axiom(s1, atom(ready, [ada]))), assertz(user:axiom(s2, not(atom(ready, [ada])))))), cleanup((retractall(user:domain(_, _)), retractall(user:axiom(_, _))))]) :-
+    labelled_explanation(ready(ada), conflict, explanation(status(conflict), _, subset_minimal_conflict_core(core_ids([s1, s2]), _), _)).
+
 :- end_tests(finite_fol_meta_prover).
