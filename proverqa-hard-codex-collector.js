@@ -32,19 +32,22 @@ function artifact(root, file) {
   return Object.freeze({ ref: `local://${path.relative(root, file).split(path.sep).join("/")}`, sha256: sha256(bytes) });
 }
 function p2Prompt(item, brokerPath, selected) {
-  return `World as Prolog terms:\n${item.p1.representation}\n${item.p1.query_term}\nA bounded chain subproblem was predeclared as ${selected.goal_id}; it is not an answer to the whole FOL question. You must execute exactly this private script path, with no arguments, shell prefix, quotes, or any other command:\n${brokerPath}\nInterpret quantifiers and every non-Horn construct yourself.\nQuestion: ${item.p0.question}\nAnswer with exactly one line: RESULT: A, RESULT: B, or RESULT: C.\n`;
+  return `World as Prolog terms:\n${item.p1.representation}\n${item.p1.query_term}\nA bounded chain subproblem was predeclared as ${selected.goal_id}; it is not an answer to the whole FOL question. You must execute exactly this private script path, with no arguments, shell prefix, quotes, or any other command:\n${brokerPath}\nIts command output will be exactly BROKER_RESULT: entailed or BROKER_RESULT: unknown. Use that bounded chain result only as one input; interpret quantifiers and every non-Horn construct yourself.\nQuestion: ${item.p0.question}\nAnswer with exactly one line: RESULT: A, RESULT: B, or RESULT: C.\n`;
 }
 function buildP2Broker(run, item, broker, swiplPath) {
   const selected = broker.predeclaredGoal(item.case_id);
   const programFile = path.join(run.state_dir, "sealed-program.pl"), receiptFile = path.join(run.workspace_dir, "broker-receipt.txt"), brokerFile = path.join(run.state_dir, "query-broker.sh");
   const compiled = broker.compiledProgram(item.case_id);
   // A Horn projection may keep a rule whose antecedent is absent from the
-  // projection (for example because its source formula is non-Horn). In this
-  // bounded subproblem, an absent predicate is a failed chain, not a Prolog
-  // exception that silently leaves an empty receipt.
-  const program = `${compiled}\n:- set_prolog_flag(unknown, fail).\n:- initialization(main).\nmain :- ((${selected.goal}) -> writeln('BROKER_RESULT: entailed') ; writeln('BROKER_RESULT: unknown')), halt.\n`;
+  // projection (for example because its source formula is non-Horn). Treat
+  // that as a failed bounded chain, not a global `unknown`-flag mutation or
+  // an exception that leaves the receipt empty.
+  const program = `${compiled}\n:- initialization(main).\nmain :- catch(((${selected.goal}) -> Result = entailed ; Result = unknown), error(existence_error(procedure, _), _), Result = unknown), format('BROKER_RESULT: ~w~n', [Result]), halt.\n`;
   writeExclusive(programFile, program, 0o400);
-  const script = `#!/bin/sh\nif [ "$#" -ne 0 ]; then exit 64; fi\nexec ${JSON.stringify(swiplPath)} --quiet --nosignals -s ${JSON.stringify(programFile)} > ${JSON.stringify(receiptFile)}\n`;
+  // stdout is intentionally duplicated into the immutable receipt and the
+  // native command result. P2 is solver-assisted only when the model can see
+  // the bounded result; a private file alone would merely prove execution.
+  const script = `#!/bin/sh\nif [ "$#" -ne 0 ]; then exit 64; fi\nif ${JSON.stringify(swiplPath)} --quiet --nosignals -s ${JSON.stringify(programFile)} > ${JSON.stringify(receiptFile)} 2>/dev/null; then cat ${JSON.stringify(receiptFile)}; else exit $?; fi\n`;
   writeExclusive(brokerFile, script, 0o700); fs.chmodSync(brokerFile, 0o700);
   return Object.freeze({ brokerFile, receiptFile, selected });
 }

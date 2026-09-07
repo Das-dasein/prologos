@@ -37,6 +37,10 @@ and were not retried.
 The source answer is benchmark gold, not a locally verified complete FOL
 oracle. The tiny one-run result cannot establish a Prolog advantage: P2 has a
 different valid denominator, no independent repetition, and the hybrid subset
-was selected before collection. It does establish the operational fact needed
-for the next design step: in valid P2 records Codex performed the actual SWI
-call and returned a separately recorded broker receipt.
+was selected before collection. It establishes only an execution fact: in
+valid P2 records Codex performed the actual SWI call and a separately recorded
+private broker receipt exists. In r3, `BROKER_RESULT` was redirected to that
+private file and did not appear in native command `aggregated_output`; the raw
+evidence therefore does not show that the model received or used the solver
+result. The next transport revision must emit the bounded result to both the
+receipt and the model-visible command output.
