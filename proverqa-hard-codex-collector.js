@@ -36,7 +36,7 @@ function p2Prompt(item, brokerPath, selected) {
 }
 function buildP2Broker(run, item, broker, swiplPath) {
   const selected = broker.predeclaredGoal(item.case_id);
-  const programFile = path.join(run.state_dir, "sealed-program.pl"), receiptFile = path.join(run.state_dir, "broker-receipt.txt"), brokerFile = path.join(run.state_dir, "query-broker.sh");
+  const programFile = path.join(run.state_dir, "sealed-program.pl"), receiptFile = path.join(run.workspace_dir, "broker-receipt.txt"), brokerFile = path.join(run.state_dir, "query-broker.sh");
   const compiled = broker.compiledProgram(item.case_id);
   // A Horn projection may keep a rule whose antecedent is absent from the
   // projection (for example because its source formula is non-Horn). In this
@@ -77,7 +77,7 @@ async function collectCodexSubscription({ fixtureFile, rawRoot, model, codexPath
     try {
       invocation = seatbelt.buildTraceAuditedInvocation({ run, sealed, codexPath: codex, model, authFile: auth });
       const raw = await invokeCodex({ invocation, spawnImpl });
-      const parsed = entry.condition === "P2" ? parseP2CodexJsonl(raw.stdout_file, protectedPaths({ fixtureFile: fixturePath, authFile: auth, swiplPath: swipl, invocation }), p2.brokerFile) : parseCodexJsonl(raw.stdout_file, protectedPaths({ fixtureFile: fixturePath, authFile: auth, swiplPath: swipl, invocation }));
+      const parsed = entry.condition === "P2" ? parseP2CodexJsonl(raw.stdout_file, protectedPaths({ fixtureFile: fixturePath, authFile: auth, swiplPath: swipl, invocation }), p2.brokerFile, { additionalAllowedPaths: [p2.receiptFile] }) : parseCodexJsonl(raw.stdout_file, protectedPaths({ fixtureFile: fixturePath, authFile: auth, swiplPath: swipl, invocation }));
       const receipt = entry.condition === "P2" ? readBrokerResult(p2.receiptFile) : null;
       response = { answer: parseCodexFinalOutput(raw.final_output_file), usage: parsed.usage, receipt };
       inspection = parsed.inspection; rawResponse = raw.final_output_file;

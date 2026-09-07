@@ -205,7 +205,7 @@ function parseCodexJsonl(stdoutFile, prohibitedPaths) {
   for (const key of ["input_tokens", "output_tokens"]) if (!Number.isSafeInteger(usage[key]) || usage[key] < 0) throw new Error("Codex native usage counter is invalid");
   return Object.freeze({ usage: Object.freeze({ input_tokens: usage.input_tokens, output_tokens: usage.output_tokens, total_tokens: usage.input_tokens + usage.output_tokens }), inspection: Object.freeze({ tool_events_observed: 0, prohibited_path_exposure: false }) });
 }
-function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
+function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath, { additionalAllowedPaths = [] } = {}) {
   const raw = fs.readFileSync(stdoutFile, "utf8"), lines = raw.split(/\r?\n/).filter(Boolean);
   if (!lines.length) throw new Error("Codex JSONL trace is empty");
   let events;
@@ -221,6 +221,8 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   };
   const sealedBroker = canonicalizeExistingPath(requestedBroker);
   const brokerState = path.dirname(sealedBroker);
+  if (!Array.isArray(additionalAllowedPaths) || additionalAllowedPaths.some(value => typeof value !== "string" || !path.isAbsolute(value))) throw new Error("P2 additional allowed paths must be absolute paths");
+  const additionalAllowed = additionalAllowedPaths.map(canonicalizeExistingPath);
   // A native command is emitted twice by Codex: item.started and
   // item.completed.  Treat that pair as one action only when the lifecycle
   // identity and the complete validated command payload agree byte-for-byte.
@@ -272,7 +274,7 @@ function parseP2CodexJsonl(stdoutFile, prohibitedPaths, brokerPath) {
   // foreign-command failure, not a path-classification side effect.
   const sealedProgram = path.join(brokerState, "sealed-program.pl");
   const brokerReceipt = path.join(brokerState, "broker-receipt.txt");
-  const allowedP2PathValue = value => value === sealedBroker || value === requestedBroker || value === sealedProgram || value === brokerReceipt || (typeof value === "string" && (() => { const match = value.match(/^\/bin\/zsh (-(?:c|lc)) (\/.*)$/); return Boolean(match) && canonicalizeExistingPath(match[2]) === sealedBroker; })());
+  const allowedP2PathValue = value => value === sealedBroker || value === requestedBroker || value === sealedProgram || value === brokerReceipt || additionalAllowed.includes(value) || (typeof value === "string" && (() => { const match = value.match(/^\/bin\/zsh (-(?:c|lc)) (\/.*)$/); return Boolean(match) && canonicalizeExistingPath(match[2]) === sealedBroker; })());
   // SWI-Prolog diagnostics append source locations (for example
   // `sealed-program.pl:7:`) to an otherwise sealed state path.  Classify the
   // path portion, rather than rejecting that diagnostic as a second command or

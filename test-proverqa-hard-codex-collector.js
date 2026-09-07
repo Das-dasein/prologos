@@ -18,8 +18,8 @@ function fakeSpawn(seen) {
     process.nextTick(() => {
       const final = args[args.indexOf("--output-last-message") + 1], brokerFile = path.join(options.env.CODEX_HOME, "query-broker.sh"), p2 = fs.existsSync(brokerFile);
       fs.writeFileSync(final, JSON.stringify({ answer: "RESULT: A" }));
-      if (p2) fs.writeFileSync(path.join(options.env.CODEX_HOME, "broker-receipt.txt"), "BROKER_RESULT: entailed\n");
-      const item = { id: "one-broker", type: "command_execution", command: `/bin/zsh -lc ${brokerFile}` };
+      if (p2) fs.writeFileSync(path.join(options.cwd, "broker-receipt.txt"), "BROKER_RESULT: entailed\n");
+      const item = { id: "one-broker", type: "command_execution", command: `/bin/zsh -lc ${brokerFile}`, aggregated_output: p2 ? path.join(options.cwd, "broker-receipt.txt") : "" };
       child.stdout.end(p2 ? `${JSON.stringify({ type: "item.started", item })}\n${JSON.stringify({ type: "item.completed", item })}\n${JSON.stringify({ type: "turn.completed", usage: { input_tokens: 3, output_tokens: 1 } })}\n` : `${JSON.stringify({ type: "turn.completed", usage: { input_tokens: 3, output_tokens: 1 } })}\n`);
       child.stderr.end(""); child.emit("close", 0);
     });
