@@ -13,11 +13,11 @@ const stable = value => JSON.stringify(value, null, 2) + "\n";
 const CONDITIONS = Object.freeze(["P0", "P1", "P2"]);
 const ANSWER = "Answer with exactly one line: RESULT: A, RESULT: B, or RESULT: C.\n";
 
-function promptFor(item, condition) {
+function promptFor(item, condition, goalIds = []) {
   const common = `You must decide whether the stated question is true, false, or uncertain.\nQuestion: ${item.p0.question}\n${ANSWER}`;
   if (condition === "P0") return `World:\n${item.p0.context}\n${common}`;
   if (condition === "P1") return `World as Prolog terms:\n${item.p1.representation}\n${item.p1.query_term}\n${common}`;
-  if (condition === "P2") return `World as Prolog terms:\n${item.p1.representation}\n${item.p1.query_term}\nA bounded chain broker is available. You may make at most one call using a case id and one listed goal id; it cannot answer the whole FOL question for you.\n${common}`;
+  if (condition === "P2") return `World as Prolog terms:\n${item.p1.representation}\n${item.p1.query_term}\nA bounded chain broker is available. Case id: ${item.case_id}. Allowed goal ids: ${goalIds.join(", ")}. You may make exactly one call; it cannot answer the whole FOL question for you.\n${common}`;
   throw new Error("unknown condition");
 }
 function parse(answer) { const match = typeof answer === "string" && answer.match(/^RESULT: ([ABC])\n?$/); return match ? match[1] : null; }
@@ -31,7 +31,7 @@ async function collect({ fixture, rawRoot, provider }) {
   requireFresh(rawRoot);
   const broker = createBroker(fixture), records = [];
   for (const item of plan(fixture)) {
-    const prompt = promptFor(item.case, item.condition);
+    const prompt = promptFor(item.case, item.condition, item.condition === "P2" ? broker.catalog(item.case.case_id) : []);
     if (item.condition !== "P2" && /broker|tool/i.test(prompt)) throw new Error("P0/P1 prompt leaked broker surface");
     const result = await provider.complete({ condition: item.condition, caseId: item.case.case_id, prompt, broker: item.condition === "P2" ? broker : undefined });
     if (!result || typeof result.answer !== "string") throw new Error("provider returned no answer");
