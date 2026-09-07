@@ -11,7 +11,7 @@ const { collect, promptFor } = require("./free-prolog-diagnostic-collector");
   try {
     assert.match(promptFor(fixture.cases[0]), /ordinary SWI-Prolog source/);
     const result = await collect({ fixture, rawRoot: path.join(parent, "raw"), generate: async () => ({ program: "ready(ada).\n", query: "ready(ada)" }) });
-    assert.equal(result.status, "observed-not-scored"); assert.equal(result.records.length, 1); assert.equal(result.records[0].observation.runtime.transcript.exitCode, 0); assert.equal(result.records[0].transport_error, null);
+    assert.equal(result.status, "observed-not-scored"); assert.equal(result.records.length, 1); assert.equal(result.records[0].observation.runtime.transcript.exitCode, 0); assert.equal(result.records[0].observation.execution_outcome, "succeeded"); assert.equal(result.records[0].transport_error, null);
     console.log("free-prolog-diagnostic-collector ok: raw ordinary Prolog observation remains non-scoring");
   } finally { fs.rmSync(parent, { recursive: true, force: true }); }
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });

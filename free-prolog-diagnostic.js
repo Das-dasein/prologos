@@ -7,6 +7,12 @@ const { createSnapshot, createCandidate, runThought } = require("./cognitive-mem
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 function nonempty(value, label) { if (typeof value !== "string" || !value.trim()) throw new Error(`${label} must be non-empty text`); return value; }
+function outcomeFromTranscript(transcript) {
+  const match = typeof transcript === "string" && transcript.match(/^PAM_DIAGNOSTIC_OUTCOME: (.+)$/m);
+  if (!match) return "unreported";
+  if (match[1] === "succeeded" || match[1] === "failed") return match[1];
+  return `error:${match[1]}`;
+}
 
 async function runFreePrologDiagnostic({ caseId, program, query, source = "agent", timeoutMs, maxOutputBytes }) {
   nonempty(caseId, "caseId"); nonempty(program, "program"); nonempty(query, "query"); nonempty(source, "source");
@@ -21,7 +27,8 @@ async function runFreePrologDiagnostic({ caseId, program, query, source = "agent
     query_sha256: sha256(query),
     program,
     query,
-    runtime: result.runEvidence
+    runtime: result.runEvidence,
+    execution_outcome: outcomeFromTranscript(result.runEvidence.transcript.transcript)
   });
 }
-module.exports = { runFreePrologDiagnostic };
+module.exports = { outcomeFromTranscript, runFreePrologDiagnostic };

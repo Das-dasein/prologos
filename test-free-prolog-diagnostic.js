@@ -8,6 +8,7 @@ const { runFreePrologDiagnostic } = require("./free-prolog-diagnostic");
   assert.equal(observed.status, "observed-not-scored");
   assert.equal(observed.runtime.trust, "untrusted");
   assert.equal(observed.runtime.transcript.exitCode, 0);
+  assert.equal(observed.execution_outcome, "succeeded");
   assert.equal(observed.program, program);
   console.log("free-prolog-diagnostic ok: ordinary agent-style Prolog executes as isolated non-scoring evidence");
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
