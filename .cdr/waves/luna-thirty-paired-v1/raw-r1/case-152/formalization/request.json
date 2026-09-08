@@ -1,0 +1,44 @@
+{
+  "command": "/Users/artem/.local/bin/codex",
+  "args": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "-C",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-WioPtx",
+    "--skip-git-repo-check",
+    "--ignore-user-config",
+    "--sandbox",
+    "read-only",
+    "--model",
+    "gpt-5.6-luna",
+    "-c",
+    "model_reasoning_effort=\"high\"",
+    "-c",
+    "model_context_window=32768",
+    "--output-schema",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-WioPtx/schema.json",
+    "--output-last-message",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-WioPtx/final.json",
+    "-"
+  ],
+  "prompt": "You are the formalization component of a two-stage reasoning experiment. Formalize the complete original English world and its original question; do not answer A/B/C. Do not use tools, shell, files, network, external annotations, or source benchmark formulas. Everything needed is in this prompt.\n\nUse the labelled Prolog surface used by the finite_fol_meta_prover library. The first declaration must be top-level domain(person,[...]). List every named individual from this world with lowercase constant atoms. Then represent every source sentence exactly once as axiom(s1,...), axiom(s2,...), through sN in source order, with its exact English in a preceding % comment. Never put domain inside axiom. Never add a conclusion just because it would answer the question.\n\nFact: axiom(s1, calm(ada)). Explicit negation: axiom(s2, not(ready(ada))). Universal rule: axiom(s3, rule([calm(X)], ready(X))). Prolog variables in rule/2 are universally quantified over person. Multiple premises in the list mean conjunction. Preserve complex premises and conclusions with and(F,G), or(F,G), xor(F,G), not(F), and implies(F,G). Inclusive OR is or/2; 'but not both' is xor/2. Preserve conditional direction. For explicit quantifiers use forall(var(x,person),F) or exists(var(x,person),F), referring to the bound variable as var(x) in its body. A lowercase x by itself is a constant. Use ordinary predicate terms, not atom(Name,Args). Do not invent domain facts or omit difficult sentences.\n\nTranslate the actual question using exactly the same predicate vocabulary as the program, including not(...) for an explicitly negative statement. Your bare query must be labelled_explanation(Goal, Status, Package), without ?- or a trailing period. The evaluator returns a finite classical status (entailed, contradicted, unknown, conflict, or invalid_program) and diagnostic package; it does not require a positive Horn proof. Do not define this evaluator yourself or execute any code. No directives, helper predicates, or negation-as-failure.\n\nReturn only JSON with two strings: {\"program\":\"...\",\"query\":\"...\"}. Before returning, check source coverage, named individuals, quantifier scope, polarity, OR/XOR, and predicate spelling between program and question.\n\n\nWorld:\nIf Sylvia studies electromagnetic waves and conducts innovative experiments, then she will make groundbreaking discoveries. Sylvia understands wave theory. If Sylvia explores new ideas, then she either collaborates with others or advances her field. If someone collects data and understands wave theory, then they can analyze signal patterns. Sylvia does not advance her field. Sylvia explores new ideas or conducts innovative experiments. Sylvia builds on existing research. If Sylvia has a PhD, then she either analyzes signal patterns or specializes in acoustics, but not both. Sylvia collects data. If someone has curiosity, then they explore new ideas and solve complex problems. If Sylvia either analyzes signal patterns or studies electromagnetic waves (but not both), then she pioneers new technologies. For Sylvia, pioneering new technologies and building on existing research are mutually exclusive. Sylvia does not collaborate with others.\n\nOriginal question:\nBased on the above information, is the following statement true, false, or uncertain? Sylvia will make groundbreaking discoveries.\n",
+  "prompt_sha256": "beb4723ceba0791bb8c694810deed805f5dd07be66bf2ac1f800c52f4e07ffd7",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "program",
+      "query"
+    ],
+    "properties": {
+      "program": {
+        "type": "string"
+      },
+      "query": {
+        "type": "string"
+      }
+    }
+  },
+  "timeout_ms": 180000
+}

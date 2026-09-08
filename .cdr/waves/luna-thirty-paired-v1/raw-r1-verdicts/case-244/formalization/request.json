@@ -1,0 +1,44 @@
+{
+  "command": "/Users/artem/.local/bin/codex",
+  "args": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "-C",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-rpTXBN",
+    "--skip-git-repo-check",
+    "--ignore-user-config",
+    "--sandbox",
+    "read-only",
+    "--model",
+    "gpt-5.6-luna",
+    "-c",
+    "model_reasoning_effort=\"high\"",
+    "-c",
+    "model_context_window=32768",
+    "--output-schema",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-rpTXBN/schema.json",
+    "--output-last-message",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-rpTXBN/final.json",
+    "-"
+  ],
+  "prompt": "You are the formalization component of a two-stage reasoning experiment. Formalize the complete original English world and its original question; do not answer A/B/C. Do not use tools, shell, files, network, external annotations, or source benchmark formulas. Everything needed is in this prompt.\n\nUse the labelled Prolog surface used by the finite_fol_meta_prover library. The first declaration must be top-level domain(person,[...]). List every named individual from this world with lowercase constant atoms. Then represent every source sentence exactly once as axiom(s1,...), axiom(s2,...), through sN in source order, with its exact English in a preceding % comment. Never put domain inside axiom. Never add a conclusion just because it would answer the question.\n\nFact: axiom(s1, calm(ada)). Explicit negation: axiom(s2, not(ready(ada))). Universal rule: axiom(s3, rule([calm(X)], ready(X))). Prolog variables in rule/2 are universally quantified over person. Multiple premises in the list mean conjunction. Preserve complex premises and conclusions with and(F,G), or(F,G), xor(F,G), not(F), and implies(F,G). Inclusive OR is or/2; 'but not both' is xor/2. Preserve conditional direction. For explicit quantifiers use forall(var(x,person),F) or exists(var(x,person),F), referring to the bound variable as var(x) in its body. A lowercase x by itself is a constant. Use ordinary predicate terms, not atom(Name,Args). Do not invent domain facts or omit difficult sentences.\n\nTranslate the actual question using exactly the same predicate vocabulary as the program, including not(...) for an explicitly negative statement. Your bare query must be labelled_explanation(Goal, Status, Package), without ?- or a trailing period. The evaluator returns a finite classical status (entailed, contradicted, unknown, conflict, or invalid_program) and diagnostic package; it does not require a positive Horn proof. Do not define this evaluator yourself or execute any code. No directives, helper predicates, or negation-as-failure.\n\nReturn only JSON with two strings: {\"program\":\"...\",\"query\":\"...\"}. Before returning, check source coverage, named individuals, quantifier scope, polarity, OR/XOR, and predicate spelling between program and question.\n\n\nWorld:\nMila does not think critically. Mila communicates effectively. If someone is detail-oriented, then they are organized and focused. If Detective Mila either prioritizes tasks or meets deadlines (but not both), then she achieves her objectives. If Detective Omar sets clear goals, then she either manages her time effectively or achieves her objectives, but not both. Detective Omar does not value accuracy. If Detective Mila remains calm, then she has experience and communicates effectively. Mila sets clear goals. If Detective Travis remains calm, then she has experience and communicates effectively. Mila manages her time effectively. Travis does not have experience. If Detective Mila either examines evidence or analyzes data (but not both), then she is detail-oriented. Mila is not focused. Anyone who prioritizes tasks or maintains records is organized. Anyone who is organized either handles pressure well or achieves their objectives (or both). Mila does not have experience. If Detective Mila sets clear goals, then she either manages her time effectively or achieves her objectives, but not both. If Detective Mila handles pressure well, then she is either someone who remains calm or someone who thinks critically (but not both). Omar communicates effectively. Omar is not focused. If Detective Crue handles pressure well, then she is either someone who remains calm or someone who thinks critically (but not both). Detective Omar is not procedural. Travis does not follow protocol. Crue sets clear goals.\n\nOriginal question:\nBased on the above information, is the following statement true, false, or uncertain? Detective Mila is meticulous, or procedural, or detail-oriented.\n",
+  "prompt_sha256": "8dea7e0c8147b71ea36083e16612e22951d6b1e307ecaf9519841c7d64af6703",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "program",
+      "query"
+    ],
+    "properties": {
+      "program": {
+        "type": "string"
+      },
+      "query": {
+        "type": "string"
+      }
+    }
+  },
+  "timeout_ms": 180000
+}

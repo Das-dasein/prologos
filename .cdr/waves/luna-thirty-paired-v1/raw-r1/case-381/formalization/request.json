@@ -1,0 +1,44 @@
+{
+  "command": "/Users/artem/.local/bin/codex",
+  "args": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "-C",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-hHM6Tz",
+    "--skip-git-repo-check",
+    "--ignore-user-config",
+    "--sandbox",
+    "read-only",
+    "--model",
+    "gpt-5.6-luna",
+    "-c",
+    "model_reasoning_effort=\"high\"",
+    "-c",
+    "model_context_window=32768",
+    "--output-schema",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-hHM6Tz/schema.json",
+    "--output-last-message",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-hHM6Tz/final.json",
+    "-"
+  ],
+  "prompt": "You are the formalization component of a two-stage reasoning experiment. Formalize the complete original English world and its original question; do not answer A/B/C. Do not use tools, shell, files, network, external annotations, or source benchmark formulas. Everything needed is in this prompt.\n\nUse the labelled Prolog surface used by the finite_fol_meta_prover library. The first declaration must be top-level domain(person,[...]). List every named individual from this world with lowercase constant atoms. Then represent every source sentence exactly once as axiom(s1,...), axiom(s2,...), through sN in source order, with its exact English in a preceding % comment. Never put domain inside axiom. Never add a conclusion just because it would answer the question.\n\nFact: axiom(s1, calm(ada)). Explicit negation: axiom(s2, not(ready(ada))). Universal rule: axiom(s3, rule([calm(X)], ready(X))). Prolog variables in rule/2 are universally quantified over person. Multiple premises in the list mean conjunction. Preserve complex premises and conclusions with and(F,G), or(F,G), xor(F,G), not(F), and implies(F,G). Inclusive OR is or/2; 'but not both' is xor/2. Preserve conditional direction. For explicit quantifiers use forall(var(x,person),F) or exists(var(x,person),F), referring to the bound variable as var(x) in its body. A lowercase x by itself is a constant. Use ordinary predicate terms, not atom(Name,Args). Do not invent domain facts or omit difficult sentences.\n\nTranslate the actual question using exactly the same predicate vocabulary as the program, including not(...) for an explicitly negative statement. Your bare query must be labelled_explanation(Goal, Status, Package), without ?- or a trailing period. The evaluator returns a finite classical status (entailed, contradicted, unknown, conflict, or invalid_program) and diagnostic package; it does not require a positive Horn proof. Do not define this evaluator yourself or execute any code. No directives, helper predicates, or negation-as-failure.\n\nReturn only JSON with two strings: {\"program\":\"...\",\"query\":\"...\"}. Before returning, check source coverage, named individuals, quantifier scope, polarity, OR/XOR, and predicate spelling between program and question.\n\n\nWorld:\nNatalie draws from inspiration. If Natalie has creative expression, then she experiments with techniques and produces unique work. Natalie enjoys art or has creative expression. If Natalie appreciates classics, then she is a traditional artist and values originality. If Natalie is inspired by history, then she is either a traditional artist or a free-spirited artist, but not both. Natalie values originality. Natalie either admires masters or appreciates classics. Natalie follows artistic rules. If Natalie has visionary talent, then she is a free-spirited artist or captures the essence of beauty (or both). Anyone who draws from inspiration either has creative expression or innovates their style (or both). If Natalie either explores new colors or pushes boundaries (but not both), then she innovates her style. Natalie is inspired by history. Colby either admires masters or appreciates classics. Anyone who explores colors and experiments with brushstrokes can produce unique work. Natalie does not admire masters. A person either innovates their style or follows artistic rules, but not necessarily both.\n\nOriginal question:\nBased on the above information, is the following statement true, false, or uncertain? Natalie does not gain recognition.\n",
+  "prompt_sha256": "eeda8b8fc4bf33960f17dd4857aaac92352aa1221d25a107652455a708d19b49",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "program",
+      "query"
+    ],
+    "properties": {
+      "program": {
+        "type": "string"
+      },
+      "query": {
+        "type": "string"
+      }
+    }
+  },
+  "timeout_ms": 180000
+}

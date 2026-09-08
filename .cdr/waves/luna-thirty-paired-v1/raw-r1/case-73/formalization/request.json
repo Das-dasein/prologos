@@ -1,0 +1,44 @@
+{
+  "command": "/Users/artem/.local/bin/codex",
+  "args": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "-C",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-Bq0S4k",
+    "--skip-git-repo-check",
+    "--ignore-user-config",
+    "--sandbox",
+    "read-only",
+    "--model",
+    "gpt-5.6-luna",
+    "-c",
+    "model_reasoning_effort=\"high\"",
+    "-c",
+    "model_context_window=32768",
+    "--output-schema",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-Bq0S4k/schema.json",
+    "--output-last-message",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-Bq0S4k/final.json",
+    "-"
+  ],
+  "prompt": "You are the formalization component of a two-stage reasoning experiment. Formalize the complete original English world and its original question; do not answer A/B/C. Do not use tools, shell, files, network, external annotations, or source benchmark formulas. Everything needed is in this prompt.\n\nUse the labelled Prolog surface used by the finite_fol_meta_prover library. The first declaration must be top-level domain(person,[...]). List every named individual from this world with lowercase constant atoms. Then represent every source sentence exactly once as axiom(s1,...), axiom(s2,...), through sN in source order, with its exact English in a preceding % comment. Never put domain inside axiom. Never add a conclusion just because it would answer the question.\n\nFact: axiom(s1, calm(ada)). Explicit negation: axiom(s2, not(ready(ada))). Universal rule: axiom(s3, rule([calm(X)], ready(X))). Prolog variables in rule/2 are universally quantified over person. Multiple premises in the list mean conjunction. Preserve complex premises and conclusions with and(F,G), or(F,G), xor(F,G), not(F), and implies(F,G). Inclusive OR is or/2; 'but not both' is xor/2. Preserve conditional direction. For explicit quantifiers use forall(var(x,person),F) or exists(var(x,person),F), referring to the bound variable as var(x) in its body. A lowercase x by itself is a constant. Use ordinary predicate terms, not atom(Name,Args). Do not invent domain facts or omit difficult sentences.\n\nTranslate the actual question using exactly the same predicate vocabulary as the program, including not(...) for an explicitly negative statement. Your bare query must be labelled_explanation(Goal, Status, Package), without ?- or a trailing period. The evaluator returns a finite classical status (entailed, contradicted, unknown, conflict, or invalid_program) and diagnostic package; it does not require a positive Horn proof. Do not define this evaluator yourself or execute any code. No directives, helper predicates, or negation-as-failure.\n\nReturn only JSON with two strings: {\"program\":\"...\",\"query\":\"...\"}. Before returning, check source coverage, named individuals, quantifier scope, polarity, OR/XOR, and predicate spelling between program and question.\n\n\nWorld:\nLovie preaches understanding or fosters peace. If Lovie either defends minorities or supports human rights (but not both), then she advocates for freedom. Lovie does not earn respect. For all humans, if they oppose extremism or value tolerance, then they promote social justice. Anyone who rejects prejudice or embraces diversity values tolerance. If someone heals their community, then they will earn respect. Lilly either supports human rights or promotes social justice, but no one necessarily does both. Lovie either supports human rights or promotes social justice, but no one necessarily does both. If Lilly either defends minorities or supports human rights (but not both), then she advocates for freedom. Shiloh does not earn respect. If someone values tolerance, then they foster peace. Lovie defends minorities. Lovie does not advocate for freedom. If Lilly fosters peace, then she heals her community. Lovie believes in equality or supports human rights. If Lovie fosters peace, then she heals her community.\n\nOriginal question:\nBased on the above information, is the following statement true, false, or uncertain? Lovie opposes extremism.\n",
+  "prompt_sha256": "feef4dfb8bc811af2475418c58767572f22afdda40fd32a35325ade9f4a30483",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "program",
+      "query"
+    ],
+    "properties": {
+      "program": {
+        "type": "string"
+      },
+      "query": {
+        "type": "string"
+      }
+    }
+  },
+  "timeout_ms": 180000
+}

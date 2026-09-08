@@ -1,0 +1,49 @@
+{
+  "command": "/Users/artem/.local/bin/codex",
+  "args": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "-C",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-NE6cD5",
+    "--skip-git-repo-check",
+    "--ignore-user-config",
+    "--sandbox",
+    "read-only",
+    "--model",
+    "gpt-5.6-luna",
+    "-c",
+    "model_reasoning_effort=\"high\"",
+    "-c",
+    "model_context_window=32768",
+    "--output-schema",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-NE6cD5/schema.json",
+    "--output-last-message",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-NE6cD5/final.json",
+    "-"
+  ],
+  "prompt": "Answer the original question from the supplied model-authored Prolog program and query. You may also receive an execution transcript for that same unchanged program. No benchmark answer, source formula, or source proof is supplied. Do not use tools, execute code, read files, access the network, or retrieve other information.\n\nUse A for True, B for False, C for Uncertain. Preserve the question's polarity. Failure to find a positive Horn derivation is not proof of falsity. A semantic executor status entailed supports A, contradicted supports B, and unknown supports C for the submitted goal; conflict, invalid_program, and runtime failure are distinct and do not justify fabricating a proof. Interpret the evidence and give your own final answer. If the supplied formalization is inconsistent or inadequate to settle the statement, explain that limitation rather than silently inventing or deleting premises.\n\nReturn only JSON: {\"answer\":\"A|B|C\",\"explanation\":\"brief reasoning and any material limitation\"}.\n\n\nOriginal question:\nBased on the above information, is the following statement true, false, or uncertain? Hunter is an unsuccessful fisherman.\n\nModel-authored program:\ndomain(person,[hunter,ictiobus]).\n\n% Hunter uses bait or knows ictiobus.\naxiom(s1, or(uses_bait(hunter), knows_ictiobus(hunter))).\n\n% Hunter is not skilled.\naxiom(s2, not(skilled(hunter))).\n\n% If Hunter can read the water, then he is either skilled or experienced, but not both.\naxiom(s3, rule([reads_water(hunter)], xor(skilled(hunter), experienced(hunter)))).\n\n% Hunter does not understand currents.\naxiom(s4, not(understands_currents(hunter))).\n\n% If Hunter knows ictiobus, then he either reads the water or understands currents, but not both.\naxiom(s5, rule([knows_ictiobus(hunter)], xor(reads_water(hunter), understands_currents(hunter)))).\n\n% Hunter either catches fish or is successful.\naxiom(s6, or(catches_fish(hunter), successful(hunter))).\n\n% Hunter travels rivers or knows ictiobus.\naxiom(s7, or(travels_rivers(hunter), knows_ictiobus(hunter))).\n\n% Hunter knows the river.\naxiom(s8, knows_river(hunter)).\n\n% Every fisherman is either successful or unsuccessful, but not both.\naxiom(s9, rule([fisherman(X)], xor(successful(X), unsuccessful(X)))).\n\n% If Hunter is patient, then he is either adventurous or can read the water, but not both.\naxiom(s10, rule([patient(hunter)], xor(adventurous(hunter), reads_water(hunter)))).\n\n% Hunter does not use bait.\naxiom(s11, not(uses_bait(hunter))).\n\n% If Hunter knows the river, then he either has experience or catches fish, but not both.\naxiom(s12, rule([knows_river(hunter)], xor(experienced(hunter), catches_fish(hunter)))).\n\nModel-authored query:\nlabelled_explanation(and(unsuccessful(hunter), fisherman(hunter)), Status, Package)\n\nExecution evidence:\nNo executor was run for this condition. Determine the answer by reading the program.\n",
+  "prompt_sha256": "0067454d8ef93ad5589b42fff8b562d99dae60779a0fdf1fa447753a37574dc0",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "answer",
+      "explanation"
+    ],
+    "properties": {
+      "answer": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "explanation": {
+        "type": "string"
+      }
+    }
+  },
+  "timeout_ms": 180000
+}

@@ -1,0 +1,44 @@
+{
+  "command": "/Users/artem/.local/bin/codex",
+  "args": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "-C",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-SV41Ix",
+    "--skip-git-repo-check",
+    "--ignore-user-config",
+    "--sandbox",
+    "read-only",
+    "--model",
+    "gpt-5.6-luna",
+    "-c",
+    "model_reasoning_effort=\"high\"",
+    "-c",
+    "model_context_window=32768",
+    "--output-schema",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-SV41Ix/schema.json",
+    "--output-last-message",
+    "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/luna-paired-SV41Ix/final.json",
+    "-"
+  ],
+  "prompt": "You are the formalization component of a two-stage reasoning experiment. Formalize the complete original English world and its original question; do not answer A/B/C. Do not use tools, shell, files, network, external annotations, or source benchmark formulas. Everything needed is in this prompt.\n\nUse the labelled Prolog surface used by the finite_fol_meta_prover library. The first declaration must be top-level domain(person,[...]). List every named individual from this world with lowercase constant atoms. Then represent every source sentence exactly once as axiom(s1,...), axiom(s2,...), through sN in source order, with its exact English in a preceding % comment. Never put domain inside axiom. Never add a conclusion just because it would answer the question.\n\nFact: axiom(s1, calm(ada)). Explicit negation: axiom(s2, not(ready(ada))). Universal rule: axiom(s3, rule([calm(X)], ready(X))). Prolog variables in rule/2 are universally quantified over person. Multiple premises in the list mean conjunction. Preserve complex premises and conclusions with and(F,G), or(F,G), xor(F,G), not(F), and implies(F,G). Inclusive OR is or/2; 'but not both' is xor/2. Preserve conditional direction. For explicit quantifiers use forall(var(x,person),F) or exists(var(x,person),F), referring to the bound variable as var(x) in its body. A lowercase x by itself is a constant. Use ordinary predicate terms, not atom(Name,Args). Do not invent domain facts or omit difficult sentences.\n\nTranslate the actual question using exactly the same predicate vocabulary as the program, including not(...) for an explicitly negative statement. Your bare query must be labelled_explanation(Goal, Status, Package), without ?- or a trailing period. The evaluator returns a finite classical status (entailed, contradicted, unknown, conflict, or invalid_program) and diagnostic package; it does not require a positive Horn proof. Do not define this evaluator yourself or execute any code. No directives, helper predicates, or negation-as-failure.\n\nReturn only JSON with two strings: {\"program\":\"...\",\"query\":\"...\"}. Before returning, check source coverage, named individuals, quantifier scope, polarity, OR/XOR, and predicate spelling between program and question.\n\n\nWorld:\nIf Devin enjoys travelling, then he is either an explorer or has patience, but not both. If Devin either reads ancient texts or unearths fossils (but not both), then he collects relics. If Devin likes history, then he is either an archaeologist or enjoys museums, but not both. Devin has curiosity. If Brooks studies ancient cultures, then he is either an expert in Inca history or makes groundbreaking discoveries (or both). Devin seeks security. If Devin has curiosity or loves challenges, then he is an explorer. Oaklyn does not unearth fossils. Devin does not unearth fossils. If Stephanie has curiosity or loves challenges, then he is an explorer. If Devin is an explorer, then he either takes risks or seeks security, but not both. Stephanie makes groundbreaking discoveries. Brooks seeks security. Stephanie does not study ancient cultures. Stephanie has curiosity. Devin loves challenges. Devin reads ancient texts. Oaklyn reads ancient texts. Devin either knows many languages or is an expert in Inca history. Anyone who embraces challenges or has a passion for history is adventurous.\n\nOriginal question:\nBased on the above information, is the following statement true, false, or uncertain? Devin is adventurous, or an expert in Inca history, or an archaeologist.\n",
+  "prompt_sha256": "77a7d4a340bf51a5f5ba3fb293b3352ccdb1c1cdce2781acf84586affc1fc20d",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "program",
+      "query"
+    ],
+    "properties": {
+      "program": {
+        "type": "string"
+      },
+      "query": {
+        "type": "string"
+      }
+    }
+  },
+  "timeout_ms": 180000
+}
