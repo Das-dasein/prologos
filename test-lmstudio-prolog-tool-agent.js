@@ -12,6 +12,6 @@ const { createLmStudioPrologToolAgent } = require("./lmstudio-prolog-tool-agent"
   ];
   const agent = createLmStudioPrologToolAgent({ model: "local-test", fetchImpl: async () => ({ ok: true, status: 200, text: async () => JSON.stringify(replies[turn++]) }) });
   const result = await agent({ caseId: "tool-agent", prompt: "Use the tools.", sourceSentences: { s1: "Selah has wings.", s2: "Selah has a serpent body.", s3: "If Selah has wings and a serpent body, then she can rule the ocean." }, expectedGoal: { predicate: "rules_the_ocean", subject: "selah" }, targetRuleSourceId: "s3" });
-  assert.equal(result.final, "proved"); assert.equal(result.calls.length, 4); assert.match(result.program, /axiom\(s3, rule/); assert.equal(result.transport.responses[0].request.tool_choice, "required");
+  assert.equal(result.final, "proved"); assert.equal(result.calls.length, 4); assert.match(result.program, /axiom\(s3, rule/); assert.equal(result.transport.responses[0].request.tool_choice, "required"); assert.equal(result.transport.responses[0].request.messages.length, 1); assert.ok(result.transport.responses[3].request.messages.length > 1);
   console.log("lmstudio-prolog-tool-agent ok: enforced tool loop preserves model calls and real Prolog proof");
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
