@@ -6,6 +6,9 @@ const {select,inspectEvents,evaluateCase,summarize}=require("./run-luna-thirty-p
   const picked=select(source,[0,1,2],"test-seed");assert.equal(picked.length,30);assert.ok(picked.every(x=>x.id>2));assert.deepEqual(picked,select(source,[0,1,2],"test-seed"));
   assert.equal(inspectEvents('{"type":"item.completed","item":{"type":"command_execution"}}\n').no_tool_events,false);
   assert.equal(inspectEvents('malformed\n').no_tool_events,false);
+  const notice={type:"item.completed",item:{type:"error",message:"Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest."}};
+  assert.equal(inspectEvents(JSON.stringify(notice)).no_tool_events,true);
+  assert.equal(inspectEvents(JSON.stringify({...notice,item:{type:"error",message:"unexpected runtime error"}})).no_tool_events,false);
   const root=fs.mkdtempSync(path.join(os.tmpdir(),"luna-paired-test-")),requests=[];
   try {
     const item={id:25,context:"Ada is calm.",question:"Is Ada ready?"},spec={selected_source_ids:[25,30],runtime:{timeout_ms:10,max_output_bytes:500}};

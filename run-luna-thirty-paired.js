@@ -22,9 +22,11 @@ function select(rows, excluded, seed) {
 function inspectEvents(stdout) {
   const events = [], invalid = [];
   for (const line of stdout.split(/\r?\n/).filter(Boolean)) { try { events.push(JSON.parse(line)); } catch { invalid.push(line); } }
-  const forbidden = events.filter(event => event.item && !["agent_message", "reasoning"].includes(event.item.type));
+  const benignNotice = event => event.item?.type === "error" && event.item.message === "Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.";
+  const notices = events.filter(benignNotice);
+  const forbidden = events.filter(event => event.item && !["agent_message", "reasoning"].includes(event.item.type) && !benignNotice(event));
   const completed = events.filter(event => event.type === "turn.completed");
-  return { no_tool_events: forbidden.length === 0 && invalid.length === 0, forbidden_events: forbidden, invalid_jsonl_lines: invalid, completed_turns: completed.length, usage: completed.at(-1)?.usage || null };
+  return { no_tool_events: forbidden.length === 0 && invalid.length === 0, forbidden_events: forbidden, benign_notices: notices, invalid_jsonl_lines: invalid, completed_turns: completed.length, usage: completed.at(-1)?.usage || null };
 }
 async function invoke({ spec, prompt, schema, directory }) {
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -97,7 +99,21 @@ async function main(manifestFile,rawRoot) {
   else write(provenance,{manifest_file:file,manifest_sha256:sha(bytes),source_commit:execFileSync("git",["rev-parse","HEAD"],{cwd:__dirname,encoding:"utf8"}).trim(),codex_version:execFileSync(spec.codex_path,["--version"],{encoding:"utf8"}).trim(),started_at:new Date().toISOString()});
   const formalTemplate=fs.readFileSync(path.join(base,"formalization.txt"),"utf8"),verdictTemplate=fs.readFileSync(path.join(base,"verdict.txt"),"utf8"),records=[];
   // One case at a time; progress and every stage survive an interrupted collector.
-  for(const item of cases){const record=await evaluateCase({spec,item,root,formalTemplate,verdictTemplate});records.push(record);const summary=summarize(records,gold);fs.writeFileSync(path.join(root,"progress.json"),json(summary));console.log(JSON.stringify({source_id:item.id,completed:records.length,formalization_error:record.formalization.error,M1:record.conditions.M1?.output?.answer,M2:record.conditions.M2?.output?.answer}));}
+  for(const item of cases){
+    if(spec.import_completed_stages_from){
+      const sourceCase=path.resolve(base,spec.import_completed_stages_from,`case-${item.id}`),deadline=Date.now()+spec.import_wait_ms;
+      while(!fs.existsSync(path.join(sourceCase,"record.json"))){if(Date.now()>deadline)throw Error(`producer not complete: ${sourceCase}`);await new Promise(resolve=>setTimeout(resolve,3000));}
+      for(const stage of ["formalization","M1","M2"]){
+        const sourceStage=path.join(sourceCase,stage),sourceReceipt=path.join(sourceStage,"receipt.json"),destination=path.join(root,`case-${item.id}`,stage);
+        if(!fs.existsSync(sourceReceipt)||fs.existsSync(path.join(destination,"receipt.json")))continue;
+        const originalBytes=fs.readFileSync(sourceReceipt,"utf8"),original=JSON.parse(originalBytes),stdout=fs.readFileSync(path.join(sourceStage,"stdout.jsonl"),"utf8"),audit=inspectEvents(stdout);
+        const reclassified=original.error==="trace_gate_failed"&&audit.no_tool_events&&audit.completed_turns===1;
+        fs.mkdirSync(destination,{recursive:true,mode:0o700});
+        for(const name of ["request.json","stdout.jsonl","stderr.txt","final.txt"])if(fs.existsSync(path.join(sourceStage,name)))fs.copyFileSync(path.join(sourceStage,name),path.join(destination,name),fs.constants.COPYFILE_EXCL);
+        write(path.join(destination,"receipt.json"),{...original,error:reclassified?null:original.error,audit,imported_from:sourceReceipt,source_receipt_sha256:sha(originalBytes),original_error:original.error,classification_amendment:reclassified?"exact-benign-skills-notice-is-not-a-tool-event":null});
+      }
+    }
+    const record=await evaluateCase({spec,item,root,formalTemplate,verdictTemplate});records.push(record);const summary=summarize(records,gold);fs.writeFileSync(path.join(root,"progress.json"),json(summary));console.log(JSON.stringify({source_id:item.id,completed:records.length,formalization_error:record.formalization.error,M1:record.conditions.M1?.output?.answer,M2:record.conditions.M2?.output?.answer}));}
   const result={status:"completed-diagnostic-not-independent-cdr-review",manifest_sha256:sha(bytes),summary:summarize(records,gold),records:records.map(r=>({source_id:r.source_id,gold:gold[r.source_id],program_sha256:r.shared_program_sha256,formalization_error:r.formalization.error,M1:r.conditions.M1?.output||null,M2:r.conditions.M2?.output||null,M1_error:r.conditions.M1?.error||null,M2_error:r.conditions.M2?.error||null,record:`case-${r.source_id}/record.json`}))};
   const final=path.join(root,"results.json");if(!fs.existsSync(final))write(final,result);console.log(json(result.summary));
 }
