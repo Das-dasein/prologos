@@ -50,6 +50,7 @@ function validateFixture(fixture) {
   }
 }
 function freshRoot(rawRoot) { if (typeof rawRoot !== "string" || !path.isAbsolute(rawRoot) || fs.existsSync(rawRoot) || !fs.existsSync(path.dirname(rawRoot))) throw new Error("rawRoot must be a fresh absolute path with an existing parent"); fs.mkdirSync(rawRoot, { mode: 0o700 }); }
+function preservedGenerated(generated) { return generated ? { program: generated.program, query: generated.query, transport: generated.transport || null } : null; }
 async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promptFile = null, provenance = null, maxRepairAttempts = 0, forceRepairAfterInitial = false, retryOnConflict = false, retryOnDomainAudit = false, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
   validateFixture(fixture); freshRoot(rawRoot); if (typeof generate !== "function") throw new Error("generate must be a function");
   if (!Number.isSafeInteger(maxRepairAttempts) || maxRepairAttempts < 0 || maxRepairAttempts > 7) throw new Error("maxRepairAttempts must be an integer from 0 to 7");
@@ -63,11 +64,11 @@ async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promp
         if (!generated || typeof generated.program !== "string" || typeof generated.query !== "string") throw new Error("generator must return program and query strings");
         observation = await runFreePrologDiagnostic({ caseId: item.case_id, program: generated.program, query: generated.query, source: "diagnostic-agent", timeoutMs, maxOutputBytes }); transportError = null;
       } catch (error) { transportError = String(error && (error.stack || error.message) || error); observation = null; }
-      attempts.push(Object.freeze({ stage: attempt === 0 ? "initial" : "repair", prompt_sha256: sha256(prompt), generated: generated ? { program: generated.program, query: generated.query } : null, observation, transport_error: transportError }));
+      attempts.push(Object.freeze({ stage: attempt === 0 ? "initial" : "repair", prompt_sha256: sha256(prompt), generated: preservedGenerated(generated), observation, transport_error: transportError }));
       if ((!needsRepair(observation, transportError, retryOnConflict, retryOnDomainAudit) && !(forceRepairAfterInitial && attempt === 0)) || attempt === maxRepairAttempts) break;
       prompt = repairPrompt(item, generated, observation, transportError, frozenPrompt);
     }
-    const record = Object.freeze({ case_id: item.case_id, fixture_sha256: fixtureSha, prompt_sha256: attempts[0].prompt_sha256, generated: generated ? { program: generated.program, query: generated.query } : null, observation, transport_error: transportError, attempts: Object.freeze(attempts) });
+    const record = Object.freeze({ case_id: item.case_id, fixture_sha256: fixtureSha, prompt_sha256: attempts[0].prompt_sha256, generated: preservedGenerated(generated), observation, transport_error: transportError, attempts: Object.freeze(attempts) });
     fs.writeFileSync(path.join(rawRoot, `${item.case_id}.json`), stable(record), { encoding: "utf8", flag: "wx", mode: 0o600 }); records.push(record);
   }
   const result = Object.freeze({ schema_version: "free-prolog-diagnostic-run-v1", status: "observed-not-scored", prompt_version: frozenPrompt ? frozenPrompt.prompt_id : promptVersion, prompt_file: frozenPrompt ? { path: frozenPrompt.file, sha256: frozenPrompt.sha256 } : null, provenance, fixture_sha256: fixtureSha, records: Object.freeze(records) });
