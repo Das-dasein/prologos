@@ -16,6 +16,13 @@ function loadFrozenPrompt(promptFile) {
   if (!spec || spec.schema_version !== "free-prolog-prompt-v1" || spec.status !== "frozen" || typeof spec.prompt_id !== "string" || typeof spec.initial_addon !== "string" || typeof spec.repair_instruction !== "string") throw new Error("invalid frozen prompt file");
   return Object.freeze({ ...spec, file: fs.realpathSync(promptFile), sha256: sha256(text) });
 }
+function renderFrozenPrompt(frozenPrompt, values) {
+  if (!values) return frozenPrompt;
+  if (!values || typeof values !== "object" || Array.isArray(values) || Object.values(values).some(value => typeof value !== "string" || !value)) throw new Error("promptAddonValues must map names to non-empty text");
+  const initial_addon = Object.entries(values).reduce((text, [key, value]) => text.replaceAll(`{{${key}}}`, value), frozenPrompt.initial_addon);
+  if (initial_addon.includes("{{")) throw new Error("unrendered frozen prompt placeholder");
+  return Object.freeze({ ...frozenPrompt, initial_addon });
+}
 function promptFor(item, promptVersion = "v1", frozenPrompt = null) {
   const common = `Read this logical world and question. Write ordinary SWI-Prolog source that you believe helps test one relevant hypothesis, plus one bare callable Prolog query to execute. The query is an API argument, not a console command: never include ?- or a trailing period. You may use normal facts, rules, helper predicates, and built-ins; do not call the shell, read files, use network, or add directives. This is an exploratory diagnostic, not a request for a final A/B/C answer.\n\n${CAPABILITY_MANIFEST}`;
   const r2 = ` Before returning, self-check that every predicate called in a rule body is defined or intentionally supplied by SWI-Prolog. For “either/or, but not both”, encode both directions or an explicit exclusivity relation; do not silently reduce it to one implication. Negation-as-failure is allowed only when you intend its closed-world meaning.`;
@@ -29,9 +36,15 @@ function promptFor(item, promptVersion = "v1", frozenPrompt = null) {
   const addon = frozenPrompt ? ` ${frozenPrompt.initial_addon}` : promptVersion === "v2-self-check" ? r2 : promptVersion === "v3-optional-semantics" ? r3 : promptVersion === "v4-surface-semantics" ? r4 : promptVersion === "v5-relevant-slice" ? r5 : promptVersion === "v6-complete-trace" ? r6 : promptVersion === "v7-labelled-countermodel" ? r7 : promptVersion === "v8-reflect-then-formalize" ? r8 : "";
   return `${common}${addon} Return JSON only: {"program":"...","query":"..."}.\n\nWorld:\n${item.context}\n\nQuestion:\n${item.question}\n`;
 }
-function repairPrompt(item, previous, observation, transportError, frozenPrompt = null) {
+function relevantExecutorEvidence(observation, transportError) {
+  const full = observation ? observation.runtime.transcript.transcript : transportError || "no runtime evidence";
+  const relevant = full.split(/\r?\n/).filter(line => /^(ERROR:|PAM_DIAGNOSTIC_OUTCOME:)/.test(line) || /Syntax error|existence_error|invalid_program|budget_exhausted/.test(line)).join("\n");
+  return (relevant || full).slice(0, 6000);
+}
+function repairPrompt(item, previous, observation, transportError, frozenPrompt = null, compact = false) {
   const instruction = frozenPrompt ? frozenPrompt.repair_instruction : `You previously wrote an ordinary Prolog program for this world. The isolated runtime returned the evidence below. Repair the program and query yourself; do not change the English world, invent facts, read files, call the shell/network, or answer A/B/C. Preserve useful source labels. Return JSON only: {"program":"...","query":"..."}.`;
   const evidence = observation ? observation.runtime.transcript.transcript : transportError || "no runtime evidence";
+  if (compact) return `${instruction}\n\nThis is a surface-only repair. Preserve the prior program's predicates, facts, rules, source labels, and query. Do not add or delete statements. Use SWI-Prolog comments (%), never //. The first executable declaration must be top-level domain(person,[...])., not an axiom wrapper.\n\nPrevious program:\n${previous.program}\n\nPrevious query:\n${previous.query}\n\nRelevant executor evidence:\n${relevantExecutorEvidence(observation, transportError)}\n\nReturn JSON only: {"program":"...","query":"..."}.`;
   const domainRepair = evidence.includes("outside_declared_domains([constant(") ? ` The trusted domain_audit is structural evidence. For each listed constant, compare its source sentence and formula: decide whether it is a named entity needing an intended domain/2 declaration or an incorrectly written reference to a quantified variable. Check quantifier_audit before adding a name to a domain; a constant matching a binder name must not be added merely to silence the audit. Use var(Name) only if the source intended that bound variable. Inspect the listed source IDs for quantified rules. Do not automatically merge similarly named predicates; compare them to their English comments first.` : "";
   return `${instruction}${domainRepair}\n\n${CAPABILITY_MANIFEST}\n\nWorld:\n${item.context}\n\nQuestion:\n${item.question}\n\nPrevious program:\n${previous.program}\n\nPrevious query:\n${previous.query}\n\nRuntime evidence:\n${evidence}\n`;
 }
@@ -51,10 +64,10 @@ function validateFixture(fixture) {
 }
 function freshRoot(rawRoot) { if (typeof rawRoot !== "string" || !path.isAbsolute(rawRoot) || fs.existsSync(rawRoot) || !fs.existsSync(path.dirname(rawRoot))) throw new Error("rawRoot must be a fresh absolute path with an existing parent"); fs.mkdirSync(rawRoot, { mode: 0o700 }); }
 function preservedGenerated(generated) { return generated ? { program: generated.program, query: generated.query, transport: generated.transport || null } : null; }
-async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promptFile = null, provenance = null, maxRepairAttempts = 0, forceRepairAfterInitial = false, retryOnConflict = false, retryOnDomainAudit = false, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
+async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promptFile = null, promptAddonValues = null, provenance = null, maxRepairAttempts = 0, forceRepairAfterInitial = false, retryOnConflict = false, retryOnDomainAudit = false, compactRepair = false, timeoutMs = 1500, maxOutputBytes = 256 * 1024 }) {
   validateFixture(fixture); freshRoot(rawRoot); if (typeof generate !== "function") throw new Error("generate must be a function");
   if (!Number.isSafeInteger(maxRepairAttempts) || maxRepairAttempts < 0 || maxRepairAttempts > 7) throw new Error("maxRepairAttempts must be an integer from 0 to 7");
-  const frozenPrompt = promptFile ? loadFrozenPrompt(promptFile) : null;
+  const frozenPrompt = promptFile ? renderFrozenPrompt(loadFrozenPrompt(promptFile), promptAddonValues) : null;
   const fixtureText = stable(fixture), fixtureSha = sha256(fixtureText), records = [];
   for (const item of fixture.cases) {
     let prompt = promptFor(item, promptVersion, frozenPrompt), generated, observation = null, transportError = null; const attempts = [];
@@ -66,7 +79,7 @@ async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promp
       } catch (error) { transportError = String(error && (error.stack || error.message) || error); observation = null; }
       attempts.push(Object.freeze({ stage: attempt === 0 ? "initial" : "repair", prompt_sha256: sha256(prompt), generated: preservedGenerated(generated), observation, transport_error: transportError }));
       if ((!needsRepair(observation, transportError, retryOnConflict, retryOnDomainAudit) && !(forceRepairAfterInitial && attempt === 0)) || attempt === maxRepairAttempts) break;
-      prompt = repairPrompt(item, generated, observation, transportError, frozenPrompt);
+      prompt = repairPrompt(item, generated, observation, transportError, frozenPrompt, compactRepair);
     }
     const record = Object.freeze({ case_id: item.case_id, fixture_sha256: fixtureSha, prompt_sha256: attempts[0].prompt_sha256, generated: preservedGenerated(generated), observation, transport_error: transportError, attempts: Object.freeze(attempts) });
     fs.writeFileSync(path.join(rawRoot, `${item.case_id}.json`), stable(record), { encoding: "utf8", flag: "wx", mode: 0o600 }); records.push(record);
@@ -74,4 +87,4 @@ async function collect({ fixture, rawRoot, generate, promptVersion = "v1", promp
   const result = Object.freeze({ schema_version: "free-prolog-diagnostic-run-v1", status: "observed-not-scored", prompt_version: frozenPrompt ? frozenPrompt.prompt_id : promptVersion, prompt_file: frozenPrompt ? { path: frozenPrompt.file, sha256: frozenPrompt.sha256 } : null, provenance, fixture_sha256: fixtureSha, records: Object.freeze(records) });
   fs.writeFileSync(path.join(rawRoot, "aggregate-not-a-score.json"), stable(result), { encoding: "utf8", flag: "wx", mode: 0o600 }); return result;
 }
-module.exports = { CAPABILITY_MANIFEST, collect, loadFrozenPrompt, needsRepair, promptFor, repairPrompt, validateFixture };
+module.exports = { CAPABILITY_MANIFEST, collect, loadFrozenPrompt, needsRepair, promptFor, relevantExecutorEvidence, renderFrozenPrompt, repairPrompt, validateFixture };

@@ -18,11 +18,11 @@ function parseProgramQuery(value) {
   return Object.freeze({ program: value.program, query: value.query });
 }
 async function responseText(response) { if (!response || typeof response.ok !== "boolean" || typeof response.text !== "function") throw new Error("fetch implementation returned an invalid response"); const body = await response.text(); if (!response.ok) throw new Error(`LM Studio chat completion failed (${response.status}): ${body.slice(0, 4000) || "no diagnostic output"}`); return body; }
-function createLmStudioFreePrologGenerator({ baseUrl = "http://127.0.0.1:1234", model, fetchImpl = globalThis.fetch, timeoutMs = 120000 }) {
-  const root = localBaseUrl(baseUrl); nonempty(model, "model"); if (typeof fetchImpl !== "function") throw new Error("fetchImpl must be a function"); if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 600000) throw new Error("timeoutMs must be an integer from 1000 to 600000");
+function createLmStudioFreePrologGenerator({ baseUrl = "http://127.0.0.1:1234", model, fetchImpl = globalThis.fetch, timeoutMs = 120000, maxTokens = 2048 }) {
+  const root = localBaseUrl(baseUrl); nonempty(model, "model"); if (typeof fetchImpl !== "function") throw new Error("fetchImpl must be a function"); if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 600000) throw new Error("timeoutMs must be an integer from 1000 to 600000"); if (!Number.isSafeInteger(maxTokens) || maxTokens < 64 || maxTokens > 16384) throw new Error("maxTokens must be an integer from 64 to 16384");
   return async ({ prompt }) => {
     nonempty(prompt, "prompt");
-    const request = Object.freeze({ model, temperature: 0, messages: [{ role: "user", content: prompt }], response_format: { type: "json_schema", json_schema: { name: "free_prolog_program", strict: true, schema: OUTPUT_SCHEMA } } });
+    const request = Object.freeze({ model, temperature: 0, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }], response_format: { type: "json_schema", json_schema: { name: "free_prolog_program", strict: true, schema: OUTPUT_SCHEMA } } });
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs);
     let rawResponse;
     try {

@@ -253,7 +253,11 @@ fold_disjunction([Next|Rest], Current, Expression) :- Combined =.. ['+', Current
 audit_trace(Goal, Result) :-
     findall(item(Id, Clause), user:axiom(Id, Clause), Items),
     ( Items = [] -> Result = invalid_program(requires_labelled_axiom_2)
-    ; ground(Goal) -> initial_trace_items(Items, Known), trace_until(Goal, Items, Known, 64, Result)
+    ; ground(Goal) -> initial_trace_items(Items, Known),
+      ( Known = [] -> self_supporting_rule_ids(Items, SelfSupporting),
+        Result = invalid_program(no_traceable_base_facts(self_supporting_rules(SelfSupporting)))
+      ; trace_until(Goal, Items, Known, 64, Result)
+      )
     ; Result = invalid_goal(requires_ground_goal(Goal))
     ).
 
@@ -261,6 +265,8 @@ initial_trace_items([], []).
 initial_trace_items([item(Id, fact(Literal))|Rest], [known(Literal, fact(Id))|KnownRest]) :- trace_literal(Literal), !, initial_trace_items(Rest, KnownRest).
 initial_trace_items([item(Id, Literal)|Rest], [known(Literal, fact(Id))|KnownRest]) :- trace_literal(Literal), !, initial_trace_items(Rest, KnownRest).
 initial_trace_items([_|Rest], Known) :- initial_trace_items(Rest, Known).
+self_supporting_rule_ids(Items, Ids) :-
+    findall(Id, (member(item(Id, rule([Only], Head)), Items), Only =@= Head), Ids).
 trace_literal(Literal) :- compound(Literal), Literal =.. [Name|_], \+ memberchk(Name, [fact, rule, not, and, or, xor, implies, forall, exists]).
 trace_until(Goal, _, Known, _, proof(Goal, Known)) :- member(known(Fact, _), Known), Fact = Goal, !.
 trace_until(_, _, _, 0, no_forward_trace(depth_limit)).

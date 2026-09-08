@@ -7,6 +7,7 @@ const https = require("node:https");
 const path = require("node:path");
 const { collect } = require("./free-prolog-diagnostic-collector");
 const { createCodexFreePrologGenerator } = require("./codex-free-prolog-generator");
+const { createLmStudioFreePrologGenerator } = require("./lmstudio-free-prolog-generator");
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 function get(url) { return new Promise((resolve, reject) => https.get(url, response => {
@@ -16,8 +17,13 @@ function get(url) { return new Promise((resolve, reject) => https.get(url, respo
 }).on("error", reject)); }
 function readSnapshot(snapshotFile) {
   const file = path.resolve(snapshotFile), text = fs.readFileSync(file, "utf8"), spec = JSON.parse(text);
-  if (!spec || spec.schema_version !== "free-prolog-experiment-snapshot-v1" || spec.status !== "ready-to-run" || typeof spec.experiment_id !== "string" || typeof spec.model !== "string" || !Number.isInteger(spec.max_model_calls) || spec.max_model_calls < 1 || spec.max_model_calls > 8 || !spec.source || !Number.isInteger(spec.source.case_id) || !/^[a-f0-9]{64}$/.test(spec.source.sha256) || typeof spec.prompt_file !== "string") throw new Error("invalid experiment snapshot");
+  if (!spec || spec.schema_version !== "free-prolog-experiment-snapshot-v1" || spec.status !== "ready-to-run" || typeof spec.experiment_id !== "string" || typeof spec.model !== "string" || !Number.isInteger(spec.max_model_calls) || spec.max_model_calls < 1 || spec.max_model_calls > 8 || !spec.source || !Number.isInteger(spec.source.case_id) || !/^[a-f0-9]{64}$/.test(spec.source.sha256) || typeof spec.prompt_file !== "string" || (spec.prompt_addon_values !== undefined && (!spec.prompt_addon_values || typeof spec.prompt_addon_values !== "object" || Array.isArray(spec.prompt_addon_values)))) throw new Error("invalid experiment snapshot");
   return Object.freeze({ ...spec, file: fs.realpathSync(file), sha256: sha256(text), prompt_file: path.resolve(path.dirname(file), spec.prompt_file) });
+}
+function generatorFor(spec) {
+  if (!spec.transport) return createCodexFreePrologGenerator({ codexPath: "/Users/artem/.local/bin/codex", model: spec.model });
+  if (spec.transport.type === "lmstudio") return createLmStudioFreePrologGenerator({ baseUrl: spec.transport.base_url, model: spec.model, timeoutMs: spec.transport.request_timeout_ms || 120000, maxTokens: spec.transport.max_tokens || 2048 });
+  throw new Error("unsupported experiment transport");
 }
 async function main(snapshotFile) {
   const spec = readSnapshot(snapshotFile), source = await get(spec.source.url);
@@ -26,8 +32,8 @@ async function main(snapshotFile) {
   if (!row || typeof row.context !== "string" || typeof row.question !== "string") throw new Error("snapshot case missing from verified source");
   const fixture = { schema_version: "free-prolog-diagnostic-fixture-v1", cases: [{ case_id: `proverqa-hard-${row.id}`, context: row.context, question: row.question }] };
   const rawRoot = path.join(path.dirname(spec.file), "..", `raw-${spec.experiment_id}-${new Date().toISOString().replace(/[:.]/g, "-")}`);
-  const result = await collect({ fixture, rawRoot, generate: createCodexFreePrologGenerator({ codexPath: "/Users/artem/.local/bin/codex", model: spec.model }), promptVersion: "v8-reflect-then-formalize", promptFile: spec.prompt_file, provenance: { snapshot_file: spec.file, snapshot_sha256: spec.sha256, source_sha256: spec.source.sha256, model: spec.model, max_model_calls: spec.max_model_calls }, maxRepairAttempts: spec.max_model_calls - 1, forceRepairAfterInitial: spec.force_repair_after_initial === true, retryOnConflict: Array.isArray(spec.retry_conditions) && spec.retry_conditions.includes("conflict"), timeoutMs: spec.runtime.timeout_ms, maxOutputBytes: spec.runtime.max_output_bytes });
+  const result = await collect({ fixture, rawRoot, generate: generatorFor(spec), promptVersion: "v8-reflect-then-formalize", promptFile: spec.prompt_file, promptAddonValues: spec.prompt_addon_values || null, provenance: { snapshot_file: spec.file, snapshot_sha256: spec.sha256, source_sha256: spec.source.sha256, model: spec.model, transport: spec.transport || { type: "codex-subscription" }, max_model_calls: spec.max_model_calls }, maxRepairAttempts: spec.max_model_calls - 1, forceRepairAfterInitial: spec.force_repair_after_initial === true, retryOnConflict: Array.isArray(spec.retry_conditions) && spec.retry_conditions.includes("conflict"), compactRepair: spec.repair_prompt_mode === "compact", timeoutMs: spec.runtime.timeout_ms, maxOutputBytes: spec.runtime.max_output_bytes });
   process.stdout.write(JSON.stringify({ raw_root: rawRoot, model_calls: result.records[0].attempts.length, final_outcome: result.records[0].observation && result.records[0].observation.execution_outcome }, null, 2) + "\n");
 }
 if (require.main === module) main(process.argv[2]).catch(error => { console.error(error.stack || error); process.exitCode = 1; });
-module.exports = { readSnapshot };
+module.exports = { generatorFor, readSnapshot };
