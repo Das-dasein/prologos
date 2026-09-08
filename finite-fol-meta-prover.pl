@@ -1,7 +1,7 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, meta_signatures/1, meta_help/2]).
+:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, audit_proof_tree/2, meta_signatures/1, meta_help/2]).
 :- use_module(library(clpb)).
 
 % Read-only self-description for an agent running inside the same Prolog image.
@@ -14,6 +14,7 @@ api_documentation(labelled_explanation/3, labelled_status_with_conflict_core_sig
 api_documentation(semantic_status/3, unlabelled_agent_program_model_check, example(semantic_status(ready(ada), Status, Certificate))).
 api_documentation(semantic_slice_status/3, monadic_relevance_sliced_model_check, example(semantic_slice_status(ready(ada), Status, Certificate))).
 api_documentation(audit_trace/2, labelled_forward_horn_trace_only, example(audit_trace(ready(ada), Result))).
+api_documentation(audit_proof_tree/2, labelled_forward_horn_dependency_tree_only, example(audit_proof_tree(ready(ada), Result))).
 api_documentation(meta_signatures/1, list_live_trusted_api_signatures, example(meta_signatures(Signatures))).
 api_documentation(meta_help/2, show_contract_for_signature_or_all, example(meta_help(all, Documentation))).
 meta_signatures(Signatures) :- findall(Signature, (api_documentation(Signature, _, _), Signature = Name/Arity, current_predicate(Name/Arity)), Signatures).
@@ -246,7 +247,8 @@ fold_disjunction([Next|Rest], Current, Expression) :- Combined =.. ['+', Current
 % A deliberately small, human-auditable forward trace over labelled ordinary
 % facts and rules. It does not pretend that XOR/disjunction/negation are Horn
 % proof steps: those remain visible in the program but yield no fabricated path.
-% Candidate form: axiom(s1, fact(calm(ada))).
+% Candidate forms: axiom(s1, fact(calm(ada))).
+%                  axiom(s1, calm(ada)).
 %                 axiom(s2, rule([calm(X)], ready(X))).
 audit_trace(Goal, Result) :-
     findall(item(Id, Clause), user:axiom(Id, Clause), Items),
@@ -257,9 +259,10 @@ audit_trace(Goal, Result) :-
 
 initial_trace_items([], []).
 initial_trace_items([item(Id, fact(Literal))|Rest], [known(Literal, fact(Id))|KnownRest]) :- trace_literal(Literal), !, initial_trace_items(Rest, KnownRest).
+initial_trace_items([item(Id, Literal)|Rest], [known(Literal, fact(Id))|KnownRest]) :- trace_literal(Literal), !, initial_trace_items(Rest, KnownRest).
 initial_trace_items([_|Rest], Known) :- initial_trace_items(Rest, Known).
-trace_literal(Literal) :- compound(Literal), Literal =.. [Name|_], \+ memberchk(Name, [not, and, or, xor, implies, forall, exists]).
-trace_until(Goal, _, Known, _, proof(Goal, Trace)) :- member(known(Fact, Trace), Known), Fact = Goal, !.
+trace_literal(Literal) :- compound(Literal), Literal =.. [Name|_], \+ memberchk(Name, [fact, rule, not, and, or, xor, implies, forall, exists]).
+trace_until(Goal, _, Known, _, proof(Goal, Known)) :- member(known(Fact, _), Known), Fact = Goal, !.
 trace_until(_, _, _, 0, no_forward_trace(depth_limit)).
 trace_until(Goal, Items, Known, Remaining, Result) :-
     trace_extensions(Items, Known, Extensions),
@@ -271,7 +274,34 @@ already_known(Known, known(Fact, _)) :- member(known(Existing, _), Known), Exist
 trace_extensions(Items, Known, Extensions) :-
     findall(known(Head, step(Id, BodyTraces)), (member(item(Id, rule(Body, Head)), Items), is_list(Body), trace_literal(Head), trace_body(Body, Known, BodyTraces)), Extensions).
 trace_body([], _, []).
-trace_body([Need|Rest], Known, [Trace|Traces]) :- trace_literal(Need), member(known(Have, Trace), Known), Need = Have, trace_body(Rest, Known, Traces).
+trace_body([Need|Rest], Known, [known(Have, Provenance)|Traces]) :- trace_literal(Need), member(known(Have, Provenance), Known), Need = Have, trace_body(Rest, Known, Traces).
+
+% A nested, inspectable view of the same successful forward derivation used by
+% audit_trace/2.  This is intentionally only a Horn dependency tree, not a
+% natural-deduction proof of arbitrary FOL: disjunction, XOR, negation and
+% quantifier steps have no invented proof rules here.
+audit_proof_tree(Goal, Result) :-
+    audit_trace(Goal, TraceResult),
+    ( TraceResult = proof(Goal, Known) ->
+        trace_proof_tree(Goal, Known, [], Tree),
+        Result = proof_tree(Goal, Tree)
+    ; Result = TraceResult
+    ).
+
+trace_proof_tree(Fact, _Known, Seen, cycle_reference(Fact)) :-
+    memberchk(Fact, Seen), !.
+trace_proof_tree(Fact, Known, _Seen, fact(Fact, axiom(Id))) :-
+    member(known(Have, fact(Id)), Known),
+    Have = Fact, !.
+trace_proof_tree(Fact, Known, Seen, derived(Fact, rule(Id), Children)) :-
+    member(known(Have, step(Id, BodyTraces)), Known),
+    Have = Fact, !,
+    trace_children(BodyTraces, Known, [Fact|Seen], Children).
+
+trace_children([], _, _, []).
+trace_children([known(Fact, _)|Rest], Known, Seen, [Tree|Trees]) :-
+    trace_proof_tree(Fact, Known, Seen, Tree),
+    trace_children(Rest, Known, Seen, Trees).
 
 % Agent-facing convenience layer.  The candidate remains normal Prolog:
 %   domain(person, [ada]).

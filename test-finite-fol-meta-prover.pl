@@ -47,6 +47,12 @@ test(labelled_explanation_audits_predicates_only_introduced_by_goal, [setup(plun
 test(labelled_explanation_reports_constants_outside_domain_with_sources, [setup(plunit_finite_fol_meta_prover:setup_outside_domain_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
     labelled_explanation(ready(dash), unknown, explanation(status(unknown), _, _, domain_audit(declared_domains([domain(person, [ada])]), outside_declared_domains([constant(dash, source_axioms([s1]), goal(true))]), quantified_rules([s2])), quantifier_audit([]), _)).
 
+test(audit_proof_tree_nests_rule_premises, [setup(plunit_finite_fol_meta_prover:setup_branching_trace_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
+    audit_proof_tree(ready(ada), proof_tree(ready(ada), derived(ready(ada), rule(s3), [
+        fact(calm(ada), axiom(s1)),
+        derived(alert(ada), rule(s2), [fact(calm(ada), axiom(s1))])
+    ]))).
+
 test(direct_solvers_reject_free_variables_in_axioms, [forall(member(Solver, [symbolic, enumerating]))]) :-
     solve_with(Solver, [domain(person,[ada])], [atom(p,[var(x)])], atom(p,[ada]), invalid_program,
                validation(free_variable(x, source_axioms([axiom(1)])))).
@@ -104,6 +110,10 @@ setup_outside_domain_world :-
     assertz(user:domain(person, [ada])),
     assertz(user:axiom(s1, calm(dash))),
     assertz(user:axiom(s2, rule([calm(X)], ready(X)))).
+setup_branching_trace_world :-
+    assertz(user:axiom(s1, calm(ada))),
+    assertz(user:axiom(s2, rule([calm(X)], alert(X)))),
+    assertz(user:axiom(s3, rule([calm(X), alert(X)], ready(X)))).
 clear_labelled_world :-
     retractall(user:domain(_, _)),
     retractall(user:axiom(_, _)).
