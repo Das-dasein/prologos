@@ -33,6 +33,7 @@ const { collect, needsRepair, promptFor, relevantExecutorEvidence, renderFrozenP
     assert.match(reflected.records[0].attempts[0].observation.runtime.transcript.transcript, /documentation\(finite_status\/6/);
     assert.equal(reflected.records[0].observation.execution_outcome, "succeeded");
     assert.equal(needsRepair({ execution_outcome: "failed", runtime: { transcript: { transcript: "" } } }, null), true);
+    assert.equal(needsRepair({ execution_outcome: "succeeded", runtime: { transcript: { transcript: "ERROR: Syntax error: Operator expected" } } }, null), true);
     console.log("free-prolog-diagnostic-collector ok: raw ordinary Prolog observation remains non-scoring");
   } finally { fs.rmSync(parent, { recursive: true, force: true }); }
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
