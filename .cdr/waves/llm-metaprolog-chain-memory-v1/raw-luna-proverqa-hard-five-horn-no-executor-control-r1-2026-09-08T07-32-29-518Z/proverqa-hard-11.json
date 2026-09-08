@@ -1,0 +1,11 @@
+{
+  "source_id": 11,
+  "input_record_sha256": "7232a0ee4b2d695ddff87f5cc825e2e9dafcdad661d229a0b36fb3e051167eda",
+  "statement": "Dr. Marlon learns quickly.",
+  "prompt": "You are the control verdict component of a two-step logical-reasoning probe. Decide only the statement below from the ordinary Prolog program and query. You have not received any Prolog execution result, proof tree, countermodel, or solver certificate. Do not run tools or invent an execution result.\n\nStatement: Dr. Marlon learns quickly.\n\nReturn JSON only: {\"answer\":\"A|B|C\"}.\n\nUse A for true, B for false, C for uncertain, based solely on your own reading of the supplied program. This is a control condition, so do not discuss proof trees or claim that an executor ran.\n\nModel-authored program:\ndomain(person,[marlon]).\n\n% Dr. Marlon reads often.\naxiom(s1, reads_often(marlon)).\n\n% Dr. Marlon follows his experience or trusts his instinct.\naxiom(s2, or(follows_experience(marlon), trusts_instinct(marlon))).\n\n% Dr. Marlon does not follow his experience.\naxiom(s3, not(follows_experience(marlon))).\n\n% Dr. Marlon is not analytical.\naxiom(s4, not(analytical(marlon))).\n\n% If Dr. Marlon either learns quickly or has good memory, then he is analytical.\naxiom(s5, implies(or(learns_quickly(marlon), good_memory(marlon)), analytical(marlon))).\n\n% If Dr. Marlon has good memory, then he is either rational or intuitive, but not both.\naxiom(s6, implies(good_memory(marlon), xor(rational(marlon), intuitive(marlon)))).\n\n% Dr. Marlon learns quickly if he reads often.\naxiom(s7, rule([reads_often(marlon)], learns_quickly(marlon))).\n\n% If Dr. Marlon values insight, then he both listens carefully and trusts his instinct.\naxiom(s8, implies(values_insight(marlon), and(listens_carefully(marlon), trusts_instinct(marlon)))).\n\n% Anyone who trusts their instinct is intuitive.\naxiom(s9, rule([trusts_instinct(X)], intuitive(X))).\n\n% Everyone is rational or emotional (or both).\naxiom(s10, forall(var(x,person), or(rational(var(x)), emotional(var(x))))).\n\nModel-authored query:\naudit_proof_tree(learns_quickly(marlon), Result)\n",
+  "output": {
+    "answer": "A"
+  },
+  "error": null,
+  "answer_is_A": true
+}
