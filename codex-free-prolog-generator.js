@@ -13,7 +13,10 @@ function invoke({ command, args, cwd, prompt, spawnImpl }) {
   return new Promise((resolve, reject) => {
     const child = spawnImpl(command, args, { cwd, stdio: ["pipe", "pipe", "pipe"] }); const out = [], err = [];
     child.stdout.on("data", chunk => out.push(chunk)); child.stderr.on("data", chunk => err.push(chunk)); child.on("error", reject);
-    child.on("close", code => code === 0 ? resolve({ stdout: Buffer.concat(out).toString("utf8"), stderr: Buffer.concat(err).toString("utf8") }) : reject(new Error(`codex exec failed (${code}): ${Buffer.concat(err).toString("utf8").trim()}`)));
+    child.on("close", code => {
+      const stdout = Buffer.concat(out).toString("utf8"), stderr = Buffer.concat(err).toString("utf8"), detail = stderr.trim() || stdout.trim() || "no diagnostic output";
+      return code === 0 ? resolve({ stdout, stderr }) : reject(new Error(`codex exec failed (${code}): ${detail}`));
+    });
     child.stdin.end(prompt);
   });
 }
