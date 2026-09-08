@@ -13,9 +13,9 @@ function createLmStudioPrologToolAgent({ baseUrl = "http://127.0.0.1:1234", mode
   return async ({ caseId, prompt, sourceSentences, expectedGoal, targetRuleSourceId, timeoutMs: runTimeoutMs = 4000, maxOutputBytes = 262144 }) => {
     nonempty(caseId, "caseId"); nonempty(prompt, "prompt");
     const session = createPrologToolSession({ caseId, sourceSentences, expectedGoal, targetRuleSourceId, timeoutMs: runTimeoutMs, maxOutputBytes });
-    const messages = [{ role: "user", content: prompt }], responses = []; let proved = false;
+    const messages = [{ role: "user", content: prompt }], responses = [], attempts = []; let proved = false;
     for (let step = 0; step < maxSteps; step += 1) {
-      const request = { model, temperature: 0, max_tokens: maxTokens, messages, tools: session.tools, tool_choice: proved ? "auto" : "required" };
+      const request = JSON.parse(JSON.stringify({ model, temperature: 0, max_tokens: maxTokens, messages, tools: session.tools, tool_choice: proved ? "auto" : "required" }));
       const controller = new AbortController(), timer = setTimeout(() => controller.abort(), timeoutMs); let raw;
       try { const response = await fetchImpl(`${root}/v1/chat/completions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request), signal: controller.signal }); raw = await body(response); } finally { clearTimeout(timer); }
       let envelope; try { envelope = JSON.parse(raw); } catch { throw new Error("LM Studio returned non-JSON tool response"); }
@@ -24,8 +24,8 @@ function createLmStudioPrologToolAgent({ baseUrl = "http://127.0.0.1:1234", mode
       responses.push(Object.freeze({ request, response_sha256: sha256(raw), response: envelope }));
       const calls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
       if (!calls.length) {
-        if (!proved) { const error = new Error("model ended without calling prove"); error.responses = responses; error.calls = session.calls; throw error; }
-        return Object.freeze({ final: typeof message.content === "string" ? message.content : "", calls: session.calls, program: session.program(), transport: Object.freeze({ schema_version: "lmstudio-prolog-tool-loop-v1", base_url: root, model, responses }) });
+        if (!proved) { const error = new Error("model ended without calling prove"); error.responses = responses; error.calls = session.calls; error.attempts = attempts; throw error; }
+        return Object.freeze({ final: typeof message.content === "string" ? message.content : "", calls: session.calls, attempts, program: session.program(), transport: Object.freeze({ schema_version: "lmstudio-prolog-tool-loop-v1", base_url: root, model, responses }) });
       }
       // Preserve the raw response above, but give the next model turn exactly
       // one completed call/result pair. This prevents a model from emitting
@@ -35,9 +35,10 @@ function createLmStudioPrologToolAgent({ baseUrl = "http://127.0.0.1:1234", mode
       const name = call && call.function && call.function.name, rawArgs = call && call.function && call.function.arguments; let args;
       try { args = JSON.parse(rawArgs); } catch { args = null; }
       let result; try { result = await session.execute(name, args); if (name === "prove") proved = hasProofTree(result); } catch (error) { result = { error: String(error && (error.message || error)) }; }
+      attempts.push(Object.freeze({ name, args, result }));
       messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
     }
-    const error = new Error(`model did not complete within ${maxSteps} tool steps`); error.responses = responses; error.calls = session.calls; throw error;
+    const error = new Error(`model did not complete within ${maxSteps} tool steps`); error.responses = responses; error.calls = session.calls; error.attempts = attempts; throw error;
   };
 }
 module.exports = { createLmStudioPrologToolAgent, hasProofTree };
