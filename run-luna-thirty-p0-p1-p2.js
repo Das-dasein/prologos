@@ -28,6 +28,7 @@ function write(file, value) {
 function files(wave = DEFAULT_WAVE) {
   return {
     fixture: path.join(wave, "fixture-draft.json"),
+    scorer: path.join(wave, "scorer-only-draft.json"),
     contract: path.join(wave, "answer-contract-draft.md"),
     protocol: path.join(wave, "protocol-draft.json"),
   };
@@ -39,7 +40,7 @@ function validateProtocol(fixture, protocol) {
   if (protocol.schema_version !== "luna-thirty-p0-p1-p2-v1") throw Error("protocol_schema_invalid");
   if (protocol.status !== "frozen-before-model-output" || protocol.retry_policy !== "none") throw Error("protocol_not_frozen_no_retry");
   if (protocol.calls_planned !== 18) throw Error("calls_planned_invalid");
-  for (const field of ["model", "reasoning_effort", "context_window", "timeout_ms", "fixture_sha256", "answer_contract_sha256"]) {
+  for (const field of ["model", "reasoning_effort", "context_window", "timeout_ms", "fixture_sha256", "answer_contract_sha256", "scorer_sha256"]) {
     if (protocol[field] === undefined || protocol[field] === null || protocol[field] === "") throw Error(`protocol_field_missing:${field}`);
   }
   if (!Array.isArray(fixture.fixture) || fixture.fixture.length !== 6 || !Array.isArray(fixture.ids) || fixture.ids.length !== 6) throw Error("fixture_size_invalid");
@@ -52,13 +53,14 @@ function validateProtocol(fixture, protocol) {
 function frozenInputs(wave = DEFAULT_WAVE) {
   const source = files(wave);
   const fixtureText = fs.readFileSync(source.fixture, "utf8");
+  const scorerText = fs.readFileSync(source.scorer, "utf8");
   const contractText = fs.readFileSync(source.contract, "utf8");
   const protocolText = fs.readFileSync(source.protocol, "utf8");
   const fixture = JSON.parse(fixtureText);
   const protocol = JSON.parse(protocolText);
-  if (fixture.status !== "frozen-before-model-output" || sha256(fixtureText) !== protocol.fixture_sha256 || sha256(contractText) !== protocol.answer_contract_sha256) throw Error("frozen_hash_gate_failed");
+  if (fixture.status !== "frozen-before-model-output" || JSON.parse(scorerText).status !== "frozen-scorer-only" || sha256(fixtureText) !== protocol.fixture_sha256 || sha256(contractText) !== protocol.answer_contract_sha256 || sha256(scorerText) !== protocol.scorer_sha256) throw Error("frozen_hash_gate_failed");
   validateProtocol(fixture, protocol);
-  return { fixture, protocol, contractText, hashes: { fixture: sha256(fixtureText), contract: sha256(contractText), protocol: sha256(protocolText) } };
+  return { fixture, protocol, contractText, hashes: { fixture: sha256(fixtureText), contract: sha256(contractText), scorer: sha256(scorerText), protocol: sha256(protocolText) } };
 }
 function p0Prompt(item) {
   return `Answer the original question using only the supplied material. Return exactly one JSON object: { "answer": "A" | "B" | "C", "reason": "..." }. Do not repair, rename, add facts, execute code, or treat a formal certificate as an answer by itself.\n\nOriginal English context:\n${item.context}\n\nOriginal question:\n${item.question}\n\nChoices: A means true; B means false; C means uncertain.`;
@@ -108,7 +110,8 @@ function run(rawRoot, wave = DEFAULT_WAVE) {
     fixture_sha256: inputs.hashes.fixture,
     answer_contract_sha256: inputs.hashes.contract,
     protocol_sha256: inputs.hashes.protocol,
-    gold_read: false,
+    scorer_read_for_hash_only: true,
+    scorer_sha256: inputs.hashes.scorer,
     calls_planned: 18,
     retry_policy: "none",
     preflight: gate,

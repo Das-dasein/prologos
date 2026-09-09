@@ -21,13 +21,18 @@ function makeWave({ badTrace = false } = {}) {
   fixture.status = "frozen-before-model-output";
   const fixtureText = `${JSON.stringify(fixture, null, 2)}\n`;
   const contractText = fs.readFileSync(path.join(sourceWave, "answer-contract-draft.md"), "utf8");
+  const scorer = JSON.parse(fs.readFileSync(path.join(sourceWave, "scorer-only-draft.json"), "utf8"));
+  scorer.status = "frozen-scorer-only";
+  const scorerText = `${JSON.stringify(scorer, null, 2)}\n`;
   const protocol = JSON.parse(fs.readFileSync(path.join(sourceWave, "protocol-draft.json"), "utf8"));
   protocol.status = "frozen-before-model-output";
   protocol.fixture_sha256 = sha256(fixtureText);
   protocol.answer_contract_sha256 = sha256(contractText);
+  protocol.scorer_sha256 = sha256(scorerText);
   protocol.codex_path = fake;
   write(path.join(wave, "fixture-draft.json"), fixtureText);
   write(path.join(wave, "answer-contract-draft.md"), contractText);
+  write(path.join(wave, "scorer-only-draft.json"), scorerText);
   write(path.join(wave, "protocol-draft.json"), `${JSON.stringify(protocol, null, 2)}\n`);
   write(path.join(wave, "bad-trace"), badTrace ? "yes" : "no");
   return { fixture, protocol };
@@ -64,7 +69,7 @@ try {
   assert.equal(receiptFiles(raw).length, 18);
   assert.equal(fs.existsSync(path.join(raw, "completed.json")), true);
   const provenance = JSON.parse(fs.readFileSync(path.join(raw, "provenance.json"), "utf8"));
-  assert.equal(provenance.gold_read, false);
+  assert.equal(provenance.scorer_read_for_hash_only, true);
   assert.equal(provenance.calls_planned, 18);
   for (const item of fixture.fixture) {
     const record = JSON.parse(fs.readFileSync(path.join(raw, item.case_id, "record.json"), "utf8"));
