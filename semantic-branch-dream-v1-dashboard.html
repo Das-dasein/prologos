@@ -1,14 +1,800 @@
-<!doctype html>
-<meta charset="utf-8">
-<title>Semantic branch dream — controlled OR/XOR review</title>
-<style>body{font:16px system-ui;margin:40px;max-width:900px;color:#172033;background:#f7f8fb}.sub{color:#596579}.cards{display:flex;gap:12px;margin:24px 0}.card{background:white;border-radius:12px;padding:16px;min-width:150px;box-shadow:0 1px 4px #ccd}.n{font-size:30px;font-weight:700}table{border-collapse:collapse;background:white;width:100%}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}.bad{color:#9f1239;font-weight:700}code{background:#eef;padding:2px 4px;border-radius:4px}</style>
-<h1>Сон с ветками: контролируемый OR/XOR-цикл</h1>
-<p class="sub">Статус: <span class="bad">REVISE</span>. Восемь трасс чисто переигрываются, но сам вопрос эксперимента промпт не задал.</p>
-<div class="cards"><div class="card"><div class="n">8/8</div>clean replay</div><div class="card"><div class="n">0</div>проверенных отказов на контролях</div><div class="card"><div class="n">1</div>alias исказил c01</div><div class="card"><div class="n">0</div>новых model calls при replay</div></div>
-<p><b>Простой смысл:</b> мы попросили Luna строить контрфактические OR/XOR-версии, но не потребовали молчать, когда текст уже однозначен. Поэтому ветки на контролях говорят о конструкции промпта, а не доказывают, что модель не различает смысл.</p>
-<table><thead><tr><th>Текст</th><th>Что должна была сделать модель</th><th>Что получилось</th></tr></thead><tbody>
-<tr><td>“either A or B”</td><td>модель получила приглашение к альтернативе</td><td>c02–c04 меняют статус; c01 меняется только alias-веткой</td></tr>
-<tr><td>“either A or B, but not both”</td><td>нужна была явная инструкция воздержаться</td><td class="bad">в v1 её не было</td></tr>
-<tr><td>“either A or B, or both” / “both are allowed”</td><td>нужна была явная инструкция воздержаться</td><td class="bad">в v1 её не было</td></tr>
-</tbody></table>
-<p><b>Честный следующий тест:</b> сравнить на новых текстах простой запрос «ветка только при неоднозначности» с тем же запросом и явной меткой <code>ambiguous / explicit_xor / explicit_or</code>. Без отдельного фильтра, который сам решает за модель.</p>
+<!doctype html><meta charset="utf-8"><title>Semantic branch dream — full v1 review</title><style>body{font:16px system-ui;margin:32px auto;max-width:1200px;color:#172033;background:#f7f8fb;line-height:1.45}h1{margin-bottom:4px}.sub{color:#596579}.note{background:#fff4e5;border-left:4px solid #d97706;padding:12px;border-radius:6px}details{background:white;border:1px solid #dde3ea;border-radius:8px;margin:10px 0;padding:10px}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#101827;color:#e5eefb;padding:14px;border-radius:6px;font-size:12px}.case{border-left:5px solid #9f1239}.casebody{padding:8px}.branch{border-left:3px solid #64748b;padding-left:12px;margin:12px 0}.bad{color:#9f1239;font-weight:700}code{background:#e7edf5;padding:2px 4px;border-radius:3px}</style><h1>Сон с ветками: полный разбор v1</h1><p class="sub">Самодостаточный локальный отчёт: полный вход Luna, её JSON-ответы, неизменяемые Prolog-кандидаты и результаты каждого изолированного исполнения.</p><div class="note"><b>Статус REVISE.</b> v1 не проверил распознавание неоднозначности, потому что промпт приглашал строить контрфактические OR/XOR-ветки, но не требовал воздержания на явных контролях. Это видно в каждом раскрывающемся кейсе ниже.</div><h2>Метод и итоговая интерпретация</h2><details open><summary>Diagnostic report</summary><pre># Controlled OR/XOR cycle — Luna v1 diagnostic
+
+Status: `REVISE`, development observation only; not a CDR receipt. The
+pre-registered discrimination question was not actually executed as written.
+
+Eight frozen controlled cases completed: four bare “either A or B” probes and
+four controls that explicitly say either “but not both”, “or both”, or “both
+are allowed”. The fail-closed replay used the saved candidates with zero model
+calls and reproduced all eight branch-dependent traces.
+
+| Source language | Cases | Accepted connector branch | Interpretation |
+| --- | ---: | ---: | --- |
+| Bare `either … or` | c01–c04 | c02–c04 change status | Luna formalized baseline as `xor` and offered `or`, but the prompt explicitly invited this counterfactual. c01's connector branch is `unknown → unknown`. |
+| Explicit XOR | c05–c06 | 2 / 2 | The model proposed `xor → or`, but the prompt never instructed it to abstain on explicit text. |
+| Explicit inclusive OR | c07–c08 | 2 / 2 | The model proposed `or → xor`, under the same missing abstention requirement. |
+
+The raw configuration therefore demonstrates that the model follows an
+invitation to construct an OR/XOR counterfactual. It does **not** measure
+whether Luna can recognize ambiguity: the executed hypothesis prompt says to
+return counterfactual hypotheses and describes the swap, without requiring
+zero hypotheses for an explicit control. The formalization prompt also did not
+enforce the manifest's promised `or` baseline for bare `either-or` wording.
+
+Two extra query-alias branches (c01 and c07) were accepted by the generic v0
+schema but are outside this connector-only cycle. In c01, `writer → writes`
+is the *only* branch that changes the result; the connector branch does not.
+This confirms that a later connector study needs a connector-only schema, not
+merely connector-only wording in a prompt.
+
+The next experiment should not add a gate that silently guarantees a good
+result. It should compare two pre-registered, equally bounded prompts on new
+texts: (1) propose a branch only if the sentence is ambiguous, otherwise
+return none; (2) the same request with an explicit
+`ambiguous/explicit_xor/explicit_or` declaration in the same model response.
+Independent text review scores false proposals on controls and missed valid
+alternatives. Prolog status change is secondary. If the declaration adds no
+value, remove it rather than layering another filter.
+
+Raw transcripts are local in `raw-luna-v1-20260909/` and are excluded from
+Git. The run used eight Luna formalization calls and eight Luna hypothesis
+calls; the replay used zero model calls.
+</pre></details><details open><summary>Raw-run provenance</summary><pre>{
+  &quot;status&quot;: &quot;diagnostic-not-cdr-receipt&quot;,
+  &quot;sample_file&quot;: &quot;/Users/artem/Documents/code/prolog-agent-memory/.cdr/waves/semantic-branch-dream-v1/sample-v1.json&quot;,
+  &quot;sample_sha256&quot;: &quot;d20c3adf3958433c5fe258b4a2b3f164c9feddf775cd3313d0d3f5c76cc8540e&quot;,
+  &quot;model&quot;: &quot;gpt-5.6-luna&quot;,
+  &quot;executor&quot;: &quot;existing immutable-candidate checker with its isolation policy&quot;,
+  &quot;started_at&quot;: &quot;2026-09-09T10:04:48.554Z&quot;
+}</pre></details><details><summary>Frozen sample</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-controlled-sample-v1&quot;,
+  &quot;status&quot;: &quot;frozen-before-model-output&quot;,
+  &quot;selection&quot;: {
+    &quot;method&quot;: &quot;four bare either-or ambiguity probes and four explicit connector controls; authored before model calls&quot;
+  },
+  &quot;cases&quot;: [
+    {
+      &quot;case_id&quot;: &quot;controlled-orxor-01&quot;,
+      &quot;source_id&quot;: &quot;c01&quot;,
+      &quot;class&quot;: &quot;bare_either_or&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Ada paints.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Ada either paints or writes.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Is Ada a writer?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;controlled-orxor-02&quot;,
+      &quot;source_id&quot;: &quot;c02&quot;,
+      &quot;class&quot;: &quot;bare_either_or&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Ben is calm.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Ben either is calm or is brave.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Is Ben brave?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;controlled-orxor-03&quot;,
+      &quot;source_id&quot;: &quot;c03&quot;,
+      &quot;class&quot;: &quot;bare_either_or&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Cara swims.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Cara either swims or cycles.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Cara cycle?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;controlled-orxor-04&quot;,
+      &quot;source_id&quot;: &quot;c04&quot;,
+      &quot;class&quot;: &quot;bare_either_or&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Drew studies.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Drew either studies or works.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Drew work?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;controlled-orxor-05&quot;,
+      &quot;source_id&quot;: &quot;c05&quot;,
+      &quot;class&quot;: &quot;explicit_xor_control&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Eli travels.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Eli either travels or rests, but not both.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Eli rest?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;controlled-orxor-06&quot;,
+      &quot;source_id&quot;: &quot;c06&quot;,
+      &quot;class&quot;: &quot;explicit_xor_control&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Faye sings.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Faye either sings or dances, but not both.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Faye dance?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;controlled-orxor-07&quot;,
+      &quot;source_id&quot;: &quot;c07&quot;,
+      &quot;class&quot;: &quot;explicit_or_control&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Gus cooks.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Gus either cooks or cleans, or both.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Gus clean?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;controlled-orxor-08&quot;,
+      &quot;source_id&quot;: &quot;c08&quot;,
+      &quot;class&quot;: &quot;explicit_or_control&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Hope reads.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Hope either reads or writes, and both are allowed.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Hope write?&quot;
+    }
+  ]
+}</pre></details><h2>Все восемь кейсов</h2><details class="case"><summary><b>controlled-orxor-01</b> · bare_either_or · final trace: <b>branch_dependent</b></summary><section class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Ada paints.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Ada either paints or writes.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Is Ada a writer?&quot;
+}</pre></details><details><summary>Formalization prompt sent to Luna</summary><pre>Formalize every numbered English sentence below as one complete finite-FOL candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]). and exactly one labelled axiom(sN, ...) for every source sentence. Use facts such as axiom(s1, calm(ada)). Use explicit negation only as not(calm(ada)); never invent predicates such as not_calm(ada). Use ONLY the surface formulas atom, not, and, or, xor, implies, and forall(var(x,person), Formula). A universal rule must be exactly like axiom(s2, forall(var(x,person), implies(and(calm(var(x)),kind(var(x))),ready(var(x))))). The binder must be var(x), never X, and every use is var(x). A biconditional must be and(implies(A,B),implies(B,A)). Never use rule(...), exists, -&gt;, &amp;, |, ordinary Prolog clauses, or an uppercase variable. For disjunction use or(A,B); for exclusive choice use xor(A,B); preserve every source sentence. Query is one lowercase ground unary term, e.g. ready(ada) or not(ready(ada)), using the same predicate vocabulary. Do not use directives, files, shell, network, consult, assert, retract, call, or definitions outside domain/2 and axiom/2.
+
+World:
+s1: Ada paints.
+s2: Ada either paints or writes.
+
+Question:
+Is Ada a writer?</pre></details><details open><summary>Luna formalization answer</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[ada]).\naxiom(s1,paints(ada)).\naxiom(s2,xor(paints(ada),writes(ada))).&quot;,
+  &quot;query&quot;: &quot;writer(ada)&quot;
+}</pre></details><details><summary>Hypothesis prompt sent to Luna</summary><pre>You are auditing a frozen Prolog formalization against its English source. Do not repair the baseline. Return zero, one, or two bounded counterfactual hypotheses in the supplied JSON schema. Set case_id exactly to controlled-orxor-01. Set baseline_candidate_sha256 exactly to cf5b54d08c70ad42977ab973ceeb7d4fb2945f5afc0852ae1d2339d408f83e61. Each hypothesis must cite an exact source sentence quote and contain a complete replacement program + query candidate. Copy the frozen candidate verbatim except for one minimal named alternative. For connector_interpretation, change exactly one `or(` token to `xor(` or vice versa and keep the query byte-identical. For predicate_alias, keep the program byte-identical and change the query only. For missing_type_assumption, keep the query byte-identical and append exactly one labelled `axiom(sN, ...)`. Keep the same finite-FOL surface language: domain(person,[...]). and axiom(sN, ...), with `atom`, `not`, `and`, `or`, `xor`, `implies`, and `forall(var(x,person), Formula)`. Do not introduce `rule`, infix -&gt;, &amp;, |, ordinary Prolog rules, directives, files, shell, network, consult, assert, retract, call, hidden gold, nl2fol, external knowledge, extra fields, or explanations.
+
+World:
+s1: Ada paints.
+s2: Ada either paints or writes.
+
+Frozen program:
+domain(person,[ada]).
+axiom(s1,paints(ada)).
+axiom(s2,xor(paints(ada),writes(ada))).
+
+Frozen query:
+writer(ada)</pre></details><details open><summary>Luna hypothesis answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-hypothesis-v1&quot;,
+  &quot;case_id&quot;: &quot;controlled-orxor-01&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;cf5b54d08c70ad42977ab973ceeb7d4fb2945f5afc0852ae1d2339d408f83e61&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Ada either paints or writes.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[ada]).\naxiom(s1,paints(ada)).\naxiom(s2,or(paints(ada),writes(ada))).&quot;,
+        &quot;query&quot;: &quot;writer(ada)&quot;
+      }
+    },
+    {
+      &quot;id&quot;: &quot;h2&quot;,
+      &quot;kind&quot;: &quot;predicate_alias&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Ada either paints or writes.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[ada]).\naxiom(s1,paints(ada)).\naxiom(s2,xor(paints(ada),writes(ada))).&quot;,
+        &quot;query&quot;: &quot;writes(ada)&quot;
+      }
+    }
+  ]
+}</pre></details><details><summary>Baseline Prolog execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;cf5b54d08c70ad42977ab973ceeb7d4fb2945f5afc0852ae1d2339d408f83e61&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(writer(ada),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writer/1]),world_predicates([paints/1,writes/1]),only_in_goal([writer/1])),domain_audit(declared_domains([domain(person,[ada])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[ada]),holds(writer,[ada])]),false_model([holds(paints,[ada])]))))),audit_proof_tree(writer(ada),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writer(ada),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writer/1]),world_predicates([paints/1,writes/1]),only_in_goal([writer/1])),domain_audit(declared_domains([domain(person,[ada])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[ada]),holds(writer,[ada])]),false_model([holds(paints,[ada])]))))),audit_proof_tree(writer(ada),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><h3>Branches</h3><article class="branch"><h4>h1 · connector_interpretation · unknown</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h1&quot;,
+  &quot;kind&quot;: &quot;connector_interpretation&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Ada either paints or writes.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[ada]).\naxiom(s1,paints(ada)).\naxiom(s2,or(paints(ada),writes(ada))).&quot;,
+    &quot;query&quot;: &quot;writer(ada)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(writer(ada),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writer/1]),world_predicates([paints/1,writes/1]),only_in_goal([writer/1])),domain_audit(declared_domains([domain(person,[ada])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[ada]),holds(writer,[ada])]),false_model([holds(paints,[ada])]))))),audit_proof_tree(writer(ada),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writer(ada),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writer/1]),world_predicates([paints/1,writes/1]),only_in_goal([writer/1])),domain_audit(declared_domains([domain(person,[ada])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[ada]),holds(writer,[ada])]),false_model([holds(paints,[ada])]))))),audit_proof_tree(writer(ada),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article><article class="branch"><h4>h2 · predicate_alias · contradicted</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h2&quot;,
+  &quot;kind&quot;: &quot;predicate_alias&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Ada either paints or writes.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[ada]).\naxiom(s1,paints(ada)).\naxiom(s2,xor(paints(ada),writes(ada))).&quot;,
+    &quot;query&quot;: &quot;writes(ada)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(writes(ada),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[ada])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(writes(ada),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(ada),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[ada])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(writes(ada),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article></section></details>
+<details class="case"><summary><b>controlled-orxor-02</b> · bare_either_or · final trace: <b>branch_dependent</b></summary><section class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Ben is calm.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Ben either is calm or is brave.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Is Ben brave?&quot;
+}</pre></details><details><summary>Formalization prompt sent to Luna</summary><pre>Formalize every numbered English sentence below as one complete finite-FOL candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]). and exactly one labelled axiom(sN, ...) for every source sentence. Use facts such as axiom(s1, calm(ada)). Use explicit negation only as not(calm(ada)); never invent predicates such as not_calm(ada). Use ONLY the surface formulas atom, not, and, or, xor, implies, and forall(var(x,person), Formula). A universal rule must be exactly like axiom(s2, forall(var(x,person), implies(and(calm(var(x)),kind(var(x))),ready(var(x))))). The binder must be var(x), never X, and every use is var(x). A biconditional must be and(implies(A,B),implies(B,A)). Never use rule(...), exists, -&gt;, &amp;, |, ordinary Prolog clauses, or an uppercase variable. For disjunction use or(A,B); for exclusive choice use xor(A,B); preserve every source sentence. Query is one lowercase ground unary term, e.g. ready(ada) or not(ready(ada)), using the same predicate vocabulary. Do not use directives, files, shell, network, consult, assert, retract, call, or definitions outside domain/2 and axiom/2.
+
+World:
+s1: Ben is calm.
+s2: Ben either is calm or is brave.
+
+Question:
+Is Ben brave?</pre></details><details open><summary>Luna formalization answer</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[ben]).\naxiom(s1, calm(ben)).\naxiom(s2, xor(calm(ben),brave(ben))).&quot;,
+  &quot;query&quot;: &quot;brave(ben)&quot;
+}</pre></details><details><summary>Hypothesis prompt sent to Luna</summary><pre>You are auditing a frozen Prolog formalization against its English source. Do not repair the baseline. Return zero, one, or two bounded counterfactual hypotheses in the supplied JSON schema. Set case_id exactly to controlled-orxor-02. Set baseline_candidate_sha256 exactly to 6fc54af3d1e7d4fd4ae9b91f9896b66b811a8fe7b16c60418aa351a85b120adc. Each hypothesis must cite an exact source sentence quote and contain a complete replacement program + query candidate. Copy the frozen candidate verbatim except for one minimal named alternative. For connector_interpretation, change exactly one `or(` token to `xor(` or vice versa and keep the query byte-identical. For predicate_alias, keep the program byte-identical and change the query only. For missing_type_assumption, keep the query byte-identical and append exactly one labelled `axiom(sN, ...)`. Keep the same finite-FOL surface language: domain(person,[...]). and axiom(sN, ...), with `atom`, `not`, `and`, `or`, `xor`, `implies`, and `forall(var(x,person), Formula)`. Do not introduce `rule`, infix -&gt;, &amp;, |, ordinary Prolog rules, directives, files, shell, network, consult, assert, retract, call, hidden gold, nl2fol, external knowledge, extra fields, or explanations.
+
+World:
+s1: Ben is calm.
+s2: Ben either is calm or is brave.
+
+Frozen program:
+domain(person,[ben]).
+axiom(s1, calm(ben)).
+axiom(s2, xor(calm(ben),brave(ben))).
+
+Frozen query:
+brave(ben)</pre></details><details open><summary>Luna hypothesis answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-hypothesis-v1&quot;,
+  &quot;case_id&quot;: &quot;controlled-orxor-02&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;6fc54af3d1e7d4fd4ae9b91f9896b66b811a8fe7b16c60418aa351a85b120adc&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Ben either is calm or is brave.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[ben]).\naxiom(s1, calm(ben)).\naxiom(s2, or(calm(ben),brave(ben))).&quot;,
+        &quot;query&quot;: &quot;brave(ben)&quot;
+      }
+    }
+  ]
+}</pre></details><details><summary>Baseline Prolog execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;6fc54af3d1e7d4fd4ae9b91f9896b66b811a8fe7b16c60418aa351a85b120adc&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(brave(ben),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([brave/1]),world_predicates([brave/1,calm/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[ben])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(brave(ben),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(brave(ben),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([brave/1]),world_predicates([brave/1,calm/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[ben])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(brave(ben),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><h3>Branches</h3><article class="branch"><h4>h1 · connector_interpretation · unknown</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h1&quot;,
+  &quot;kind&quot;: &quot;connector_interpretation&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Ben either is calm or is brave.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[ben]).\naxiom(s1, calm(ben)).\naxiom(s2, or(calm(ben),brave(ben))).&quot;,
+    &quot;query&quot;: &quot;brave(ben)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(brave(ben),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([brave/1]),world_predicates([brave/1,calm/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[ben])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(brave,[ben]),holds(calm,[ben])]),false_model([holds(calm,[ben])]))))),audit_proof_tree(brave(ben),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(brave(ben),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([brave/1]),world_predicates([brave/1,calm/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[ben])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(brave,[ben]),holds(calm,[ben])]),false_model([holds(calm,[ben])]))))),audit_proof_tree(brave(ben),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article></section></details>
+<details class="case"><summary><b>controlled-orxor-03</b> · bare_either_or · final trace: <b>branch_dependent</b></summary><section class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Cara swims.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Cara either swims or cycles.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Cara cycle?&quot;
+}</pre></details><details><summary>Formalization prompt sent to Luna</summary><pre>Formalize every numbered English sentence below as one complete finite-FOL candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]). and exactly one labelled axiom(sN, ...) for every source sentence. Use facts such as axiom(s1, calm(ada)). Use explicit negation only as not(calm(ada)); never invent predicates such as not_calm(ada). Use ONLY the surface formulas atom, not, and, or, xor, implies, and forall(var(x,person), Formula). A universal rule must be exactly like axiom(s2, forall(var(x,person), implies(and(calm(var(x)),kind(var(x))),ready(var(x))))). The binder must be var(x), never X, and every use is var(x). A biconditional must be and(implies(A,B),implies(B,A)). Never use rule(...), exists, -&gt;, &amp;, |, ordinary Prolog clauses, or an uppercase variable. For disjunction use or(A,B); for exclusive choice use xor(A,B); preserve every source sentence. Query is one lowercase ground unary term, e.g. ready(ada) or not(ready(ada)), using the same predicate vocabulary. Do not use directives, files, shell, network, consult, assert, retract, call, or definitions outside domain/2 and axiom/2.
+
+World:
+s1: Cara swims.
+s2: Cara either swims or cycles.
+
+Question:
+Does Cara cycle?</pre></details><details open><summary>Luna formalization answer</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[cara]).\naxiom(s1, swims(cara)).\naxiom(s2, xor(swims(cara),cycles(cara))).&quot;,
+  &quot;query&quot;: &quot;cycles(cara)&quot;
+}</pre></details><details><summary>Hypothesis prompt sent to Luna</summary><pre>You are auditing a frozen Prolog formalization against its English source. Do not repair the baseline. Return zero, one, or two bounded counterfactual hypotheses in the supplied JSON schema. Set case_id exactly to controlled-orxor-03. Set baseline_candidate_sha256 exactly to 0da3cb7986a7f19b859cec559708f4fd55becafc3b0fcbcacb7deb77d19d5127. Each hypothesis must cite an exact source sentence quote and contain a complete replacement program + query candidate. Copy the frozen candidate verbatim except for one minimal named alternative. For connector_interpretation, change exactly one `or(` token to `xor(` or vice versa and keep the query byte-identical. For predicate_alias, keep the program byte-identical and change the query only. For missing_type_assumption, keep the query byte-identical and append exactly one labelled `axiom(sN, ...)`. Keep the same finite-FOL surface language: domain(person,[...]). and axiom(sN, ...), with `atom`, `not`, `and`, `or`, `xor`, `implies`, and `forall(var(x,person), Formula)`. Do not introduce `rule`, infix -&gt;, &amp;, |, ordinary Prolog rules, directives, files, shell, network, consult, assert, retract, call, hidden gold, nl2fol, external knowledge, extra fields, or explanations.
+
+World:
+s1: Cara swims.
+s2: Cara either swims or cycles.
+
+Frozen program:
+domain(person,[cara]).
+axiom(s1, swims(cara)).
+axiom(s2, xor(swims(cara),cycles(cara))).
+
+Frozen query:
+cycles(cara)</pre></details><details open><summary>Luna hypothesis answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-hypothesis-v1&quot;,
+  &quot;case_id&quot;: &quot;controlled-orxor-03&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;0da3cb7986a7f19b859cec559708f4fd55becafc3b0fcbcacb7deb77d19d5127&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Cara either swims or cycles.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[cara]).\naxiom(s1, swims(cara)).\naxiom(s2, or(swims(cara),cycles(cara))).&quot;,
+        &quot;query&quot;: &quot;cycles(cara)&quot;
+      }
+    }
+  ]
+}</pre></details><details><summary>Baseline Prolog execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;0da3cb7986a7f19b859cec559708f4fd55becafc3b0fcbcacb7deb77d19d5127&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(cycles(cara),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cycles/1]),world_predicates([cycles/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[cara])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cycles(cara),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cycles(cara),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cycles/1]),world_predicates([cycles/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[cara])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cycles(cara),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><h3>Branches</h3><article class="branch"><h4>h1 · connector_interpretation · unknown</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h1&quot;,
+  &quot;kind&quot;: &quot;connector_interpretation&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Cara either swims or cycles.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[cara]).\naxiom(s1, swims(cara)).\naxiom(s2, or(swims(cara),cycles(cara))).&quot;,
+    &quot;query&quot;: &quot;cycles(cara)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(cycles(cara),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([cycles/1]),world_predicates([cycles/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[cara])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(cycles,[cara]),holds(swims,[cara])]),false_model([holds(swims,[cara])]))))),audit_proof_tree(cycles(cara),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cycles(cara),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([cycles/1]),world_predicates([cycles/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[cara])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(cycles,[cara]),holds(swims,[cara])]),false_model([holds(swims,[cara])]))))),audit_proof_tree(cycles(cara),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article></section></details>
+<details class="case"><summary><b>controlled-orxor-04</b> · bare_either_or · final trace: <b>branch_dependent</b></summary><section class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Drew studies.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Drew either studies or works.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Drew work?&quot;
+}</pre></details><details><summary>Formalization prompt sent to Luna</summary><pre>Formalize every numbered English sentence below as one complete finite-FOL candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]). and exactly one labelled axiom(sN, ...) for every source sentence. Use facts such as axiom(s1, calm(ada)). Use explicit negation only as not(calm(ada)); never invent predicates such as not_calm(ada). Use ONLY the surface formulas atom, not, and, or, xor, implies, and forall(var(x,person), Formula). A universal rule must be exactly like axiom(s2, forall(var(x,person), implies(and(calm(var(x)),kind(var(x))),ready(var(x))))). The binder must be var(x), never X, and every use is var(x). A biconditional must be and(implies(A,B),implies(B,A)). Never use rule(...), exists, -&gt;, &amp;, |, ordinary Prolog clauses, or an uppercase variable. For disjunction use or(A,B); for exclusive choice use xor(A,B); preserve every source sentence. Query is one lowercase ground unary term, e.g. ready(ada) or not(ready(ada)), using the same predicate vocabulary. Do not use directives, files, shell, network, consult, assert, retract, call, or definitions outside domain/2 and axiom/2.
+
+World:
+s1: Drew studies.
+s2: Drew either studies or works.
+
+Question:
+Does Drew work?</pre></details><details open><summary>Luna formalization answer</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[drew]).\naxiom(s1, studies(drew)).\naxiom(s2, xor(studies(drew),works(drew))).&quot;,
+  &quot;query&quot;: &quot;works(drew)&quot;
+}</pre></details><details><summary>Hypothesis prompt sent to Luna</summary><pre>You are auditing a frozen Prolog formalization against its English source. Do not repair the baseline. Return zero, one, or two bounded counterfactual hypotheses in the supplied JSON schema. Set case_id exactly to controlled-orxor-04. Set baseline_candidate_sha256 exactly to 8285a598875b6780399f60f879a5fce144404d4a02b8c727e0c7467a572e45a5. Each hypothesis must cite an exact source sentence quote and contain a complete replacement program + query candidate. Copy the frozen candidate verbatim except for one minimal named alternative. For connector_interpretation, change exactly one `or(` token to `xor(` or vice versa and keep the query byte-identical. For predicate_alias, keep the program byte-identical and change the query only. For missing_type_assumption, keep the query byte-identical and append exactly one labelled `axiom(sN, ...)`. Keep the same finite-FOL surface language: domain(person,[...]). and axiom(sN, ...), with `atom`, `not`, `and`, `or`, `xor`, `implies`, and `forall(var(x,person), Formula)`. Do not introduce `rule`, infix -&gt;, &amp;, |, ordinary Prolog rules, directives, files, shell, network, consult, assert, retract, call, hidden gold, nl2fol, external knowledge, extra fields, or explanations.
+
+World:
+s1: Drew studies.
+s2: Drew either studies or works.
+
+Frozen program:
+domain(person,[drew]).
+axiom(s1, studies(drew)).
+axiom(s2, xor(studies(drew),works(drew))).
+
+Frozen query:
+works(drew)</pre></details><details open><summary>Luna hypothesis answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-hypothesis-v1&quot;,
+  &quot;case_id&quot;: &quot;controlled-orxor-04&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;8285a598875b6780399f60f879a5fce144404d4a02b8c727e0c7467a572e45a5&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Drew either studies or works.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[drew]).\naxiom(s1, studies(drew)).\naxiom(s2, or(studies(drew),works(drew))).&quot;,
+        &quot;query&quot;: &quot;works(drew)&quot;
+      }
+    }
+  ]
+}</pre></details><details><summary>Baseline Prolog execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;8285a598875b6780399f60f879a5fce144404d4a02b8c727e0c7467a572e45a5&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(works(drew),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([works/1]),world_predicates([studies/1,works/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[drew])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(works(drew),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(works(drew),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([works/1]),world_predicates([studies/1,works/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[drew])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(works(drew),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><h3>Branches</h3><article class="branch"><h4>h1 · connector_interpretation · unknown</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h1&quot;,
+  &quot;kind&quot;: &quot;connector_interpretation&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Drew either studies or works.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[drew]).\naxiom(s1, studies(drew)).\naxiom(s2, or(studies(drew),works(drew))).&quot;,
+    &quot;query&quot;: &quot;works(drew)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(works(drew),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([works/1]),world_predicates([studies/1,works/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[drew])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(studies,[drew]),holds(works,[drew])]),false_model([holds(studies,[drew])]))))),audit_proof_tree(works(drew),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(works(drew),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([works/1]),world_predicates([studies/1,works/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[drew])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(studies,[drew]),holds(works,[drew])]),false_model([holds(studies,[drew])]))))),audit_proof_tree(works(drew),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article></section></details>
+<details class="case"><summary><b>controlled-orxor-05</b> · explicit_xor_control · final trace: <b>branch_dependent</b></summary><section class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Eli travels.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Eli either travels or rests, but not both.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Eli rest?&quot;
+}</pre></details><details><summary>Formalization prompt sent to Luna</summary><pre>Formalize every numbered English sentence below as one complete finite-FOL candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]). and exactly one labelled axiom(sN, ...) for every source sentence. Use facts such as axiom(s1, calm(ada)). Use explicit negation only as not(calm(ada)); never invent predicates such as not_calm(ada). Use ONLY the surface formulas atom, not, and, or, xor, implies, and forall(var(x,person), Formula). A universal rule must be exactly like axiom(s2, forall(var(x,person), implies(and(calm(var(x)),kind(var(x))),ready(var(x))))). The binder must be var(x), never X, and every use is var(x). A biconditional must be and(implies(A,B),implies(B,A)). Never use rule(...), exists, -&gt;, &amp;, |, ordinary Prolog clauses, or an uppercase variable. For disjunction use or(A,B); for exclusive choice use xor(A,B); preserve every source sentence. Query is one lowercase ground unary term, e.g. ready(ada) or not(ready(ada)), using the same predicate vocabulary. Do not use directives, files, shell, network, consult, assert, retract, call, or definitions outside domain/2 and axiom/2.
+
+World:
+s1: Eli travels.
+s2: Eli either travels or rests, but not both.
+
+Question:
+Does Eli rest?</pre></details><details open><summary>Luna formalization answer</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[eli]).\naxiom(s1,travels(eli)).\naxiom(s2,xor(travels(eli),rests(eli))).&quot;,
+  &quot;query&quot;: &quot;rests(eli)&quot;
+}</pre></details><details><summary>Hypothesis prompt sent to Luna</summary><pre>You are auditing a frozen Prolog formalization against its English source. Do not repair the baseline. Return zero, one, or two bounded counterfactual hypotheses in the supplied JSON schema. Set case_id exactly to controlled-orxor-05. Set baseline_candidate_sha256 exactly to 9d1c601a5b05df37f01d578625bd45aa0b91ea06e4b23335e345131cad19a9cd. Each hypothesis must cite an exact source sentence quote and contain a complete replacement program + query candidate. Copy the frozen candidate verbatim except for one minimal named alternative. For connector_interpretation, change exactly one `or(` token to `xor(` or vice versa and keep the query byte-identical. For predicate_alias, keep the program byte-identical and change the query only. For missing_type_assumption, keep the query byte-identical and append exactly one labelled `axiom(sN, ...)`. Keep the same finite-FOL surface language: domain(person,[...]). and axiom(sN, ...), with `atom`, `not`, `and`, `or`, `xor`, `implies`, and `forall(var(x,person), Formula)`. Do not introduce `rule`, infix -&gt;, &amp;, |, ordinary Prolog rules, directives, files, shell, network, consult, assert, retract, call, hidden gold, nl2fol, external knowledge, extra fields, or explanations.
+
+World:
+s1: Eli travels.
+s2: Eli either travels or rests, but not both.
+
+Frozen program:
+domain(person,[eli]).
+axiom(s1,travels(eli)).
+axiom(s2,xor(travels(eli),rests(eli))).
+
+Frozen query:
+rests(eli)</pre></details><details open><summary>Luna hypothesis answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-hypothesis-v1&quot;,
+  &quot;case_id&quot;: &quot;controlled-orxor-05&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;9d1c601a5b05df37f01d578625bd45aa0b91ea06e4b23335e345131cad19a9cd&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Eli either travels or rests, but not both.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[eli]).\naxiom(s1,travels(eli)).\naxiom(s2,or(travels(eli),rests(eli))).&quot;,
+        &quot;query&quot;: &quot;rests(eli)&quot;
+      }
+    }
+  ]
+}</pre></details><details><summary>Baseline Prolog execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;9d1c601a5b05df37f01d578625bd45aa0b91ea06e4b23335e345131cad19a9cd&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(rests(eli),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[eli])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(eli),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(eli),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[eli])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(eli),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><h3>Branches</h3><article class="branch"><h4>h1 · connector_interpretation · unknown</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h1&quot;,
+  &quot;kind&quot;: &quot;connector_interpretation&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Eli either travels or rests, but not both.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[eli]).\naxiom(s1,travels(eli)).\naxiom(s2,or(travels(eli),rests(eli))).&quot;,
+    &quot;query&quot;: &quot;rests(eli)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(rests(eli),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[eli])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[eli]),holds(travels,[eli])]),false_model([holds(travels,[eli])]))))),audit_proof_tree(rests(eli),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(eli),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[eli])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[eli]),holds(travels,[eli])]),false_model([holds(travels,[eli])]))))),audit_proof_tree(rests(eli),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article></section></details>
+<details class="case"><summary><b>controlled-orxor-06</b> · explicit_xor_control · final trace: <b>branch_dependent</b></summary><section class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Faye sings.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Faye either sings or dances, but not both.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Faye dance?&quot;
+}</pre></details><details><summary>Formalization prompt sent to Luna</summary><pre>Formalize every numbered English sentence below as one complete finite-FOL candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]). and exactly one labelled axiom(sN, ...) for every source sentence. Use facts such as axiom(s1, calm(ada)). Use explicit negation only as not(calm(ada)); never invent predicates such as not_calm(ada). Use ONLY the surface formulas atom, not, and, or, xor, implies, and forall(var(x,person), Formula). A universal rule must be exactly like axiom(s2, forall(var(x,person), implies(and(calm(var(x)),kind(var(x))),ready(var(x))))). The binder must be var(x), never X, and every use is var(x). A biconditional must be and(implies(A,B),implies(B,A)). Never use rule(...), exists, -&gt;, &amp;, |, ordinary Prolog clauses, or an uppercase variable. For disjunction use or(A,B); for exclusive choice use xor(A,B); preserve every source sentence. Query is one lowercase ground unary term, e.g. ready(ada) or not(ready(ada)), using the same predicate vocabulary. Do not use directives, files, shell, network, consult, assert, retract, call, or definitions outside domain/2 and axiom/2.
+
+World:
+s1: Faye sings.
+s2: Faye either sings or dances, but not both.
+
+Question:
+Does Faye dance?</pre></details><details open><summary>Luna formalization answer</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[faye]).\naxiom(s1, sings(faye)).\naxiom(s2, xor(sings(faye),dances(faye))).&quot;,
+  &quot;query&quot;: &quot;dances(faye)&quot;
+}</pre></details><details><summary>Hypothesis prompt sent to Luna</summary><pre>You are auditing a frozen Prolog formalization against its English source. Do not repair the baseline. Return zero, one, or two bounded counterfactual hypotheses in the supplied JSON schema. Set case_id exactly to controlled-orxor-06. Set baseline_candidate_sha256 exactly to 6c6aa7ba6c967c76c5f4c3535b1acab7939c833537b4e1a5028583afdc02e4f7. Each hypothesis must cite an exact source sentence quote and contain a complete replacement program + query candidate. Copy the frozen candidate verbatim except for one minimal named alternative. For connector_interpretation, change exactly one `or(` token to `xor(` or vice versa and keep the query byte-identical. For predicate_alias, keep the program byte-identical and change the query only. For missing_type_assumption, keep the query byte-identical and append exactly one labelled `axiom(sN, ...)`. Keep the same finite-FOL surface language: domain(person,[...]). and axiom(sN, ...), with `atom`, `not`, `and`, `or`, `xor`, `implies`, and `forall(var(x,person), Formula)`. Do not introduce `rule`, infix -&gt;, &amp;, |, ordinary Prolog rules, directives, files, shell, network, consult, assert, retract, call, hidden gold, nl2fol, external knowledge, extra fields, or explanations.
+
+World:
+s1: Faye sings.
+s2: Faye either sings or dances, but not both.
+
+Frozen program:
+domain(person,[faye]).
+axiom(s1, sings(faye)).
+axiom(s2, xor(sings(faye),dances(faye))).
+
+Frozen query:
+dances(faye)</pre></details><details open><summary>Luna hypothesis answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-hypothesis-v1&quot;,
+  &quot;case_id&quot;: &quot;controlled-orxor-06&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;6c6aa7ba6c967c76c5f4c3535b1acab7939c833537b4e1a5028583afdc02e4f7&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Faye either sings or dances, but not both.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[faye]).\naxiom(s1, sings(faye)).\naxiom(s2, or(sings(faye),dances(faye))).&quot;,
+        &quot;query&quot;: &quot;dances(faye)&quot;
+      }
+    }
+  ]
+}</pre></details><details><summary>Baseline Prolog execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;6c6aa7ba6c967c76c5f4c3535b1acab7939c833537b4e1a5028583afdc02e4f7&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(dances(faye),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[faye])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(faye),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(faye),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[faye])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(faye),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><h3>Branches</h3><article class="branch"><h4>h1 · connector_interpretation · unknown</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h1&quot;,
+  &quot;kind&quot;: &quot;connector_interpretation&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Faye either sings or dances, but not both.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[faye]).\naxiom(s1, sings(faye)).\naxiom(s2, or(sings(faye),dances(faye))).&quot;,
+    &quot;query&quot;: &quot;dances(faye)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(dances(faye),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[faye])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(dances,[faye]),holds(sings,[faye])]),false_model([holds(sings,[faye])]))))),audit_proof_tree(dances(faye),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(faye),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[faye])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(dances,[faye]),holds(sings,[faye])]),false_model([holds(sings,[faye])]))))),audit_proof_tree(dances(faye),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article></section></details>
+<details class="case"><summary><b>controlled-orxor-07</b> · explicit_or_control · final trace: <b>branch_dependent</b></summary><section class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Gus cooks.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Gus either cooks or cleans, or both.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Gus clean?&quot;
+}</pre></details><details><summary>Formalization prompt sent to Luna</summary><pre>Formalize every numbered English sentence below as one complete finite-FOL candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]). and exactly one labelled axiom(sN, ...) for every source sentence. Use facts such as axiom(s1, calm(ada)). Use explicit negation only as not(calm(ada)); never invent predicates such as not_calm(ada). Use ONLY the surface formulas atom, not, and, or, xor, implies, and forall(var(x,person), Formula). A universal rule must be exactly like axiom(s2, forall(var(x,person), implies(and(calm(var(x)),kind(var(x))),ready(var(x))))). The binder must be var(x), never X, and every use is var(x). A biconditional must be and(implies(A,B),implies(B,A)). Never use rule(...), exists, -&gt;, &amp;, |, ordinary Prolog clauses, or an uppercase variable. For disjunction use or(A,B); for exclusive choice use xor(A,B); preserve every source sentence. Query is one lowercase ground unary term, e.g. ready(ada) or not(ready(ada)), using the same predicate vocabulary. Do not use directives, files, shell, network, consult, assert, retract, call, or definitions outside domain/2 and axiom/2.
+
+World:
+s1: Gus cooks.
+s2: Gus either cooks or cleans, or both.
+
+Question:
+Does Gus clean?</pre></details><details open><summary>Luna formalization answer</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[gus]).\naxiom(s1, cooks(gus)).\naxiom(s2, or(cooks(gus),cleans(gus))).&quot;,
+  &quot;query&quot;: &quot;cleans(gus)&quot;
+}</pre></details><details><summary>Hypothesis prompt sent to Luna</summary><pre>You are auditing a frozen Prolog formalization against its English source. Do not repair the baseline. Return zero, one, or two bounded counterfactual hypotheses in the supplied JSON schema. Set case_id exactly to controlled-orxor-07. Set baseline_candidate_sha256 exactly to 57ef27b5bed832f32ab7396a783984031dac75a677dea71edfb7576123d5be33. Each hypothesis must cite an exact source sentence quote and contain a complete replacement program + query candidate. Copy the frozen candidate verbatim except for one minimal named alternative. For connector_interpretation, change exactly one `or(` token to `xor(` or vice versa and keep the query byte-identical. For predicate_alias, keep the program byte-identical and change the query only. For missing_type_assumption, keep the query byte-identical and append exactly one labelled `axiom(sN, ...)`. Keep the same finite-FOL surface language: domain(person,[...]). and axiom(sN, ...), with `atom`, `not`, `and`, `or`, `xor`, `implies`, and `forall(var(x,person), Formula)`. Do not introduce `rule`, infix -&gt;, &amp;, |, ordinary Prolog rules, directives, files, shell, network, consult, assert, retract, call, hidden gold, nl2fol, external knowledge, extra fields, or explanations.
+
+World:
+s1: Gus cooks.
+s2: Gus either cooks or cleans, or both.
+
+Frozen program:
+domain(person,[gus]).
+axiom(s1, cooks(gus)).
+axiom(s2, or(cooks(gus),cleans(gus))).
+
+Frozen query:
+cleans(gus)</pre></details><details open><summary>Luna hypothesis answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-hypothesis-v1&quot;,
+  &quot;case_id&quot;: &quot;controlled-orxor-07&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;57ef27b5bed832f32ab7396a783984031dac75a677dea71edfb7576123d5be33&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Gus either cooks or cleans, or both.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[gus]).\naxiom(s1, cooks(gus)).\naxiom(s2, xor(cooks(gus),cleans(gus))).&quot;,
+        &quot;query&quot;: &quot;cleans(gus)&quot;
+      }
+    },
+    {
+      &quot;id&quot;: &quot;h2&quot;,
+      &quot;kind&quot;: &quot;predicate_alias&quot;,
+      &quot;source_sentence_id&quot;: &quot;s1&quot;,
+      &quot;source_quote&quot;: &quot;Gus cooks.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[gus]).\naxiom(s1, cooks(gus)).\naxiom(s2, or(cooks(gus),cleans(gus))).&quot;,
+        &quot;query&quot;: &quot;cooks(gus)&quot;
+      }
+    }
+  ]
+}</pre></details><details><summary>Baseline Prolog execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;57ef27b5bed832f32ab7396a783984031dac75a677dea71edfb7576123d5be33&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(cleans(gus),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[gus])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(cleans,[gus]),holds(cooks,[gus])]),false_model([holds(cooks,[gus])]))))),audit_proof_tree(cleans(gus),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(gus),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[gus])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(cleans,[gus]),holds(cooks,[gus])]),false_model([holds(cooks,[gus])]))))),audit_proof_tree(cleans(gus),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><h3>Branches</h3><article class="branch"><h4>h1 · connector_interpretation · contradicted</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h1&quot;,
+  &quot;kind&quot;: &quot;connector_interpretation&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Gus either cooks or cleans, or both.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[gus]).\naxiom(s1, cooks(gus)).\naxiom(s2, xor(cooks(gus),cleans(gus))).&quot;,
+    &quot;query&quot;: &quot;cleans(gus)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(cleans(gus),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[gus])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(gus),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(gus),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[gus])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(gus),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article><article class="branch"><h4>h2 · predicate_alias · entailed</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h2&quot;,
+  &quot;kind&quot;: &quot;predicate_alias&quot;,
+  &quot;source_sentence_id&quot;: &quot;s1&quot;,
+  &quot;source_quote&quot;: &quot;Gus cooks.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[gus]).\naxiom(s1, cooks(gus)).\naxiom(s2, or(cooks(gus),cleans(gus))).&quot;,
+    &quot;query&quot;: &quot;cooks(gus)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;entailed&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(cooks(gus),entailed,explanation(status(entailed),source_axioms([s1,s2]),signature_audit(goal_predicates([cooks/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[gus])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_countermodel)))),audit_proof_tree(cooks(gus),proof_tree(cooks(gus),fact(cooks(gus),axiom(s1))))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cooks(gus),entailed,explanation(status(entailed),source_axioms([s1,s2]),signature_audit(goal_predicates([cooks/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[gus])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_countermodel)))),audit_proof_tree(cooks(gus),proof_tree(cooks(gus),fact(cooks(gus),axiom(s1))))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article></section></details>
+<details class="case"><summary><b>controlled-orxor-08</b> · explicit_or_control · final trace: <b>branch_dependent</b></summary><section class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Hope reads.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Hope either reads or writes, and both are allowed.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Hope write?&quot;
+}</pre></details><details><summary>Formalization prompt sent to Luna</summary><pre>Formalize every numbered English sentence below as one complete finite-FOL candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]). and exactly one labelled axiom(sN, ...) for every source sentence. Use facts such as axiom(s1, calm(ada)). Use explicit negation only as not(calm(ada)); never invent predicates such as not_calm(ada). Use ONLY the surface formulas atom, not, and, or, xor, implies, and forall(var(x,person), Formula). A universal rule must be exactly like axiom(s2, forall(var(x,person), implies(and(calm(var(x)),kind(var(x))),ready(var(x))))). The binder must be var(x), never X, and every use is var(x). A biconditional must be and(implies(A,B),implies(B,A)). Never use rule(...), exists, -&gt;, &amp;, |, ordinary Prolog clauses, or an uppercase variable. For disjunction use or(A,B); for exclusive choice use xor(A,B); preserve every source sentence. Query is one lowercase ground unary term, e.g. ready(ada) or not(ready(ada)), using the same predicate vocabulary. Do not use directives, files, shell, network, consult, assert, retract, call, or definitions outside domain/2 and axiom/2.
+
+World:
+s1: Hope reads.
+s2: Hope either reads or writes, and both are allowed.
+
+Question:
+Does Hope write?</pre></details><details open><summary>Luna formalization answer</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[hope]).\naxiom(s1,reads(hope)).\naxiom(s2,and(or(reads(hope),writes(hope)),and(allowed_reading(hope),allowed_writing(hope)))).&quot;,
+  &quot;query&quot;: &quot;writes(hope)&quot;
+}</pre></details><details><summary>Hypothesis prompt sent to Luna</summary><pre>You are auditing a frozen Prolog formalization against its English source. Do not repair the baseline. Return zero, one, or two bounded counterfactual hypotheses in the supplied JSON schema. Set case_id exactly to controlled-orxor-08. Set baseline_candidate_sha256 exactly to 45b10e5c35abee81879ef0da16d8a1a85ab9ce06c8162a008b7c300e567fad40. Each hypothesis must cite an exact source sentence quote and contain a complete replacement program + query candidate. Copy the frozen candidate verbatim except for one minimal named alternative. For connector_interpretation, change exactly one `or(` token to `xor(` or vice versa and keep the query byte-identical. For predicate_alias, keep the program byte-identical and change the query only. For missing_type_assumption, keep the query byte-identical and append exactly one labelled `axiom(sN, ...)`. Keep the same finite-FOL surface language: domain(person,[...]). and axiom(sN, ...), with `atom`, `not`, `and`, `or`, `xor`, `implies`, and `forall(var(x,person), Formula)`. Do not introduce `rule`, infix -&gt;, &amp;, |, ordinary Prolog rules, directives, files, shell, network, consult, assert, retract, call, hidden gold, nl2fol, external knowledge, extra fields, or explanations.
+
+World:
+s1: Hope reads.
+s2: Hope either reads or writes, and both are allowed.
+
+Frozen program:
+domain(person,[hope]).
+axiom(s1,reads(hope)).
+axiom(s2,and(or(reads(hope),writes(hope)),and(allowed_reading(hope),allowed_writing(hope)))).
+
+Frozen query:
+writes(hope)</pre></details><details open><summary>Luna hypothesis answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-hypothesis-v1&quot;,
+  &quot;case_id&quot;: &quot;controlled-orxor-08&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;45b10e5c35abee81879ef0da16d8a1a85ab9ce06c8162a008b7c300e567fad40&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Hope either reads or writes, and both are allowed.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[hope]).\naxiom(s1,reads(hope)).\naxiom(s2,and(xor(reads(hope),writes(hope)),and(allowed_reading(hope),allowed_writing(hope)))).&quot;,
+        &quot;query&quot;: &quot;writes(hope)&quot;
+      }
+    }
+  ]
+}</pre></details><details><summary>Baseline Prolog execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;45b10e5c35abee81879ef0da16d8a1a85ab9ce06c8162a008b7c300e567fad40&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(writes(hope),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([allowed_reading/1,allowed_writing/1,reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[hope])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(allowed_reading,[hope]),holds(allowed_writing,[hope]),holds(reads,[hope]),holds(writes,[hope])]),false_model([holds(allowed_reading,[hope]),holds(allowed_writing,[hope]),holds(reads,[hope])]))))),audit_proof_tree(writes(hope),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(hope),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([allowed_reading/1,allowed_writing/1,reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[hope])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(allowed_reading,[hope]),holds(allowed_writing,[hope]),holds(reads,[hope]),holds(writes,[hope])]),false_model([holds(allowed_reading,[hope]),holds(allowed_writing,[hope]),holds(reads,[hope])]))))),audit_proof_tree(writes(hope),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><h3>Branches</h3><article class="branch"><h4>h1 · connector_interpretation · contradicted</h4><details open><summary>Model hypothesis (complete candidate)</summary><pre>{
+  &quot;id&quot;: &quot;h1&quot;,
+  &quot;kind&quot;: &quot;connector_interpretation&quot;,
+  &quot;source_sentence_id&quot;: &quot;s2&quot;,
+  &quot;source_quote&quot;: &quot;Hope either reads or writes, and both are allowed.&quot;,
+  &quot;candidate&quot;: {
+    &quot;program&quot;: &quot;domain(person,[hope]).\naxiom(s1,reads(hope)).\naxiom(s2,and(xor(reads(hope),writes(hope)),and(allowed_reading(hope),allowed_writing(hope)))).&quot;,
+    &quot;query&quot;: &quot;writes(hope)&quot;
+  }
+}</pre></details><details><summary>Prolog execution</summary><pre>{
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(writes(hope),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([allowed_reading/1,allowed_writing/1,reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[hope])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(writes(hope),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(hope),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([allowed_reading/1,allowed_writing/1,reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[hope])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(writes(hope),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details></article></section></details>
