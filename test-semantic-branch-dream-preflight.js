@@ -12,6 +12,7 @@ assert.equal(fixture.cases.filter(x => x.class === "no_explicit_exclusivity").le
 assert.equal(fixture.cases.filter(x => x.class === "explicit_exclusive_control").length, 3);
 assert.equal(Object.hasOwn(fixture.cases[0], "answer"), false);
 assert.deepEqual(sentences("One. Two."), [{ id: "s1", text: "One." }, { id: "s2", text: "Two." }]);
+assert.deepEqual(sentences("If Dr. Ada sings. Bob listens."), [{ id: "s1", text: "If Dr. Ada sings." }, { id: "s2", text: "Bob listens." }]);
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "sbd-preflight-"));
 try {
   const manifestDir = path.join(root, ".cdr", "waves", "luna-thirty-paired-v1"); fs.mkdirSync(manifestDir, { recursive: true });

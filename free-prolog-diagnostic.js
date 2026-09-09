@@ -8,6 +8,10 @@ const { FINITE_FOL_PRELUDE, createSnapshot, createCandidate, runThought } = requ
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 function nonempty(value, label) { if (typeof value !== "string" || !value.trim()) throw new Error(`${label} must be non-empty text`); return value; }
 function outcomeFromTranscript(transcript) {
+  // SWI-Prolog can report a load error and still reach the diagnostic wrapper
+  // with a partially loaded program. A later success marker is not evidence
+  // that the submitted candidate executed intact.
+  if (typeof transcript === "string" && /^(?:ERROR:.*(?:Syntax error|.*error)|.*Syntax error)/mi.test(transcript)) return "failed";
   const match = typeof transcript === "string" && transcript.match(/^PAM_DIAGNOSTIC_OUTCOME: (.+)$/m);
   if (!match) return "unreported";
   if (match[1] === "succeeded" || match[1] === "failed") return match[1];

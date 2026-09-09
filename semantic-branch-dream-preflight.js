@@ -7,7 +7,10 @@ const path = require("node:path");
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const stable = value => JSON.stringify(value, null, 2) + "\n";
 const rank = (seed, row) => sha256(`${seed}:${row.id}`);
-function sentences(context) { return context.split(/(?<=\.)\s+/).filter(Boolean).map((text, index) => ({ id: `s${index + 1}`, text })); }
+function sentences(context) {
+  const protectedText = context.replace(/\b(Dr|Mr|Mrs|Ms|Prof|St)\./g, "$1<dot>");
+  return protectedText.split(/(?<=\.)\s+/).filter(Boolean).map((text, index) => ({ id: `s${index + 1}`, text: text.replace(/<dot>/g, ".") }));
+}
 function classOf(row) {
   const text = row.context.toLowerCase();
   if (text.includes("not necessarily both")) return "soft_disjunction";

@@ -12,11 +12,22 @@ function statusFromBindings(bindings) {
   return match ? match[1] : "unreported";
 }
 function cited(sentences, id, quote) { return Array.isArray(sentences) && sentences.some(s => s && s.id === id && typeof s.text === "string" && s.text.includes(quote)); }
+function connectorTokens(program) { return [...program.matchAll(/\b(or|xor)\(/g)].map(match => match[1]); }
+function connectorOnlyChange(before, after) {
+  const normalize = value => value.replace(/\b(?:or|xor)\(/g, "choice(");
+  const left = connectorTokens(before), right = connectorTokens(after);
+  return normalize(before) === normalize(after) && left.length === right.length && left.filter((token, index) => token !== right[index]).length === 1;
+}
 function validate(h, baseline, sentences) {
   if (!h || !/^h[1-2]$/.test(h.id || "") || !["connector_interpretation", "predicate_alias", "missing_type_assumption"].includes(h.kind)) throw new Error("invalid hypothesis identity");
   if (!/^s[0-9]+$/.test(h.source_sentence_id || "") || typeof h.source_quote !== "string" || !h.source_quote || !cited(sentences, h.source_sentence_id, h.source_quote)) throw new Error("source quote does not occur in the cited sentence");
   if (!h.candidate || typeof h.candidate.program !== "string" || !h.candidate.program.trim() || !groundGoal(h.candidate.query)) throw new Error("hypothesis must contain a complete ground candidate");
   if (candidateHash(h.candidate) === candidateHash(baseline)) throw new Error("hypothesis candidate must differ from baseline");
+  // This audits the submitted text; it does not construct or patch a Prolog
+  // candidate. A branch may still be a complete immutable program.
+  if (h.kind === "connector_interpretation" && (h.candidate.query !== baseline.query || !connectorOnlyChange(baseline.program, h.candidate.program))) throw new Error("connector interpretation must change exactly one or/xor connector and keep the query");
+  if (h.kind === "predicate_alias" && (h.candidate.program !== baseline.program || h.candidate.query === baseline.query)) throw new Error("predicate alias must keep the program byte-identical and change the query only");
+  if (h.kind === "missing_type_assumption" && (h.candidate.query !== baseline.query || !h.candidate.program.startsWith(baseline.program) || !/^axiom\(s[0-9]+, [\s\S]+\)\.\s*$/.test(h.candidate.program.slice(baseline.program.length)))) throw new Error("missing type assumption must append one labelled axiom and keep the query");
 }
 function makeBranch(_baseline, h) { return { program: h.candidate.program, query: h.candidate.query }; }
 async function execute(caseId, candidate, timeoutMs, maxOutputBytes) {
@@ -30,7 +41,8 @@ async function runSemanticBranchDream({ caseId, baseline, hypothesisSet, sourceS
   const baselineResult = await executeCandidate(`${caseId}:baseline`, baseline, timeoutMs, maxOutputBytes), branches = [];
   for (const h of hypothesisSet.hypotheses) try { validate(h, baseline, sourceSentences); const execution = await executeCandidate(`${caseId}:${h.id}`, makeBranch(baseline, h), timeoutMs, maxOutputBytes); branches.push({ id: h.id, kind: h.kind, hypothesis: h, ...execution }); } catch (error) { branches.push({ id: h && h.id || "invalid", kind: h && h.kind || "invalid", status: "rejected_hypothesis", rejection: String(error.message || error) }); }
   const executable = branches.filter(b => !b.rejection && b.execution_outcome === "succeeded" && b.semantic_status !== "unreported");
-  const conclusion = baselineResult.execution_outcome !== "succeeded" || baselineResult.semantic_status === "unreported" || executable.length === 0 ? "unresolved" : executable.some(b => b.semantic_status !== baselineResult.semantic_status) ? "branch_dependent" : "stable";
+  const incomplete = branches.some(b => b.rejection || b.execution_outcome !== "succeeded" || b.semantic_status === "unreported");
+  const conclusion = baselineResult.execution_outcome !== "succeeded" || baselineResult.semantic_status === "unreported" || executable.length === 0 || incomplete ? "unresolved" : executable.some(b => b.semantic_status !== baselineResult.semantic_status) ? "branch_dependent" : "stable";
   return Object.freeze({ schema_version: "dream-trace-v1", status: "observed-not-scored", case_id: caseId, baseline: baselineResult, branches, conclusion });
 }
-module.exports = { candidateHash, makeBranch, runSemanticBranchDream, statusFromBindings, validate };
+module.exports = { candidateHash, connectorOnlyChange, makeBranch, runSemanticBranchDream, statusFromBindings, validate };
