@@ -59,6 +59,10 @@ test(standard_explanation_is_the_same_package_without_only_near_audit, [setup(pl
     labelled_explanation_standard(curiosity(ada), unknown, Standard),
     \+ sub_term(near_signature_audit(_, _), Standard),
     sub_term(near_signature_audit(_, _), Enhanced).
+test(standard_explanation_preserves_invalid_validation_package, [setup(assertz(user:domain(person,[ada]))), cleanup(clear_labelled_world)]) :-
+    assertz(user:axiom(s13,p(var(x)))),
+    labelled_explanation(p(ada), invalid_program, Package),
+    labelled_explanation_standard(p(ada), invalid_program, Package).
 
 test(audit_proof_tree_nests_rule_premises, [setup(plunit_finite_fol_meta_prover:setup_branching_trace_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
     audit_proof_tree(ready(ada), proof_tree(ready(ada), derived(ready(ada), rule(s3), [

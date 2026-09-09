@@ -84,7 +84,8 @@ labelled_explanation(Goal, Status, Package) :-
 labelled_explanation_standard(Goal, Status, StandardPackage) :-
     labelled_explanation(Goal, Status, Package), explanation_without_near_signature(Package, StandardPackage).
 explanation_without_near_signature(explanation(Status, Sources, Signature, _Near, Domain, Quantifiers, Core, Certificate), explanation(Status, Sources, Signature, Domain, Quantifiers, Core, Certificate)) :- !.
-explanation_without_near_signature(explanation(Status, Sources, Signature, _Near, Domain, Quantifiers, Certificate), explanation(Status, Sources, Signature, Domain, Quantifiers, Certificate)).
+explanation_without_near_signature(explanation(Status, Sources, Signature, _Near, Domain, Quantifiers, Certificate), explanation(Status, Sources, Signature, Domain, Quantifiers, Certificate)) :- !.
+explanation_without_near_signature(Package, Package).
 labelled_compilation(Goal, Domains, Compiled, CompiledGoal, Result) :-
     findall(domain(Type, Values), user:domain(Type, Values), Domains),
     findall(label(Id, Clause), user:axiom(Id, Clause), Labelled),
