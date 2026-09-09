@@ -64,7 +64,8 @@ async function run({ outputRoot, waveRoot = wave, protocol, resumeAfterUserInter
 }
 if (require.main === module) {
   const protocol = JSON.parse(fs.readFileSync(path.join(wave, "protocol-draft.json"), "utf8"));
-  const outputRoot = process.argv[2] || path.join(wave, "raw-luna-explicit-xor-v1");
-  run({ outputRoot, protocol, resumeAfterUserInterrupt: process.argv.includes("--resume-after-user-interrupt") }).then(result => process.stdout.write(json(result))).catch(error => { process.stderr.write(`${error.stack || error}\n`); process.exitCode = 1; });
+  const args = process.argv.slice(2);
+  const outputRoot = args.find(arg => arg !== "--resume-after-user-interrupt") || path.join(wave, "raw-luna-explicit-xor-v1");
+  run({ outputRoot, protocol, resumeAfterUserInterrupt: args.includes("--resume-after-user-interrupt") }).then(result => process.stdout.write(json(result))).catch(error => { process.stderr.write(`${error.stack || error}\n`); process.exitCode = 1; });
 }
 module.exports = { preflight, prompt, run, validCandidate };
