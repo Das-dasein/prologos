@@ -10,6 +10,12 @@ const { runFreePrologDiagnostic } = require("./free-prolog-diagnostic");
   assert.equal(observed.runtime.transcript.exitCode, 0);
   assert.equal(observed.execution_outcome, "succeeded");
   assert.equal(observed.program, program);
+  assert.doesNotMatch(observed.runtime.transcript.transcript, /Warning:|Singleton variables/);
+  // Fix the trusted examples, not the warning channel: candidate mistakes stay visible.
+  const warning = await runFreePrologDiagnostic({ caseId: "candidate-warning", program: "probe(Unused).\n", query: "probe(ada)", timeoutMs: 1500 });
+  assert.equal(warning.execution_outcome, "succeeded");
+  assert.match(warning.runtime.transcript.transcript, /Singleton variables: \[Unused\]/);
+  assert.doesNotMatch(warning.runtime.transcript.transcript, /trusted-prelude-0\.pl/);
   const semanticProgram = `check(Status, Certificate) :- finite_status([domain(person,[ada])], [atom(paints,[ada]), xor(atom(paints,[ada]), atom(writes,[ada]))], atom(writes,[ada]), 16, Status, Certificate).\n`;
   const semantic = await runFreePrologDiagnostic({ caseId: "preloaded-semantics", program: semanticProgram, query: "check(Status, Certificate)", timeoutMs: 1500 });
   assert.equal(semantic.execution_outcome, "succeeded");
