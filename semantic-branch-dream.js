@@ -32,7 +32,7 @@ function validate(h, baseline, sentences) {
 function makeBranch(_baseline, h) { return { program: h.candidate.program, query: h.candidate.query }; }
 async function execute(caseId, candidate, timeoutMs, maxOutputBytes) {
   const checked = await checkCandidate({ caseId, ...candidate, timeoutMs, maxOutputBytes });
-  return { candidate_sha256: candidateHash(candidate), execution_outcome: checked.execution_outcome, semantic_status: statusFromBindings(checked.bindings), bindings: checked.bindings, transcript: checked.transcript, lexical_audit: checked.lexical_audit };
+  return { candidate_sha256: candidateHash(candidate), execution_outcome: checked.execution_outcome, semantic_status: statusFromBindings(checked.bindings), bindings: checked.bindings, transcript: checked.transcript };
 }
 async function runSemanticBranchDream({ caseId, baseline, hypothesisSet, sourceSentences, timeoutMs = 4000, maxOutputBytes = 262144, executeCandidate = execute }) {
   if (!caseId || !baseline || typeof baseline.program !== "string" || !groundGoal(baseline.query)) throw new Error("case_id and ground baseline candidate required");

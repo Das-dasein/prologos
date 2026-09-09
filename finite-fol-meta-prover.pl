@@ -1,7 +1,7 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, audit_proof_tree/2, meta_signatures/1, meta_help/2]).
+:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, audit_proof_tree/2, near_signature_audit/3, meta_signatures/1, meta_help/2]).
 :- use_module(library(clpb)).
 
 % Read-only self-description for an agent running inside the same Prolog image.
@@ -16,6 +16,7 @@ api_documentation(semantic_status/3, unlabelled_agent_program_model_check, examp
 api_documentation(semantic_slice_status/3, monadic_relevance_sliced_model_check, example(semantic_slice_status(ready(ada), _Status, _Certificate))).
 api_documentation(audit_trace/2, labelled_forward_horn_trace_only, example(audit_trace(ready(ada), _Result))).
 api_documentation(audit_proof_tree/2, labelled_forward_horn_dependency_tree_only, example(audit_proof_tree(ready(ada), _Result))).
+api_documentation(near_signature_audit/3, advisory_near_object_predicate_names_without_repair, example(near_signature_audit(atom(receives_accolades,[clark]), [s1-atom(receive_accolades,[clark])], _Audit))).
 api_documentation(meta_signatures/1, list_live_trusted_api_signatures, example(meta_signatures(_Signatures))).
 api_documentation(meta_help/2, show_contract_for_signature_or_all, example(meta_help(all, _Documentation))).
 meta_signatures(Signatures) :- findall(Signature, (api_documentation(Signature, _, _), Signature = Name/Arity, current_predicate(Name/Arity)), Signatures).
@@ -65,14 +66,15 @@ labelled_explanation(Goal, Status, Package) :-
       pairs_keys(Compiled, SourceIds),
       pairs_values(Compiled, Axioms),
       signature_audit(CompiledGoal, Axioms, SignatureAudit),
+      near_signature_audit(CompiledGoal, Compiled, NearSignatureAudit),
       domain_audit(Domains, Compiled, CompiledGoal, DomainAudit),
       quantifier_audit(Compiled, CompiledGoal, QuantifierAudit),
       finite_sat_status(Domains, Axioms, CompiledGoal, Status, Inner),
       ( Status = conflict ->
           subset_minimal_conflict_core(Domains, Compiled, Core),
           pairs_keys(Core, CoreIds),
-          Package = explanation(status(conflict), source_axioms(SourceIds), SignatureAudit, DomainAudit, QuantifierAudit, subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
-      ; Package = explanation(status(Status), source_axioms(SourceIds), SignatureAudit, DomainAudit, QuantifierAudit, certificate(Inner))
+          Package = explanation(status(conflict), source_axioms(SourceIds), SignatureAudit, NearSignatureAudit, DomainAudit, QuantifierAudit, subset_minimal_conflict_core(core_ids(CoreIds), core_formulas(Core)), certificate(Inner))
+      ; Package = explanation(status(Status), source_axioms(SourceIds), SignatureAudit, NearSignatureAudit, DomainAudit, QuantifierAudit, certificate(Inner))
       )
     ).
 labelled_compilation(Goal, Domains, Compiled, CompiledGoal, Result) :-
@@ -106,6 +108,31 @@ signature_audit(Goal, Axioms, signature_audit(goal_predicates(GoalSymbols), worl
     sort(RawGoalSymbols, GoalSymbols),
     sort(RawWorldSymbols, WorldSymbols),
     subtract(GoalSymbols, WorldSymbols, OnlyInGoal).
+
+% This is metaprogramming over the reified object-FOL terms, never a repair
+% rule. It reports names and arities for comparison with the source text.
+near_signature_audit(Goal, Labelled, near_signature_audit(query_related(QueryPairs), world_internal(WorldPairs))) :-
+    formula_predicates(Goal, RawGoalSymbols), sort(RawGoalSymbols, GoalSymbols),
+    pairs_values(Labelled, Axioms), formulas_predicates(Axioms, RawWorldSymbols), sort(RawWorldSymbols, WorldSymbols),
+    near_signature_pairs(GoalSymbols, WorldSymbols, QueryPairs),
+    near_signature_pairs(WorldSymbols, WorldSymbols, RawWorldPairs), sort(RawWorldPairs, WorldPairs).
+near_signature_pairs([], _, []).
+near_signature_pairs([Left|Rest], RightSymbols, Pairs) :-
+    findall(near_pair(Left, Right, edit_distance(Distance)), (member(Right, RightSymbols), near_distinct_signatures(Left, Right, Distance)), First),
+    near_signature_pairs(Rest, RightSymbols, Remaining), append(First, Remaining, Pairs).
+near_distinct_signatures(LeftName/Arity, RightName/Arity, Distance) :-
+    LeftName \== RightName, atom_edit_distance(LeftName, RightName, Distance), Distance =< 1.
+atom_edit_distance(Left, Right, Distance) :-
+    atom_chars(Left, LeftChars), atom_chars(Right, RightChars), length(RightChars, RightLength), numlist(0, RightLength, InitialRow),
+    foldl(edit_distance_row(RightChars), LeftChars, state(1, InitialRow), state(_, FinalRow)), last(FinalRow, Distance).
+edit_distance_row(RightChars, LeftChar, state(Index, Previous), state(NextIndex, [Index|Cells])) :-
+    edit_distance_cells(LeftChar, RightChars, Previous, Index, Cells), NextIndex is Index + 1.
+edit_distance_cells(_, [], [_], _, []).
+edit_distance_cells(LeftChar, [RightChar|RightRest], [Diagonal, Above|PreviousRest], Left, [Cell|Cells]) :-
+    ( LeftChar = RightChar -> Cost = 0 ; Cost = 1 ),
+    Insert is Left + 1, Delete is Above + 1, Replace is Diagonal + Cost,
+    min_list([Insert, Delete, Replace], Cell),
+    edit_distance_cells(LeftChar, RightRest, [Above|PreviousRest], Cell, Cells).
 formulas_predicates([], []).
 formulas_predicates([Formula|Rest], Symbols) :-
     formula_predicates(Formula, First),
