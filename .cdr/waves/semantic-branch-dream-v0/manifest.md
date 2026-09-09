@@ -2,6 +2,8 @@
 
 Changelog:
 
+- v0.1.4 — standardized model formalization on the full finite-FOL surface
+  grammar after `rule(...)` was observed nested inside a conjunction.
 - v0.1.3 — pinned the finite-FOL surface-language examples after the first
   transport-valid Luna run exposed `forall(X,...)` as a systematic invalid form.
 - v0.1.2 — pinned the recovered safe-executor validation before the first

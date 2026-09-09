@@ -4,7 +4,7 @@ const { formalPrompt, hypothesisPrompt, inspect } = require("./semantic-branch-d
 const item = { world: [{ id: "s1", text: "Ada paints." }], question: "Is Ada ready?" };
 const baseline = { program: "axiom(s1, paints(ada)).", query: "ready(ada)" };
 assert.match(formalPrompt(item), /s1: Ada paints\./); assert.match(formalPrompt(item), /Question:/);
-assert.match(formalPrompt(item), /never invent predicates such as not_calm/); assert.match(formalPrompt(item), /Do not use forall/); assert.match(formalPrompt(item), /rule\(\[calm\(X\), kind\(X\)\], ready\(X\)\)/);
+assert.match(formalPrompt(item), /never invent predicates such as not_calm/); assert.match(formalPrompt(item), /forall\(var\(x,person\)/); assert.match(formalPrompt(item), /Never use rule/); assert.match(formalPrompt(item), /and\(implies\(A,B\),implies\(B,A\)\)/);
 assert.match(hypothesisPrompt(item, baseline), /Do not repair the baseline/); assert.match(hypothesisPrompt(item, baseline), /complete replacement program \+ query/); assert.match(hypothesisPrompt(item, baseline), /axiom\(s1/);
 assert.match(hypothesisPrompt({ ...item, case_id: "proverqa-hard-31" }, baseline), /case_id exactly to proverqa-hard-31/);
 const notice = "Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.";
