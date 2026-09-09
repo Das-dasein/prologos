@@ -1,13 +1,64 @@
-<!doctype html><meta charset="utf-8"><title>Semantic branch dream v3 — full alpha review</title><style>body{font:16px system-ui;margin:32px auto;max-width:1200px;color:#172033;background:#f7f8fb;line-height:1.45}.note{background:#eaf5ff;border-left:4px solid #2563eb;padding:12px;border-radius:6px}details{background:#fff;border:1px solid #dde3ea;border-radius:8px;margin:10px 0;padding:10px}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#101827;color:#e5eefb;padding:14px;border-radius:6px;font-size:12px}.case{border-left:5px solid #2563eb}</style><h1>Сон с ветками v3: полный alpha-разбор</h1><div class="note"><b>Beta ещё не проводилась.</b> Здесь есть все видимые тексты, точные промпты, ответы Luna, полные Prolog-кандидаты, alpha traces и независимый zero-model replay.</div><h2>Protocol and alpha result</h2><details open><summary>Alpha report</summary><pre># Alpha report — semantic branch dream v3
+<!doctype html><meta charset="utf-8"><title>Semantic branch dream v3 — full CDR review</title><style>body{font:16px system-ui;margin:32px auto;max-width:1200px;color:#172033;background:#f7f8fb;line-height:1.45}.note{background:#eaf5ff;border-left:4px solid #2563eb;padding:12px;border-radius:6px}details{background:#fff;border:1px solid #dde3ea;border-radius:8px;margin:10px 0;padding:10px}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#101827;color:#e5eefb;padding:14px;border-radius:6px;font-size:12px}.case{border-left:5px solid #2563eb}</style><h1>Сон с ветками v3: полный CDR-разбор</h1><div class="note"><b>Gamma закрыт для узкого наблюдения.</b> Beta подтвердила воспроизводимость, но сузила claim: v3 проверяет расширенную инструкцию, а не generalization старого prompt.</div><h2>CDR receipt and reviews</h2><details open><summary>Gamma receipt</summary><pre># Gamma receipt — semantic branch dream v3
 
-Status: `alpha observed-not-scored`; Beta is pending.
+Status: `CLOSED — narrow observed result`.
+
+Permitted claim:
+
+&gt; On twelve pre-frozen author-written texts, Luna received an expanded
+&gt; instruction that explicitly named the control expressions. It proposed a
+&gt; permitted connector branch for all six author-classified bare alternatives
+&gt; and abstained on all six explicit controls. Five saved formalizations changed
+&gt; the query status; the sixth remained unknown because its generated program
+&gt; used distinct predicates `codes` and `code`. Independent replay reproduced
+&gt; all twelve traces.
+
+Not established: generalization of the unchanged v2.1 prompt, correct semantic
+translation of every text, general language disambiguation, answer accuracy,
+memory benefit, or Prolog benefit.
+</pre></details><details open><summary>Beta report</summary><pre># Beta report — semantic branch dream v3
+
+Verdict: `REVISE` for claim calibration; no Luna rerun is required. Technical
+reproducibility passed.
+
+- Preregistration commit `f42eabb` predates raw start (10:44:47 UTC vs
+  10:44:55 UTC). Fixture SHA-256 is
+  `f5416ab92088dd0578f5e8075d1edd660628f4b58bb53a20b058f25d8a01120d`.
+- 24 receipts and 120 JSONL events were inspected: one completed turn each,
+  matching prompt/stdout/stderr hashes, no forbidden tool action. The hidden
+  `expected_class` never appears in a prompt.
+- The schema permits only zero or one connector branch. All six branches cite
+  s2, preserve query and all other program bytes, and change exactly one
+  OR/XOR token.
+- Beta independently ran 18 isolated candidates to reproduce all 12 traces,
+  with zero model calls. Results match alpha and its saved fail-closed replay;
+  no load error was accepted.
+- The dashboard matches byte-for-byte regeneration from the reviewed files.
+
+Calibration corrections:
+
+1. v3's prompt explicitly lists the new variants `exactly one`, `never both`,
+   `one and only one`, `may do both`, and `not mutually exclusive`. Thus this
+   is evidence of compliance with an **expanded instruction**, not
+   generalization of the unchanged v2.1 prompt.
+2. v3-orxor-06's stable trace is technically correct but depends on a lexical
+   split: `codes(fara)` in s1 differs from `code(fara)` in s2. Neither branch
+   constrains `design(fara)`. It must not be described as a source-level
+   connector choice that does not matter, and it must not be auto-normalized.
+
+After these corrections, Gamma may record the narrow observed result.
+</pre></details><h2>Protocol and alpha result</h2><details open><summary>Alpha report</summary><pre># Alpha report — semantic branch dream v3
+
+Status: `alpha observed-not-scored`; Beta required the calibration addendum in
+`beta-v3-report.md` before Gamma.
 
 On 12 pre-frozen varied English phrasings, Luna produced one complete permitted
 connector branch for all 6 bare alternatives and abstained on all 6 explicit
 controls. Five bare branches changed the query status from `unknown` to
 `contradicted`; one branch (v3-orxor-06) left the queried status `unknown` and
-is correctly `stable`. The branch still represents a source-cited connector
-alternative, but it does not matter for that particular question.
+is correctly `stable`. Its reason is not semantic irrelevance: the generated
+baseline split `codes(fara)` from the s2 predicate `code(fara)`, so neither OR
+nor XOR constrains `design(fara)`. This lexical/modal formalization issue is
+preserved as observed and never auto-repaired.
 
 | Frozen class | Cases | Hypothesis present | Branch-dependent | Stable | No hypothesis |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -16,10 +67,11 @@ alternative, but it does not matter for that particular question.
 | explicit inclusive-OR variants | 3 | 0 / 3 | 0 | 0 | 3 |
 
 The zero-model-call fail-closed replay reproduced every trace. This alpha
-result extends the v2.1 observation to these twelve authored phrasings. It
-does not establish general natural-language disambiguation, answer accuracy,
-memory usefulness, or a benefit of Prolog. Beta must still verify raw receipts,
-blinding, one-token deltas, and replay independently.
+result describes these twelve authored phrasings under the expanded v3
+instruction, which directly lists their explicit control expressions. It does
+not establish generalization of the unchanged v2.1 prompt, general
+natural-language disambiguation, translation correctness, answer accuracy,
+memory usefulness, or a benefit of Prolog.
 </pre></details><details open><summary>Raw provenance</summary><pre>{
   &quot;status&quot;: &quot;development-alpha-not-cdr-receipt&quot;,
   &quot;sample_sha256&quot;: &quot;f5416ab92088dd0578f5e8075d1edd660628f4b58bb53a20b058f25d8a01120d&quot;,
@@ -591,6 +643,30 @@ Question:
 Does Arin study music?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[arin]).\naxiom(s1, studies_physics(arin)).\naxiom(s2, or(studies_physics(arin), studies_music(arin))).&quot;,
   &quot;query&quot;: &quot;studies_music(arin)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;studies_music&quot;,
+      &quot;studies_physics&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;audit&quot;: {
+        &quot;status&quot;: &quot;advisory-not-executed&quot;,
+        &quot;vocabulary&quot;: [
+          &quot;studies_music&quot;,
+          &quot;studies_physics&quot;
+        ],
+        &quot;suggestions&quot;: [],
+        &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+      }
+    }
+  ]
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-01; baseline_candidate_sha256 exactly to 1ee771cf37ebd1d809729c692e39f83cd2156f79feeee25d7f846198682a1817. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -712,6 +788,30 @@ Question:
 Does Bela swim?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[bela]).\naxiom(s1,hikes(bela)).\naxiom(s2,or(hikes(bela),swims(bela))).&quot;,
   &quot;query&quot;: &quot;swims(bela)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;hikes&quot;,
+      &quot;swims&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;audit&quot;: {
+        &quot;status&quot;: &quot;advisory-not-executed&quot;,
+        &quot;vocabulary&quot;: [
+          &quot;hikes&quot;,
+          &quot;swims&quot;
+        ],
+        &quot;suggestions&quot;: [],
+        &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+      }
+    }
+  ]
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-02; baseline_candidate_sha256 exactly to 94d789041473aba8d554197433da4f00fd6c83adb0a5cbfd057aed7d77684bd0. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -833,6 +933,30 @@ Question:
 Does Cleo dance?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[cleo]).\naxiom(s1, sings(cleo)).\naxiom(s2, or(sings(cleo),dances(cleo))).&quot;,
   &quot;query&quot;: &quot;dances(cleo)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;dances&quot;,
+      &quot;sings&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;audit&quot;: {
+        &quot;status&quot;: &quot;advisory-not-executed&quot;,
+        &quot;vocabulary&quot;: [
+          &quot;dances&quot;,
+          &quot;sings&quot;
+        ],
+        &quot;suggestions&quot;: [],
+        &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+      }
+    }
+  ]
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-03; baseline_candidate_sha256 exactly to b248e4239db20ddf399450a2eab146a169dbaa76a03c589ba87b1302353e72ee. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -954,6 +1078,30 @@ Question:
 Is Dion a painter?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[dion]).\naxiom(s1,poet(dion)).\naxiom(s2,or(poet(dion),painter(dion))).&quot;,
   &quot;query&quot;: &quot;painter(dion)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;painter&quot;,
+      &quot;poet&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;audit&quot;: {
+        &quot;status&quot;: &quot;advisory-not-executed&quot;,
+        &quot;vocabulary&quot;: [
+          &quot;painter&quot;,
+          &quot;poet&quot;
+        ],
+        &quot;suggestions&quot;: [],
+        &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+      }
+    }
+  ]
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-04; baseline_candidate_sha256 exactly to b1c8bd92fd1a06d8c498306020a5416c0f8f512eccb05033d3dd0e372e6d9a62. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -1075,6 +1223,30 @@ Question:
 Does Evan order food?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[evan]).\naxiom(s1,cooks(evan)).\naxiom(s2,or(cooks(evan),orders(evan))).&quot;,
   &quot;query&quot;: &quot;orders(evan)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;cooks&quot;,
+      &quot;orders&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;audit&quot;: {
+        &quot;status&quot;: &quot;advisory-not-executed&quot;,
+        &quot;vocabulary&quot;: [
+          &quot;cooks&quot;,
+          &quot;orders&quot;
+        ],
+        &quot;suggestions&quot;: [],
+        &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+      }
+    }
+  ]
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-05; baseline_candidate_sha256 exactly to 5811c329f98d1d27ea46c34231ee24a6cdf8d37f79f65ad9d67500012193895a. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -1196,6 +1368,46 @@ Question:
 Does Fara design?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[fara]).\naxiom(s1,codes(fara)).\naxiom(s2,or(code(fara),design(fara))).&quot;,
   &quot;query&quot;: &quot;design(fara)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;code&quot;,
+      &quot;codes&quot;,
+      &quot;design&quot;
+    ],
+    &quot;suggestions&quot;: [
+      {
+        &quot;left&quot;: &quot;code&quot;,
+        &quot;right&quot;: &quot;codes&quot;,
+        &quot;edit_distance&quot;: 1,
+        &quot;action&quot;: &quot;review_source_spelling_only&quot;
+      }
+    ],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;audit&quot;: {
+        &quot;status&quot;: &quot;advisory-not-executed&quot;,
+        &quot;vocabulary&quot;: [
+          &quot;code&quot;,
+          &quot;codes&quot;,
+          &quot;design&quot;
+        ],
+        &quot;suggestions&quot;: [
+          {
+            &quot;left&quot;: &quot;code&quot;,
+            &quot;right&quot;: &quot;codes&quot;,
+            &quot;edit_distance&quot;: 1,
+            &quot;action&quot;: &quot;review_source_spelling_only&quot;
+          }
+        ],
+        &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+      }
+    }
+  ]
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-06; baseline_candidate_sha256 exactly to 270fdfe594b4cb73a154246db4f145f9a6e9c8e1f049074a1985a42105261c28. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -1317,6 +1529,17 @@ Question:
 Does Galen dance?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[galen]).\naxiom(s1,sings(galen)).\naxiom(s2,xor(sings(galen),dances(galen))).&quot;,
   &quot;query&quot;: &quot;dances(galen)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;dances&quot;,
+      &quot;sings&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: []
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-07; baseline_candidate_sha256 exactly to a49dfb2534cd75e9e1c99280a159e090e9adf3b4a0f805ec03d4c3dd1f30105c. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -1387,6 +1610,17 @@ Question:
 Does Hana draw?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[hana]).\naxiom(s1,writes(hana)).\naxiom(s2,xor(writes(hana),draws(hana))).&quot;,
   &quot;query&quot;: &quot;draws(hana)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;draws&quot;,
+      &quot;writes&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: []
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-08; baseline_candidate_sha256 exactly to 763c9736543522f2144fe12df979587c30a8f93d4f1307d5d4eaf0194111a6a9. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -1457,6 +1691,17 @@ Question:
 Does Ivo cycle?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[ivo]).\naxiom(s1,runs(ivo)).\naxiom(s2,xor(runs(ivo),cycles(ivo))).&quot;,
   &quot;query&quot;: &quot;cycles(ivo)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;cycles&quot;,
+      &quot;runs&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: []
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-09; baseline_candidate_sha256 exactly to 6f4b39a6d460eef70e82609dd73d4163e32b7e96af1c48e8051787b18391766c. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -1527,6 +1772,17 @@ Question:
 Does Jade dance?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[jade]).\naxiom(s1, sings(jade)).\naxiom(s2, or(sings(jade), dance(jade))).&quot;,
   &quot;query&quot;: &quot;dance(jade)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;dance&quot;,
+      &quot;sings&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: []
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-10; baseline_candidate_sha256 exactly to 8ce033299b26ad5e289c0c25fa6c68a6a7c29fd6c3e735f6c45f4d6a9f6fe79b. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -1597,6 +1853,17 @@ Question:
 Does Kori write?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[kori]).\naxiom(s1,reads(kori)).\naxiom(s2,or(reads(kori),writes(kori))).&quot;,
   &quot;query&quot;: &quot;writes(kori)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;reads&quot;,
+      &quot;writes&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: []
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-11; baseline_candidate_sha256 exactly to 44284e64988dfdd94d76dba57c1ad63774471fe2d37c37c58c491579e94d5493. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
@@ -1667,6 +1934,17 @@ Question:
 Does Luz sculpt?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
   &quot;program&quot;: &quot;domain(person,[luz]).\naxiom(s1,paints(luz)).\naxiom(s2,or(paints(luz),sculpts(luz))).&quot;,
   &quot;query&quot;: &quot;sculpts(luz)&quot;
+}</pre></details><details open><summary>Advisory predicate-name audit — no auto-repair</summary><pre>{
+  &quot;baseline&quot;: {
+    &quot;status&quot;: &quot;advisory-not-executed&quot;,
+    &quot;vocabulary&quot;: [
+      &quot;paints&quot;,
+      &quot;sculpts&quot;
+    ],
+    &quot;suggestions&quot;: [],
+    &quot;note&quot;: &quot;No predicate is renamed, aliased, asserted, or used to change the query or proof.&quot;
+  },
+  &quot;branches&quot;: []
 }</pre></details><details><summary>Hypothesis prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the target wording reasonably permits both inclusive OR and exclusive XOR. Return no branch whenever it explicitly states exclusivity or inclusivity, including expressions equivalent to exactly one, never both, one and only one, may do both, at least one with both possible, or not mutually exclusive. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
 
 Set case_id exactly to v3-orxor-12; baseline_candidate_sha256 exactly to a4151e2f04023d24b04f7852a72003fae5073bb99b95ef11d0650489e61b93c7. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.

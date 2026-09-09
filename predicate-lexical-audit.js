@@ -1,0 +1,8 @@
+"use strict";
+// Advisory only: candidate data contain predicate-like terms inside axiom/2,
+// so SWI-Prolog's callable-predicate DWIM cannot inspect these names for us.
+const RESERVED = new Set(["axiom", "domain", "and", "or", "xor", "not", "implies", "forall", "var", "atom"]);
+function names(text) { return [...String(text || "").matchAll(/\b([a-z][a-z0-9_]*)\(/g)].map(match => match[1]).filter(name => !RESERVED.has(name)); }
+function distance(left, right) { const rows = Array.from({ length: left.length + 1 }, (_, i) => [i]); for (let j = 1; j <= right.length; j += 1) rows[0][j] = j; for (let i = 1; i <= left.length; i += 1) for (let j = 1; j <= right.length; j += 1) rows[i][j] = Math.min(rows[i - 1][j] + 1, rows[i][j - 1] + 1, rows[i - 1][j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1)); return rows[left.length][right.length]; }
+function auditPredicateNames({ program, query }) { const vocabulary = [...new Set([...names(program), ...names(query)])].sort(); const suggestions = []; for (let i = 0; i < vocabulary.length; i += 1) for (let j = i + 1; j < vocabulary.length; j += 1) { const edit_distance = distance(vocabulary[i], vocabulary[j]); if (edit_distance <= 1) suggestions.push(Object.freeze({ left: vocabulary[i], right: vocabulary[j], edit_distance, action: "review_source_spelling_only" })); } return Object.freeze({ status: "advisory-not-executed", vocabulary, suggestions: Object.freeze(suggestions), note: "No predicate is renamed, aliased, asserted, or used to change the query or proof." }); }
+module.exports = { auditPredicateNames, distance, names };

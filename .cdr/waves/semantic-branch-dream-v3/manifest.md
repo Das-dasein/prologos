@@ -1,12 +1,13 @@
 # Semantic branch dream v3 — varied-language abstention test
 
-Status: `PREREGISTERED — NOT RUN`.
+Status: `ALPHA + BETA COMPLETE — GAMMA RECORDED`.
 
 v2.1 established only that a clear abstention instruction separates eight
-near-identical templates. v3 asks a narrower generalization question: on new,
-varied controlled phrasings, does the same single plain prompt propose one
-complete OR/XOR alternative for bare alternatives and abstain for explicit
-exclusive/inclusive language?
+near-identical templates. v3 asks a narrower instruction-following question:
+on new varied controlled phrasings, does an expanded plain prompt that directly
+names the new control expressions propose one complete OR/XOR alternative for
+bare alternatives and abstain for explicit exclusive/inclusive language? It is
+not a generalization test of the unchanged v2.1 prompt.
 
 The 12 frozen cases contain six bare alternatives, three explicit-XOR controls
 (`exactly one`, `never both`, `one and only one`), and three inclusive-OR
