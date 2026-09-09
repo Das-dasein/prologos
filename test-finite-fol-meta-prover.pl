@@ -67,6 +67,15 @@ test(standard_explanation_preserves_invalid_validation_package, [setup(assertz(u
     labelled_explanation(p(ada), invalid_program, Package),
     labelled_explanation_standard(p(ada), invalid_program, Package).
 
+test(benchmark_answer_is_decided_inside_prolog, [setup(plunit_finite_fol_meta_prover:setup_answer_world), cleanup(clear_labelled_world)]) :-
+    labelled_benchmark_answer(ready(ada), answer('A'), _),
+    labelled_benchmark_answer(noisy(ada), answer('B'), _),
+    labelled_benchmark_answer(curious(ada), answer('C'), _).
+
+test(benchmark_answer_does_not_hide_invalid_program_as_unknown, [setup(assertz(user:domain(person,[ada]))), cleanup(clear_labelled_world)]) :-
+    assertz(user:axiom(s1, p(var(x)))),
+    labelled_benchmark_answer(p(ada), unresolved(invalid_program), explanation(status(invalid_program), _)).
+
 test(audit_proof_tree_nests_rule_premises, [setup(plunit_finite_fol_meta_prover:setup_branching_trace_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
     audit_proof_tree(ready(ada), proof_tree(ready(ada), derived(ready(ada), rule(s3), [
         fact(calm(ada), axiom(s1)),
@@ -134,6 +143,10 @@ setup_branching_trace_world :-
     assertz(user:axiom(s1, calm(ada))),
     assertz(user:axiom(s2, rule([calm(X)], alert(X)))),
     assertz(user:axiom(s3, rule([calm(X), alert(X)], ready(X)))).
+setup_answer_world :-
+    assertz(user:domain(person, [ada])),
+    assertz(user:axiom(s1, ready(ada))),
+    assertz(user:axiom(s2, not(noisy(ada)))).
 clear_labelled_world :-
     retractall(user:domain(_, _)),
     retractall(user:axiom(_, _)).

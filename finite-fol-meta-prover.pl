@@ -1,7 +1,7 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, labelled_explanation_standard/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, audit_proof_tree/2, near_signature_audit/3, near_signature_audit_has_pairs/2, meta_signatures/1, meta_help/2]).
+:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, labelled_explanation_standard/3, labelled_benchmark_answer/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, audit_proof_tree/2, near_signature_audit/3, near_signature_audit_has_pairs/2, meta_signatures/1, meta_help/2]).
 :- use_module(library(clpb)).
 
 % Read-only self-description for an agent running inside the same Prolog image.
@@ -13,6 +13,7 @@ api_documentation(finite_sat_status/5, symbolic_classical_model_check, example(f
 api_documentation(labelled_semantic_status/3, labelled_agent_program_symbolic_check, example(labelled_semantic_status(ready(ada), _Status, _Certificate))).
 api_documentation(labelled_explanation/3, labelled_status_with_conflict_core_signature_and_domain_audits, example(labelled_explanation(ready(ada), _Status, _Package))).
 api_documentation(labelled_explanation_standard/3, labelled_explanation_projection_without_near_signature_audit, example(labelled_explanation_standard(ready(ada), _Status, _Package))).
+api_documentation(labelled_benchmark_answer/3, deterministic_proverqa_label_after_labelled_model_check, example(labelled_benchmark_answer(ready(ada), _Answer, _Package))).
 api_documentation(semantic_status/3, unlabelled_agent_program_model_check, example(semantic_status(ready(ada), _Status, _Certificate))).
 api_documentation(semantic_slice_status/3, monadic_relevance_sliced_model_check, example(semantic_slice_status(ready(ada), _Status, _Certificate))).
 api_documentation(audit_trace/2, labelled_forward_horn_trace_only, example(audit_trace(ready(ada), _Result))).
@@ -84,6 +85,20 @@ labelled_explanation(Goal, Status, Package) :-
 % then removes only the advisory near-name field; it never changes a formula.
 labelled_explanation_standard(Goal, Status, StandardPackage) :-
     labelled_explanation(Goal, Status, Package), explanation_without_near_signature(Package, StandardPackage).
+
+% This is the benchmark decision boundary: once a submitted object-FOL program
+% has been validated and executed, Prolog maps its semantic status to the task
+% label.  An invalid or inconsistent program is deliberately unresolved; it is
+% never relabelled as C/unknown.
+labelled_benchmark_answer(Goal, answer('A'), Package) :-
+    labelled_explanation(Goal, entailed, Package), !.
+labelled_benchmark_answer(Goal, answer('B'), Package) :-
+    labelled_explanation(Goal, contradicted, Package), !.
+labelled_benchmark_answer(Goal, answer('C'), Package) :-
+    labelled_explanation(Goal, unknown, Package), !.
+labelled_benchmark_answer(Goal, unresolved(Status), Package) :-
+    labelled_explanation(Goal, Status, Package).
+
 explanation_without_near_signature(explanation(Status, Sources, Signature, _Near, Domain, Quantifiers, Core, Certificate), explanation(Status, Sources, Signature, Domain, Quantifiers, Core, Certificate)) :- !.
 explanation_without_near_signature(explanation(Status, Sources, Signature, _Near, Domain, Quantifiers, Certificate), explanation(Status, Sources, Signature, Domain, Quantifiers, Certificate)) :- !.
 explanation_without_near_signature(Package, Package).
