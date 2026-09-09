@@ -41,9 +41,16 @@ Record independently:
 2. target verdict (`same_relation`, `different_relation`, or `insufficient_basis`);
 3. `same_relation` on a control target, always a false merge even if its evidence
    IDs are invalid or another finding contradicts it;
-4. required evidence present: `s1` and `q1` for a positive target judgement;
+4. required evidence present: `s1` and `q1` for either defined target verdict;
 5. absent target judgement; invalid IDs; conflicting verdicts; and other pairs.
 
 For each family, record whether both twins give their gold verdict with required
 evidence. The report has per-condition denominators of four and a family denominator
 of four; it never presents eight cases as independent or a single accuracy number.
+
+Gold stores complete `predicate/1` signatures. For all findings of one exact target
+pair: differing verdicts produce `conflict` and forbid target/family success;
+duplicate equal verdicts count once. Success requires the gold verdict and at least
+one finding with exactly permitted IDs containing both `s1` and `q1`. Schema-invalid
+JSON has no success; its raw text is still inspected separately so a visible
+`same_relation` on a control cannot be hidden by invalidity.
