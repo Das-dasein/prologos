@@ -98,6 +98,26 @@ registry for an isolated domain extension; it cannot shadow reserved runtime
 predicates. This candidate registry is not the active chat-ingestion profile,
 introduces no facts, and is not a substitute for dialogue-derived memory.
 
+## Deterministic answer after semantic execution
+
+For the finite object-FOL evaluator, `labelled_benchmark_answer/3` is the
+answer boundary: `entailed` produces `A`, `contradicted` produces `B`, and
+`unknown` produces `C`. `invalid_program` and `conflict` remain unresolved;
+they are never silently converted into `C`. Thus a model can supply an
+immutable candidate program and query, while SWI-Prolog supplies the final
+benchmark label and its certificate.
+
+The frozen 30-case Luna development run was re-executed through this boundary
+with no model calls. It produced 17/30 matches with the original ProverQA
+gold, identical to the earlier M2 condition in which Luna read the executor
+output. The reviewable artifact is
+`.cdr/waves/luna-thirty-prolog-answer-v1/raw-prolog-answer-v1/dashboard.html`.
+This demonstrates that M2 mostly transcribed the solver status; it does not
+establish general accuracy of model-led formalization. A post-hoc audit found
+that several mismatches depend on a hidden source XOR whose meaning conflicts
+with the visible English text, so this development score combines
+formalization fidelity with compatibility with that dataset contract.
+
 ## Bounded rule hypotheses
 
 `npm run elenchus -- --hypothesis FILE [--memory FILE]` evaluates one proposed
