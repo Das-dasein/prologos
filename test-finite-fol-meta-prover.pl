@@ -53,6 +53,9 @@ test(near_signature_audit_reports_query_spelling_without_repair) :-
 test(near_signature_audit_keeps_internal_chain_names_visible) :-
     near_signature_audit(atom(target, [clark]), [s1-atom(develop, [clark]), s2-atom(develops, [clark])],
         near_signature_audit(query_related([]), world_internal([near_pair(world(develop/1, source_axioms([s1])), world(develops/1, source_axioms([s2])), edit_distance(1))]))).
+test(near_signature_audit_explicitly_marks_empty_and_nonempty) :-
+    near_signature_audit_has_pairs(near_signature_audit(query_related([]), world_internal([])), false),
+    near_signature_audit_has_pairs(near_signature_audit(query_related([near_pair(query(a/1), world(b/1, source_axioms([s1])), edit_distance(1))]), world_internal([])), true).
 
 test(standard_explanation_is_the_same_package_without_only_near_audit, [setup(plunit_finite_fol_meta_prover:setup_goal_only_predicate_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
     labelled_explanation(curiosity(ada), unknown, Enhanced),

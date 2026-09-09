@@ -1,7 +1,7 @@
 % Finite-domain object-FOL evaluator hosted in SWI-Prolog.
 % This is deliberately not a general FOL prover: quantifiers range only over
 % the explicit domain/2 values supplied by the caller.
-:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, labelled_explanation_standard/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, audit_proof_tree/2, near_signature_audit/3, meta_signatures/1, meta_help/2]).
+:- module(finite_fol_meta_prover, [finite_status/6, finite_sat_status/5, labelled_semantic_status/3, labelled_explanation/3, labelled_explanation_standard/3, semantic_status/3, semantic_slice_status/3, audit_trace/2, audit_proof_tree/2, near_signature_audit/3, near_signature_audit_has_pairs/2, meta_signatures/1, meta_help/2]).
 :- use_module(library(clpb)).
 
 % Read-only self-description for an agent running inside the same Prolog image.
@@ -18,6 +18,7 @@ api_documentation(semantic_slice_status/3, monadic_relevance_sliced_model_check,
 api_documentation(audit_trace/2, labelled_forward_horn_trace_only, example(audit_trace(ready(ada), _Result))).
 api_documentation(audit_proof_tree/2, labelled_forward_horn_dependency_tree_only, example(audit_proof_tree(ready(ada), _Result))).
 api_documentation(near_signature_audit/3, advisory_near_object_predicate_names_without_repair, example(near_signature_audit(atom(receives_accolades,[clark]), [s1-atom(receive_accolades,[clark])], _Audit))).
+api_documentation(near_signature_audit_has_pairs/2, read_only_boolean_for_nonempty_near_signature_audit, example(near_signature_audit_has_pairs(near_signature_audit(query_related([]), world_internal([])), false))).
 api_documentation(meta_signatures/1, list_live_trusted_api_signatures, example(meta_signatures(_Signatures))).
 api_documentation(meta_help/2, show_contract_for_signature_or_all, example(meta_help(all, _Documentation))).
 meta_signatures(Signatures) :- findall(Signature, (api_documentation(Signature, _, _), Signature = Name/Arity, current_predicate(Name/Arity)), Signatures).
@@ -125,6 +126,8 @@ near_signature_audit(Goal, Labelled, near_signature_audit(query_related(QueryPai
     pairs_values(Labelled, Axioms), formulas_predicates(Axioms, RawWorldSymbols), sort(RawWorldSymbols, WorldSymbols),
     near_query_signature_pairs(GoalSymbols, WorldSymbols, Labelled, QueryPairs),
     near_world_signature_pairs(WorldSymbols, Labelled, RawWorldPairs), sort(RawWorldPairs, WorldPairs).
+near_signature_audit_has_pairs(near_signature_audit(query_related(QueryPairs), world_internal(WorldPairs)), HasPairs) :-
+    ( QueryPairs = [], WorldPairs = [] -> HasPairs = false ; HasPairs = true ).
 near_query_signature_pairs([], _, _, []).
 near_query_signature_pairs([Left|Rest], RightSymbols, Labelled, Pairs) :-
     findall(near_pair(query(Left), world(Right, source_axioms(SourceIds)), edit_distance(Distance)), (member(Right, RightSymbols), near_distinct_signatures(Left, Right, Distance), signature_source_ids(Right, Labelled, SourceIds)), First),
