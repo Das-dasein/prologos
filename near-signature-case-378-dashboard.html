@@ -1,0 +1,102 @@
+<!doctype html><meta charset="utf-8"><title>Case 378: metaprogramming audit</title><style>body{max-width:1160px;margin:32px auto;padding:0 18px;font:16px/1.5 system-ui;color:#172033;background:#fafafa}section{background:#fff;border:1px solid #d8dee9;border-radius:10px;padding:18px;margin:18px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#101827;color:#e5edf7;padding:14px;border-radius:7px}code{overflow-wrap:anywhere}.warn{border-left:5px solid #d97706;padding-left:12px}li{margin:.75em 0}</style><h1>Case 378: мета-Prolog аудит имён</h1><section class="warn"><b>Граница результата.</b> Это один воспроизводимый запуск уже сохранённого кандидата. Вызовов модели не было. Prolog не переименовывал предикаты, не добавлял <code>scientist(clark)</code> и не менял ответ. Поэтому это не эксперимент о качестве модели и не результат CDR.</section><section><h2>Исходный вопрос</h2><p>Based on the above information, is the following statement true, false, or uncertain? Dr. Clark does not receive accolades.</p><p>Метка датасета: <code>B</code>. Она показана для контекста и не использовалась при запуске.</p></section><section><h2>Все 25 исходных предложений и pinned nl2fol</h2><ol><li><b>s1</b> For all scientists, if a scientist is renowned, then they either make breakthrough discoveries or receive accolades (or both).<br><code>∀x (renowned(x) → (make_breakthrough_discoveries(x) ∨ receive_accolades(x)))</code></li>
+<li><b>s2</b> If Dr. Clark conducts innovative research, then he will either advance the field or improve existing processes, but not both.<br><code>conduct_innovative_research(Clark) → (advance_the_field(Clark) ⊕ improve_existing_processes(Clark))</code></li>
+<li><b>s3</b> If Dr. Clark pursues a PhD, then he either dedicates his career to research or works in industry, but not both.<br><code>pursue_phd(Clark) → (dedicate_career_to_research(Clark) ⊕ work_in_industry(Clark))</code></li>
+<li><b>s4</b> Dr. Clark pursues a PhD.<br><code>pursue_phd(Clark)</code></li>
+<li><b>s5</b> If Dr. Kylan conducts innovative research, then he will either advance the field or improve existing processes, but not both.<br><code>conduct_innovative_research(Kylan) → (advance_the_field(Kylan) ⊕ improve_existing_processes(Kylan))</code></li>
+<li><b>s6</b> Dr. Clark leads research teams.<br><code>lead_research_teams(Clark)</code></li>
+<li><b>s7</b> Dr. Clark conducts innovative research.<br><code>conduct_innovative_research(Clark)</code></li>
+<li><b>s8</b> Dr. Kylan publishes papers.<br><code>publish_papers(Kylan)</code></li>
+<li><b>s9</b> Dr. Clark either conducts experiments or teaches at a university.<br><code>conduct_experiments(Clark) ∨ teach_at_university(Clark)</code></li>
+<li><b>s10</b> Dr. Clark does not drive progress.<br><code>¬drive_progress(Clark)</code></li>
+<li><b>s11</b> If Dr. Clark either develops new techniques or makes breakthrough discoveries (but not both), then he will advance his field.<br><code>(develop_new_techniques(Clark) ⊕ make_breakthrough_discoveries(Clark)) → advance_the_field(Clark)</code></li>
+<li><b>s12</b> All scientists either study phenomena or develop new techniques.<br><code>∀x (study_phenomena(x) ∨ develop_new_techniques(x))</code></li>
+<li><b>s13</b> Dr. Clark either teaches at a university or works in industry, but not both.<br><code>teach_at_university(Clark) ⊕ work_in_industry(Clark)</code></li>
+<li><b>s14</b> If Dr. Clark publishes papers and influences others, then he is renowned.<br><code>publish_papers(Clark) → (influence_others(Clark) ∧ renowned(Clark))</code></li>
+<li><b>s15</b> Dr. Harrison pursues a PhD.<br><code>pursue_phd(Harrison)</code></li>
+<li><b>s16</b> Dr. Kylan does not create new materials.<br><code>¬create_new_materials(Kylan)</code></li>
+<li><b>s17</b> Dr. Clark does not create new materials.<br><code>¬create_new_materials(Clark)</code></li>
+<li><b>s18</b> If a scientist develops new techniques, then they will drive progress in their field.<br><code>∀x (develop_new_techniques(x) → drive_progress(x))</code></li>
+<li><b>s19</b> Every scientist who dedicates their career to research either improves existing processes or creates new materials.<br><code>∀x (dedicate_career_to_research(x) → (improve_existing_processes(x) ∨ create_new_materials(x)))</code></li>
+<li><b>s20</b> Clark influences others.<br><code>influence_others(Clark)</code></li>
+<li><b>s21</b> If Dr. Clark either leads research teams or teaches at a university (but not both), then he collaborates with his peers.<br><code>(lead_research_teams(Clark) ⊕ teach_at_university(Clark)) → collaborate_with_peers(Clark)</code></li>
+<li><b>s22</b> Dr. Clark publishes papers.<br><code>publish_papers(Clark)</code></li>
+<li><b>s23</b> Clark does not collaborate with his peers.<br><code>¬collaborate_with_peers(Clark)</code></li>
+<li><b>s24</b> Any scientist who studies complex phenomena or tests new hypotheses can advance their field.<br><code>∀x ((study_complex_phenomena(x) ∨ test_new_hypotheses(x)) → advance_the_field(x))</code></li>
+<li><b>s25</b> Dr. Clark dedicates his career to research if he is passionate about science.<br><code>passionate_about_science(Clark) → dedicate_career_to_research(Clark)</code></li></ol></section><section><h2>Неизменённый кандидат</h2><p>SHA-256: <code>e5feb4e9cdcbad04c3e5ad5536776a94a9962ba79373718a9f75fd538b2f4cfd</code></p><pre>:- use_module('../../finite-fol-meta-prover.pl').
+domain(person,[clark,kylan,harrison]).
+
+% For all scientists, if a scientist is renowned, then they either make breakthrough discoveries or receive accolades (or both).
+axiom(s1, forall(var(x,person), implies(and(scientist(var(x)), renowned(var(x))), or(make_breakthrough_discoveries(var(x)), receive_accolades(var(x)))))).
+
+% If Dr. Clark conducts innovative research, then he will either advance the field or improve existing processes, but not both.
+axiom(s2, rule([conducts_innovative_research(clark)], xor(advance_field(clark), improve_existing_processes(clark)))).
+
+% If Dr. Clark pursues a PhD, then he either dedicates his career to research or works in industry, but not both.
+axiom(s3, rule([pursues_phd(clark)], xor(dedicates_career_to_research(clark), works_in_industry(clark)))).
+
+% Dr. Clark pursues a PhD.
+axiom(s4, pursues_phd(clark)).
+
+% If Dr. Kylan conducts innovative research, then he will either advance the field or improve existing processes, but not both.
+axiom(s5, rule([conducts_innovative_research(kylan)], xor(advance_field(kylan), improve_existing_processes(kylan)))).
+
+% Dr. Clark leads research teams.
+axiom(s6, leads_research_teams(clark)).
+
+% Dr. Clark conducts innovative research.
+axiom(s7, conducts_innovative_research(clark)).
+
+% Dr. Kylan publishes papers.
+axiom(s8, publishes_papers(kylan)).
+
+% Dr. Clark either conducts experiments or teaches at a university.
+axiom(s9, or(conducts_experiments(clark), teaches_at_a_university(clark))).
+
+% Dr. Clark does not drive progress.
+axiom(s10, not(drives_progress(clark))).
+
+% If Dr. Clark either develops new techniques or makes breakthrough discoveries (but not both), then he will advance his field.
+axiom(s11, rule([xor(develops_new_techniques(clark), make_breakthrough_discoveries(clark))], advances_his_field(clark))).
+
+% All scientists either study phenomena or develop new techniques.
+axiom(s12, forall(var(x,person), implies(scientist(var(x)), or(study_phenomena(var(x)), develop_new_techniques(var(x)))))).
+
+% Dr. Clark either teaches at a university or works in industry, but not both.
+axiom(s13, xor(teaches_at_a_university(clark), works_in_industry(clark))).
+
+% If Dr. Clark publishes papers and influences others, then he is renowned.
+axiom(s14, rule([publishes_papers(clark), influences_others(clark)], renowned(clark))).
+
+% Dr. Harrison pursues a PhD.
+axiom(s15, pursues_phd(harrison)).
+
+% Dr. Kylan does not create new materials.
+axiom(s16, not(creates_new_materials(kylan))).
+
+% Dr. Clark does not create new materials.
+axiom(s17, not(creates_new_materials(clark))).
+
+% If a scientist develops new techniques, then they will drive progress in their field.
+axiom(s18, forall(var(x,person), implies(and(scientist(var(x)), develops_new_techniques(var(x))), drives_progress(var(x))))).
+
+% Every scientist who dedicates their career to research either improves existing processes or creates new materials.
+axiom(s19, forall(var(x,person), implies(and(scientist(var(x)), dedicates_career_to_research(var(x))), or(improves_existing_processes(var(x)), creates_new_materials(var(x)))))).
+
+% Clark influences others.
+axiom(s20, influences_others(clark)).
+
+% If Dr. Clark either leads research teams or teaches at a university (but not both), then he collaborates with his peers.
+axiom(s21, rule([xor(leads_research_teams(clark), teaches_at_a_university(clark))], collaborates_with_his_peers(clark))).
+
+% Dr. Clark publishes papers.
+axiom(s22, publishes_papers(clark)).
+
+% Clark does not collaborate with his peers.
+axiom(s23, not(collaborates_with_his_peers(clark))).
+
+% Any scientist who studies complex phenomena or tests new hypotheses can advance their field.
+axiom(s24, forall(var(x,person), implies(and(scientist(var(x)), or(studies_complex_phenomena(var(x)), tests_new_hypotheses(var(x)))), advances_their_field(var(x))))).
+
+% Dr. Clark dedicates his career to research if he is passionate about science.
+axiom(s25, rule([passionate_about_science(clark)], dedicates_career_to_research(clark))).
+</pre><h3>Query</h3><pre>not(receives_accolades(clark))</pre></section><section><h2>Результат свежего Prolog запуска</h2><p>Outcome: <code>succeeded</code></p><pre>labelled_explanation(not(receives_accolades(clark)),unknown,explanation(status(unknown),source_axioms([s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19,s20,s21,s22,s23,s24,s25]),signature_audit(goal_predicates([receives_accolades/1]),world_predicates([advance_field/1,advances_his_field/1,advances_their_field/1,collaborates_with_his_peers/1,conducts_experiments/1,conducts_innovative_research/1,creates_new_materials/1,dedicates_career_to_research/1,develop_new_techniques/1,develops_new_techniques/1,drives_progress/1,improve_existing_processes/1,improves_existing_processes/1,influences_others/1,leads_research_teams/1,make_breakthrough_discoveries/1,passionate_about_science/1,publishes_papers/1,pursues_phd/1,receive_accolades/1,renowned/1,scientist/1,studies_complex_phenomena/1,study_phenomena/1,teaches_at_a_university/1,tests_new_hypotheses/1,works_in_industry/1]),only_in_goal([receives_accolades/1])),near_signature_audit(query_related([near_pair(query(receives_accolades/1),world(receive_accolades/1,source_axioms([s1])),edit_distance(1))]),world_internal([near_pair(world(develop_new_techniques/1,source_axioms([s12])),world(develops_new_techniques/1,source_axioms([s11,s18])),edit_distance(1)),near_pair(world(improve_existing_processes/1,source_axioms([s2,s5])),world(improves_existing_processes/1,source_axioms([s19])),edit_distance(1))])),domain_audit(declared_domains([domain(person,[clark,kylan,harrison])]),outside_declared_domains([]),quantified_rules([s1,s12,s18,s19,s24])),quantifier_audit([]),certificate(open_pair(true_model([holds(conducts_innovative_research,[clark]),holds(dedicates_career_to_research,[clark]),holds(improve_existing_processes,[clark]),holds(influences_others,[clark]),holds(leads_research_teams,[clark]),holds(publishes_papers,[clark]),holds(publishes_papers,[kylan]),holds(pursues_phd,[clark]),holds(pursues_phd,[harrison]),holds(renowned,[clark]),holds(teaches_at_a_university,[clark])]),false_model([holds(conducts_innovative_research,[clark]),holds(dedicates_career_to_research,[clark]),holds(improve_existing_processes,[clark]),holds(influences_others,[clark]),holds(leads_research_teams,[clark]),holds(publishes_papers,[clark]),holds(publishes_papers,[kylan]),holds(pursues_phd,[clark]),holds(pursues_phd,[harrison]),holds(receives_accolades,[clark]),holds(renowned,[clark]),holds(teaches_at_a_university,[clark])]))))),audit_proof_tree(not(receives_accolades(clark)),no_forward_trace(no_supported_rule_path))</pre><p>В сертификате видны: query-пара <code>receives_accolades/1 → receive_accolades/1</code> с <code>s1</code>; внутренние пары <code>develop_new_techniques/develops_new_techniques</code> с <code>s12</code> против <code>s11,s18</code> и <code>improve/improves_existing_processes</code> с <code>s2,s5</code> против <code>s19</code>.</p></section>
