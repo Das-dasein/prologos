@@ -1,0 +1,40 @@
+"use strict";
+// Read-only audit of a completed NSR raw directory. It never changes receipts.
+const crypto = require("node:crypto"), fs = require("node:fs"), path = require("node:path");
+const NOTICE = "Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.";
+const sha = value => crypto.createHash("sha256").update(value).digest("hex");
+const esc = value => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function events(stdout) {
+  try {
+    const rows = stdout.split(/\r?\n/).filter(Boolean).map(JSON.parse);
+    const items = rows.filter(row => row.item).map(row => row.item);
+    const forbidden = items.filter(item => !["agent_message", "reasoning"].includes(item.type) && !(item.type === "error" && item.message === NOTICE)).map(item => item.type);
+    const output = items.find(item => item.type === "agent_message")?.text || null;
+    const exact_shape = rows.length === 5 && rows[0].type === "thread.started" && rows[1].type === "turn.started" && rows[2].type === "item.completed" && rows[2].item?.type === "error" && rows[2].item?.message === NOTICE && rows[3].type === "item.completed" && rows[3].item?.type === "agent_message" && rows[4].type === "turn.completed";
+    return { parseable: true, exact_shape, completed_turns: rows.filter(row => row.type === "turn.completed").length, benign_notices: items.filter(item => item.type === "error" && item.message === NOTICE).length, forbidden, output };
+  } catch (error) { return { parseable: false, completed_turns: 0, benign_notices: 0, forbidden: ["invalid_jsonl"], parse_error: String(error.message || error), output: null }; }
+}
+function read(file) { return JSON.parse(fs.readFileSync(file, "utf8")); }
+function callAudit(dir, stage) {
+  const receiptFile = path.join(dir, stage, "receipt.json"), requestFile = path.join(dir, stage, "request.json"), stdoutFile = path.join(dir, stage, "stdout.jsonl"), stderrFile = path.join(dir, stage, "stderr.txt");
+  const receipt = read(receiptFile), request = read(requestFile), stdout = fs.readFileSync(stdoutFile, "utf8"), stderr = fs.readFileSync(stderrFile, "utf8"), trace = events(stdout);
+  const required = stage === "m0" ? ["program", "query"] : ["problems", "boundary"], rawOutput = trace.output ? JSON.parse(trace.output) : null;
+  const schema_valid = rawOutput && Object.keys(rawOutput).length === required.length && required.every(key => Object.hasOwn(rawOutput, key));
+  return { stage, original_error: receipt.error, hashes_match: { stdout: sha(stdout) === receipt.stdout_sha256, stderr: sha(stderr) === receipt.stderr_sha256, prompt: sha(request.prompt) === receipt.prompt_sha256 }, sealed_args: { json: request.args.includes("--json"), ephemeral: request.args.includes("--ephemeral"), read_only: request.args.includes("read-only") }, trace, output_matches_receipt: trace.output === JSON.stringify(receipt.output), schema_valid, host_stderr: stderr.length ? stderr : null, prompt: request.prompt, model_output: receipt.output, raw_agent_message: trace.output, has_placeholder: request.prompt.includes("Frozen program:\nM0 unavailable"), has_treatment: request.prompt.includes("Advisory near_signature_audit (read-only; it did not change the candidate):") };
+}
+function render(report) {
+  const rows = report.cases.map(row => `<tr><td>${esc(row.case_id)}</td><td>${esc(row.m0.original_error)}</td><td>${row.m0.model_output ? "yes" : "no"}</td><td>${row.m1.has_placeholder && row.m2.has_placeholder ? "yes" : "no"}</td><td>${row.m2.has_treatment ? "yes" : "no"}</td><td>${[row.m0,row.m1,row.m2].every(c => c.trace.forbidden.length === 0 && c.trace.completed_turns === 1) ? "only notice" : "see detail"}</td></tr><tr><td colspan="6"><details><summary>prompts and raw JSON outputs</summary>${[row.m0,row.m1,row.m2].map(c => `<h3>${c.stage}</h3><p>original receipt: <code>${esc(c.original_error)}</code>; turns ${c.trace.completed_turns}; benign notices ${c.trace.benign_notices}; forbidden ${esc(JSON.stringify(c.trace.forbidden))}</p><h4>Prompt</h4><pre>${esc(c.prompt)}</pre><h4>Output captured by runner</h4><pre>${esc(JSON.stringify(c.model_output, null, 2))}</pre>`).join("")}</details></td></tr>`).join("\n");
+  return `<!doctype html><meta charset="utf-8"><title>NSR v1 failed-run audit</title><style>body{font:15px system-ui;margin:32px;max-width:1400px;color:#18212b}table{border-collapse:collapse;width:100%}td,th{border:1px solid #cbd5e1;padding:8px;text-align:left;vertical-align:top}th{background:#e0f2fe}pre{white-space:pre-wrap;background:#f8fafc;padding:12px;max-height:420px;overflow:auto}code{background:#fee2e2;padding:2px 5px}.fail{background:#fff1f2;padding:16px;border-left:5px solid #e11d48}</style><h1>Near-signature reflection v1: completed but unusable run</h1><p class="fail"><strong>Do not score this as an M1/M2 experiment.</strong> The original runner classified every M0 call as <code>trace_gate_failed</code> because of a fixed Codex skills-context notice. It then supplied <code>M0 unavailable</code> to every M1 and M2 prompt. Thus no review prompt contained a frozen candidate, Prolog certificate, or treatment advisory.</p><p>The read-only audit verifies raw-file hashes and shows that the observed trace issue was exactly one known system notice per call, with one completed turn and no tool event. That fact does not retroactively make M1/M2 prompts valid.</p><h2>Counts</h2><pre>${esc(JSON.stringify(report.summary, null, 2))}</pre><h2>All calls, prompts, and captured answers</h2><table><thead><tr><th>case</th><th>M0 receipt</th><th>M0 output exists</th><th>review got placeholder</th><th>M2 got audit</th><th>trace</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function audit(root) {
+  const caseDirs = fs.readdirSync(root, { withFileTypes: true }).filter(entry => entry.isDirectory() && entry.name.startsWith("nsr-")).map(entry => entry.name).sort();
+  const cases = caseDirs.map(caseId => { const dir = path.join(root, caseId), record = read(path.join(dir, "record.json")); return { case_id: caseId, record_m0_error: record.m0.error, m0: callAudit(dir, "m0"), m1: callAudit(dir, "m1"), m2: callAudit(dir, "m2") }; });
+  const calls = cases.flatMap(row => [row.m0, row.m1, row.m2]);
+  const summary = { raw_root: root, cases: cases.length, calls: calls.length, original_trace_gate_failed: calls.filter(call => call.original_error === "trace_gate_failed").length, raw_hashes_match: calls.filter(call => Object.values(call.hashes_match).every(Boolean)).length, exact_five_event_notice_stream: calls.filter(call => call.trace.parseable && call.trace.exact_shape && call.trace.completed_turns === 1 && call.trace.benign_notices === 1 && call.trace.forbidden.length === 0).length, output_matches_agent_message: calls.filter(call => call.output_matches_receipt).length, output_has_expected_top_level_schema: calls.filter(call => call.schema_valid).length, sealed_args_present: calls.filter(call => Object.values(call.sealed_args).every(Boolean)).length, m0_outputs_captured_despite_error: cases.filter(row => row.m0.model_output).length, review_prompts_with_m0_placeholder: cases.filter(row => row.m1.has_placeholder && row.m2.has_placeholder).length, m2_prompts_with_treatment: cases.filter(row => row.m2.has_treatment).length, host_stderr_nonempty: calls.filter(call => call.host_stderr).length, conclusion: "unscorable: all review prompts received M0 unavailable; no treatment comparison occurred" };
+  const report = { schema: "nsr-post-run-audit-v1", scope: "read-only audit; original receipts are preserved", notice: NOTICE, summary, cases };
+  fs.writeFileSync(path.join(root, "post-run-audit.json"), JSON.stringify(report, null, 2) + "\n", { flag: "wx", mode: 0o600 });
+  fs.writeFileSync(path.join(root, "post-run-audit.html"), render(report), { flag: "wx", mode: 0o600 });
+  return report;
+}
+if (require.main === module) console.log(JSON.stringify(audit(process.argv[2]), null, 2));
+module.exports = { NOTICE, audit, events };
