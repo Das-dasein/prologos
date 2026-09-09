@@ -1,6 +1,6 @@
 # Semantic branch dream v2 — abstention comparison
 
-Status: `v2 ABORTED BEFORE A VALID TRACE`; `v2.1 PREREGISTERED — NOT RUN`.
+Status: `v2 ABORTED BEFORE A VALID TRACE`; `v2.1 ALPHA + BETA COMPLETE — GAMMA RECORDED`.
 
 The first v2 formalization prompt accidentally mixed `atom(...)` from another
 FOL profile into the executable candidate grammar. Its first model call

@@ -1,6 +1,8 @@
 # Alpha report — semantic branch dream v2.1
 
-Status: `alpha observed-not-scored`; not a CDR receipt. Beta review is pending.
+Status: `alpha observed-not-scored`. Beta subsequently accepted the narrow
+descriptive claim in `beta-v2.1-report.md`; this report remains the alpha
+record, not the CDR receipt.
 
 v2 was aborted before a valid trace because its formalization prompt mixed an
 incompatible `atom(...)` profile into executable candidates. v2.1 excluded the
