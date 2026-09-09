@@ -76,6 +76,10 @@ test(benchmark_answer_does_not_hide_invalid_program_as_unknown, [setup(assertz(u
     assertz(user:axiom(s1, p(var(x)))),
     labelled_benchmark_answer(p(ada), unresolved(invalid_program), explanation(status(invalid_program), _)).
 
+test(diagnostic_query_answer_uses_only_the_old_query_as_data, [setup(plunit_finite_fol_meta_prover:setup_answer_world), cleanup(clear_labelled_world)]) :-
+    diagnostic_query_answer(labelled_explanation(ready(ada), ignored_status, ignored_package), answer('A'), _),
+    diagnostic_query_answer(not_a_diagnostic_query(ready(ada)), unresolved(invalid_diagnostic_query(not_a_diagnostic_query(ready(ada)))), none).
+
 test(audit_proof_tree_nests_rule_premises, [setup(plunit_finite_fol_meta_prover:setup_branching_trace_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
     audit_proof_tree(ready(ada), proof_tree(ready(ada), derived(ready(ada), rule(s3), [
         fact(calm(ada), axiom(s1)),
