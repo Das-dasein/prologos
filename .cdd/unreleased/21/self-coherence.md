@@ -1,44 +1,70 @@
 ## Gap
 
-Issue #21, CDS design-and-build, bounded fake-provider pilot runner connecting
-dialogue, extraction-v2, isolated Prolog evaluation, and normalized Matrix B.
+Issue #21, CDS design-and-build repair R2. The shipped runner labelled B1-B4
+without distinct memory paths or final answer calls; this cycle implements the
+prospective `prolog-memory-evaluation-v2` software contract and keeps live
+model quality outside the evidence boundary.
 
 ## Skills
 
-Loaded canonical CDS.md, generic cnos.cdd α pointer, issue #21, CDR policy and
-method, live-extraction-harness.js, and cdr-matrix-harness.js.
+Loaded CDS/CDS.md, CDD issue/contract/proof/constraints/design/plan, CDR
+SKILL.md/CDR.md, and engineering code/test guidance from the current
+activation tree. The issue-requested
+`cnos.cds/skills/cds/implementation` surface is absent in this authority
+snapshot; existing code/test guidance was used instead. Affected peers are
+`pilot-runner.js`, `test-pilot-runner.js`, `cdr-matrix-harness.js`, the pinned
+pilot config, and this self-coherence artifact; prospective CDR method,
+handoff, repair report, dataset, oracle, trusted files, dashboard, and
+historical `.cdd/unreleased/21` artifacts were treated as read-only.
 
 ## ACs
 
-1. `npm run pilot -- --condition B1 --output FILE` runs all 12 cases.
-2. `npm run test:pilot` proves byte-reproducible fake output.
-3. Live mode is opt-in and requires a raw-output directory; usage and context
-   budget are checked.
-4. B1-B5 emit normalized records and Matrix B cells; B5 is labelled gold.
-5. Focused tests cover malformed/incomplete output, leakage, trusted hash and
-   immutability, unsafe query, and deterministic fake execution.
-6. Output records source, dataset/config/profile/trusted hashes, condition,
-   model, prompt hash, and per-turn provider usage.
+1. Distinct paths: `test-pilot-runner.js` asserts `recent_turns`,
+`rolling_summary`, `typed_claims_no_prolog`, and `typed_claims_plus_prolog`
+contexts, unequal hashes, 0 B3 Prolog calls, and 12 B4 calls.
+2. Final answers: the focused test instruments 36 extraction and 12 answer
+calls per B1-B4 and checks answer usage, raw refs, and answer records.
+3. Budget E: every condition has 72 measured extraction/summary/answer
+entries, all equal configured E=8192; an unequal-E fixture fails closed.
+4. v2 evidence: condition artifacts and aggregate retain v2 identity, hashes,
+config, prompts, raw refs, usage, contexts, claims, turns, and intervals;
+`scoreCandidateArtifact` consumes the aggregate and rejects incomplete shape.
+5. Scoring: records carry separate extraction and answer cells with explicit
+numerators/denominators; aggregate baseline remains `null` until a complete
+comparative run, while fake answers exercise the registered 12-case fixture.
+6. Safety/compatibility: focused tests cover leakage, missing raw output,
+trusted hash mismatch, unsafe query, and missing answer adapter; `npm test`,
+CDR gold, annotation, matrix, and focused pilot gates pass. B5 remains
+`gold_oracle`.
+
+The fake fixtures prove software behavior and reproducibility only; they do
+not prove live answer quality or PAM-C1--C4.
 
 ## Self-check
 
-The provider response, query, payload atoms, hashes, and trusted files are
-validated at the boundary. Each case builds a fresh Prolog program; no trusted
-file is appended. The fake provider is deterministic and its evidence boundary
-is explicitly limited to harness determinism.
+The implementation keeps extraction, context construction, Prolog, and answer
+effects explicit. Runtime claim IDs keep gold IDs out of model prompts while
+source claim IDs remain in records and fake provenance. All required claims in
+this report map to focused commands or code surfaces; no live provider or
+comparative pilot was run. No ambiguity is deferred to beta about v1/v2
+identity, B5 boundary, or the configured E gate.
 
 ## Debt
 
-The runner does not claim live utility or Prolog superiority. Matrix scoring
-remains bounded to the registered pilot; independent CDR beta review is still
-required. The tracked pilot config pins the current synthetic dataset and
-trusted source hashes.
+Fake execution remains software evidence only. Live PAM-C1--C4 quality,
+thresholds, baseline selection, utility, causality, superiority, and
+statistical significance remain for a separately authorized run and fresh
+independent CDR beta. The requested CDS implementation skill is absent from
+the supplied activation snapshot. Aggregate currently records a null baseline
+until all live B1-B3 scores are available; no historical artifact was
+rewritten.
 
 ## CDD Trace
 
-Steps 4-7: issue gap and constraints loaded; design/plan were not required for
-this single bounded runner because existing extraction and matrix contracts
-define the interfaces; focused tests were added before implementation; code is
-`pilot-runner.js`, CLI is the `pilot` npm script, documentation is the README,
-and this report records self-coherence and evidence. The unrelated shared
-`cdr-tree-view.js` artifact is already present in commit `5a88a96`.
+Issue intake read GitHub #21 and the complete R2 clarification. Authority
+inputs were loaded before editing; affected peers were enumerated. The
+implementation changed `pilot-runner.js`, its focused tests, the v2 pinned
+config, and the candidate reader in `cdr-matrix-harness.js`. Focused fake
+tests, `npm test`, CDR gold, annotation, and matrix gates are the proof
+projection. The branch is ready for independent beta review; this artifact is
+not a beta or gamma verdict and no push or live comparative run occurred.
