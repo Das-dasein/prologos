@@ -1,6 +1,13 @@
 # Semantic branch dream v2 — abstention comparison
 
-Status: `PREREGISTERED — NOT RUN`.
+Status: `v2 ABORTED BEFORE A VALID TRACE`; `v2.1 PREREGISTERED — NOT RUN`.
+
+The first v2 formalization prompt accidentally mixed `atom(...)` from another
+FOL profile into the executable candidate grammar. Its first model call
+produced a candidate rejected before execution; no v2 case has a valid trace.
+The raw directory stays local as transport evidence. The exposed c01 is
+excluded from v2.1 and replaced by c09 before any new model call. v2.1 changes
+only this profile error, using lower-case unary terms such as `studies(iris)`.
 
 v2 repairs the question v1 failed to ask. On eight new controlled texts, one
 frozen Luna baseline is followed by two equally bounded hypothesis calls:
@@ -35,3 +42,6 @@ Plain-schema SHA-256:
 `494920b299c395548fe0c346e013228c05dd26b2b22cffa729a3826916b360ef`.
 Declared-schema SHA-256:
 `5efa68f3003139f6dc6a53514915bd1113179d39649af92f2b815b40413c8d5b`.
+
+v2.1 fixture SHA-256:
+`a27dc3f5bc5c2cd89bc483120b2a3e27b1b5e23c0bfdfbe107433d5c00cd9508`.
