@@ -1,4 +1,40 @@
 "use strict";
-// Deterministic builder; model-visible fixture never contains kind or gold.
-const fs=require("node:fs"),path=require("node:path");const root=".cdr/waves/near-signature-constructed-v1",plan=JSON.parse(fs.readFileSync(path.join(root,"candidate-plan.json")));
-const human=p=>p.replaceAll("_"," "), realText={receive_accolades:"Ada receives accolades."}, controlText={cares:"Ada cares for patients.",cures:"Ada cures patients.",walks:"Ada walks to work.",talks:"Ada talks to colleagues.",sees:"Ada sees stars.",seeks:"Ada seeks answers.",holds:"Ada holds books.",folds:"Ada folds papers.",reads:"Ada reads novels.",leads:"Ada leads teams.",rings:"Ada rings bells.",sings:"Ada sings songs.",rides:"Ada rides bicycles.",hides:"Ada hides keys.",cooks:"Ada cooks meals.",books:"Ada books flights."};const items=[],gold=[];let n=0;for(const [world,query] of plan.real_source_supported_pairs){const id=`real-${++n}`;items.push({case_id:id,world:[{id:"s1",text:realText[world]||`Ada ${human(world)}.`}],question:"Assess the frozen candidate for source-grounded naming concerns.",program:`domain(person,[ada]).\naxiom(s1, atom(${world},[ada])).`,query:`atom(${query},[ada])`});gold.push({case_id:id,verdict:"same_relation",expected_pair:[query,world],source_ids:["s1"]})}n=0;for(const [left,right] of plan.distinct_relation_controls){const id=`control-${++n}`;items.push({case_id:id,world:[{id:"s1",text:controlText[left]},{id:"s2",text:controlText[right]}],question:"Assess the frozen candidate for source-grounded naming concerns.",program:`domain(person,[ada]).\naxiom(s1, atom(${left},[ada])).\naxiom(s2, atom(${right},[ada])).`,query:`atom(${left},[ada])`});gold.push({case_id:id,verdict:"different_relation",expected_pair:[left,right],source_ids:["s1","s2"]})}fs.writeFileSync(path.join(root,"fixture-v1.json"),JSON.stringify({status:"draft-not-for-model",constructed:true,cases:items},null,2)+"\n");fs.writeFileSync(path.join(root,"gold-v1.json"),JSON.stringify({status:"evaluator-only-draft",items:gold},null,2)+"\n");console.log(JSON.stringify({cases:items.length,real:8,controls:8}));
+
+// Deterministic construction only. This command deliberately produces drafts;
+// freezing is a separate reviewed step before any model output.
+const fs = require("node:fs");
+const path = require("node:path");
+const root = ".cdr/waves/near-signature-constructed-v1";
+const plan = JSON.parse(fs.readFileSync(path.join(root, "candidate-plan.json"), "utf8"));
+const realText = {
+  receive_accolades: "Ada receives accolades.", enjoys_hiking: "Ada enjoys hiking.",
+  develops_plans: "Ada develops plans.", improves_processes: "Ada improves processes.",
+  follows_rules: "Ada follows rules.", leads_teams: "Ada leads teams.",
+  trains_dogs: "Ada trains dogs.", plans_trips: "Ada plans trips."
+};
+const controlText = {
+  cares: "Ada cares for patients.", cures: "Ada cures patients.",
+  walks: "Ada walks to work.", talks: "Ada talks to colleagues.",
+  sees: "Ada sees stars.", seeks: "Ada seeks answers.",
+  holds: "Ada holds books.", folds: "Ada folds papers.",
+  reads: "Ada reads novels.", leads: "Ada leads teams.",
+  rings: "Ada rings bells.", sings: "Ada sings songs.",
+  rides: "Ada rides bicycles.", hides: "Ada hides keys.",
+  cooks: "Ada cooks meals.", books: "Ada books flights."
+};
+const cases = [];
+const gold = [];
+for (const [index, [world, query]] of plan.real_source_supported_pairs.entries()) {
+  const caseId = `real-${index + 1}`;
+  cases.push({ case_id: caseId, world: [{ id: "s1", text: realText[world] }], question: "Assess the frozen candidate for source-grounded naming concerns.", program: `domain(person,[ada]).\naxiom(s1, atom(${world},[ada])).`, query: `atom(${query},[ada])` });
+  gold.push({ case_id: caseId, verdict: "same_relation", expected_pair: [query, world], source_ids: ["s1"] });
+}
+for (const [index, [left, right]] of plan.distinct_relation_controls.entries()) {
+  const caseId = `control-${index + 1}`;
+  cases.push({ case_id: caseId, world: [{ id: "s1", text: controlText[left] }, { id: "s2", text: controlText[right] }], question: "Assess the frozen candidate for source-grounded naming concerns.", program: `domain(person,[ada]).\naxiom(s1, atom(${left},[ada])).\naxiom(s2, atom(${right},[ada])).`, query: `atom(${left},[ada])` });
+  gold.push({ case_id: caseId, verdict: "different_relation", expected_pair: [left, right], source_ids: ["s1", "s2"] });
+}
+if (cases.length !== 16 || gold.length !== 16) throw Error("constructed_size_invalid");
+fs.writeFileSync(path.join(root, "fixture-v1.json"), JSON.stringify({ status: "draft-not-for-model", constructed: true, cases }, null, 2) + "\n");
+fs.writeFileSync(path.join(root, "gold-v1.json"), JSON.stringify({ status: "evaluator-only-draft", items: gold }, null, 2) + "\n");
+console.log(JSON.stringify({ cases: cases.length, real: 8, controls: 8 }));
