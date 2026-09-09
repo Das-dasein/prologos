@@ -114,12 +114,18 @@ signature_audit(Goal, Axioms, signature_audit(goal_predicates(GoalSymbols), worl
 near_signature_audit(Goal, Labelled, near_signature_audit(query_related(QueryPairs), world_internal(WorldPairs))) :-
     formula_predicates(Goal, RawGoalSymbols), sort(RawGoalSymbols, GoalSymbols),
     pairs_values(Labelled, Axioms), formulas_predicates(Axioms, RawWorldSymbols), sort(RawWorldSymbols, WorldSymbols),
-    near_signature_pairs(GoalSymbols, WorldSymbols, QueryPairs),
-    near_signature_pairs(WorldSymbols, WorldSymbols, RawWorldPairs), sort(RawWorldPairs, WorldPairs).
-near_signature_pairs([], _, []).
-near_signature_pairs([Left|Rest], RightSymbols, Pairs) :-
-    findall(near_pair(Left, Right, edit_distance(Distance)), (member(Right, RightSymbols), near_distinct_signatures(Left, Right, Distance)), First),
-    near_signature_pairs(Rest, RightSymbols, Remaining), append(First, Remaining, Pairs).
+    near_query_signature_pairs(GoalSymbols, WorldSymbols, Labelled, QueryPairs),
+    near_world_signature_pairs(WorldSymbols, Labelled, RawWorldPairs), sort(RawWorldPairs, WorldPairs).
+near_query_signature_pairs([], _, _, []).
+near_query_signature_pairs([Left|Rest], RightSymbols, Labelled, Pairs) :-
+    findall(near_pair(query(Left), world(Right, source_axioms(SourceIds)), edit_distance(Distance)), (member(Right, RightSymbols), near_distinct_signatures(Left, Right, Distance), signature_source_ids(Right, Labelled, SourceIds)), First),
+    near_query_signature_pairs(Rest, RightSymbols, Labelled, Remaining), append(First, Remaining, Pairs).
+near_world_signature_pairs([], _, []).
+near_world_signature_pairs([Left|Rest], Labelled, Pairs) :-
+    findall(near_pair(world(Left, source_axioms(LeftIds)), world(Right, source_axioms(RightIds)), edit_distance(Distance)), (member(Right, Rest), near_distinct_signatures(Left, Right, Distance), signature_source_ids(Left, Labelled, LeftIds), signature_source_ids(Right, Labelled, RightIds)), First),
+    near_world_signature_pairs(Rest, Labelled, Remaining), append(First, Remaining, Pairs).
+signature_source_ids(Signature, Labelled, SourceIds) :-
+    findall(Id, (member(Id-Formula, Labelled), formula_predicates(Formula, Symbols), memberchk(Signature, Symbols)), RawIds), sort(RawIds, SourceIds).
 near_distinct_signatures(LeftName/Arity, RightName/Arity, Distance) :-
     LeftName \== RightName, atom_edit_distance(LeftName, RightName, Distance), Distance =< 1.
 atom_edit_distance(Left, Right, Distance) :-

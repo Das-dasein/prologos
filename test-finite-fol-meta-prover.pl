@@ -49,10 +49,10 @@ test(labelled_explanation_reports_constants_outside_domain_with_sources, [setup(
 
 test(near_signature_audit_reports_query_spelling_without_repair) :-
     near_signature_audit(atom(receives_accolades, [clark]), [s1-atom(receive_accolades, [clark])],
-        near_signature_audit(query_related([near_pair(receives_accolades/1, receive_accolades/1, edit_distance(1))]), world_internal([]))).
+        near_signature_audit(query_related([near_pair(query(receives_accolades/1), world(receive_accolades/1, source_axioms([s1])), edit_distance(1))]), world_internal([]))).
 test(near_signature_audit_keeps_internal_chain_names_visible) :-
     near_signature_audit(atom(target, [clark]), [s1-atom(develop, [clark]), s2-atom(develops, [clark])],
-        near_signature_audit(query_related([]), world_internal([near_pair(develop/1, develops/1, edit_distance(1)), near_pair(develops/1, develop/1, edit_distance(1))]))).
+        near_signature_audit(query_related([]), world_internal([near_pair(world(develop/1, source_axioms([s1])), world(develops/1, source_axioms([s2])), edit_distance(1))])).
 
 test(audit_proof_tree_nests_rule_premises, [setup(plunit_finite_fol_meta_prover:setup_branching_trace_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
     audit_proof_tree(ready(ada), proof_tree(ready(ada), derived(ready(ada), rule(s3), [
