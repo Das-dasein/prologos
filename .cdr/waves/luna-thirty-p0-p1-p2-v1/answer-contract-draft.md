@@ -26,10 +26,12 @@ P2 appends exactly the P1 suffix followed by:
 
 ```text
 Read-only execution certificate for that same frozen candidate:
-<certificate bytes, including invalid_program if observed>
+<the exact saved `PAM_DIAGNOSTIC_BINDINGS` line; for invalid_program, the complete
+saved validation reason rather than a synthesized verdict>
 ```
 
-There is no source FOL sidecar, proof, previous Luna answer, gold answer,
+The complete historical runtime transcript remains dashboard-only; warnings,
+paths and transport wrappers never enter a prompt. There is no source FOL sidecar, proof, previous Luna answer, gold answer,
 counterfactual branch, alias, repair or tool access in any prompt. The response
 schema and model settings are identical. Six condition orders are one occurrence
 each: `P0,P1,P2`; `P0,P2,P1`; `P1,P0,P2`; `P1,P2,P0`; `P2,P0,P1`; `P2,P1,P0`.

@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Separate the value of executable Prolog output from the value of merely showing
-an immutable Prolog representation on the same original ProverQA question.
+Measure the effect of adding a saved execution certificate for an imperfect,
+immutable model formalization, beyond merely showing that representation.
 
 ## Frozen development subset
 
@@ -32,9 +32,11 @@ scorer-only. The total is 18 calls, with a frozen counterbalanced condition orde
 Report all six answers by condition, paired P0→P1 and P1→P2 changes, and match
 to existing scorer-only gold. Do not collapse them into a causal accuracy claim:
 P0 is newly sampled, selected cases are development data, and P2 has more text.
-The key falsifiable result is whether P2 changes a P1 answer in the direction of
-gold on any selected original question. A no-change result is valid evidence that
-this executable certificate did not help this model on this slice.
+Report P1→P2 improvements, deteriorations, no-change, invalid/missing answer and
+trace failure symmetrically. Also distinguish following the certificate from
+becoming correct against gold. A no-change result is only no observed improvement
+in these six single trials; this pilot does not establish solver access, semantic
+equivalence, memory, dream, or general runtime value.
 
 ## Gates before freeze
 
