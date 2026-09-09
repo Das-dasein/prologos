@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "semantic-branch-dream-hypothesis-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "case_id", "baseline_candidate_sha256", "hypotheses"],
+  "properties": {
+    "schema_version": { "const": "semantic-branch-dream-hypothesis-v1" },
+    "case_id": { "type": "string", "minLength": 1 },
+    "baseline_candidate_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "hypotheses": {
+      "type": "array",
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/hypothesis" }
+    }
+  },
+  "$defs": {
+    "hypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "source_sentence_id", "source_quote", "operation"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^h[1-2]$" },
+        "kind": {
+          "enum": ["connector_interpretation", "predicate_alias", "missing_type_assumption"]
+        },
+        "source_sentence_id": { "type": "string", "pattern": "^s[0-9]+$" },
+        "source_quote": { "type": "string", "minLength": 1 },
+        "operation": {
+          "oneOf": [
+            { "$ref": "#/$defs/connector" },
+            { "$ref": "#/$defs/queryAlias" },
+            { "$ref": "#/$defs/typeFact" }
+          ]
+        }
+      }
+    },
+    "connector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "from", "to"],
+      "properties": {
+        "kind": { "const": "replace_connector" },
+        "from": { "enum": ["or", "xor"] },
+        "to": { "enum": ["or", "xor"] }
+      }
+    },
+    "queryAlias": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "from_predicate", "to_predicate", "arity"],
+      "properties": {
+        "kind": { "const": "replace_query_predicate" },
+        "from_predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "to_predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "arity": { "const": 1 }
+      }
+    },
+    "typeFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "predicate", "constant"],
+      "properties": {
+        "kind": { "const": "add_type_fact" },
+        "predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "constant": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+      }
+    }
+  }
+}
