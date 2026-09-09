@@ -4,7 +4,8 @@ Status: `ALPHA PREREGISTERED — NO MODEL OUTPUT INSPECTED`.
 
 ## Question
 
-For a frozen, model-authored finite-FOL candidate, does showing Luna the
+For a finite-FOL candidate frozen after a single M0 model-authored generation,
+does showing Luna the
 read-only `near_signature_audit` portion of its own Prolog certificate improve
 its ability to identify source-supported naming problems without falsely
 calling distinct or technical names typos?
@@ -15,7 +16,8 @@ claim.
 
 ## Frozen source and split
 
-`fixture-v1.json` is model-visible and contains exactly 12 source worlds and
+`fixture-v1.json` is model-visible and contains exactly 12 selected historical
+error-probe source worlds and
 questions. It was generated from the pinned sanitized source excerpt file
 `reports/luna-thirty-error-probes/source-excerpts.json`; its SHA is recorded
 inside the fixture. Case 378 was excluded before writing the fixture because it
@@ -42,7 +44,8 @@ conditions have completed.
    judgement) plus a free-text boundary explanation. It never permits a
    replacement program, alias, new fact, or final A/B/C answer.
 
-The order of baseline/enhanced calls is counterbalanced by frozen case ID hash.
+The exact baseline/enhanced order is a six/six frozen map in
+`protocol-v1.json`; it is not recomputed after generation.
 Each call uses `gpt-5.6-luna`, ephemeral fresh session, one turn, the same
 reasoning effort/context window, and no tools. There are 12 generation calls
 and 24 diagnostic calls. A failed call remains a recorded failure; there are
@@ -50,7 +53,8 @@ no retries or repair loops.
 
 ## Measures and falsifier
 
-After both conditions, an evaluator compares claims to the source English and
+`scoring-rubric-v1.md` fixes the primary unit and all abstention, invalid, and
+morphology handling before output. After both conditions, an evaluator compares claims to the source English and
 evaluator-only FOL. Report per condition: source-supported naming problems
 found, false typo allegations, source-citation completeness, and any other
 material problem named. Case-level paired deltas are descriptive only.

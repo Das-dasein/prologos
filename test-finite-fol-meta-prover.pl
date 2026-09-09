@@ -52,7 +52,13 @@ test(near_signature_audit_reports_query_spelling_without_repair) :-
         near_signature_audit(query_related([near_pair(query(receives_accolades/1), world(receive_accolades/1, source_axioms([s1])), edit_distance(1))]), world_internal([]))).
 test(near_signature_audit_keeps_internal_chain_names_visible) :-
     near_signature_audit(atom(target, [clark]), [s1-atom(develop, [clark]), s2-atom(develops, [clark])],
-        near_signature_audit(query_related([]), world_internal([near_pair(world(develop/1, source_axioms([s1])), world(develops/1, source_axioms([s2])), edit_distance(1))])).
+        near_signature_audit(query_related([]), world_internal([near_pair(world(develop/1, source_axioms([s1])), world(develops/1, source_axioms([s2])), edit_distance(1))]))).
+
+test(standard_explanation_is_the_same_package_without_only_near_audit, [setup(plunit_finite_fol_meta_prover:setup_goal_only_predicate_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
+    labelled_explanation(curiosity(ada), unknown, Enhanced),
+    labelled_explanation_standard(curiosity(ada), unknown, Standard),
+    \+ sub_term(near_signature_audit(_, _), Standard),
+    sub_term(near_signature_audit(_, _), Enhanced).
 
 test(audit_proof_tree_nests_rule_premises, [setup(plunit_finite_fol_meta_prover:setup_branching_trace_world), cleanup(plunit_finite_fol_meta_prover:clear_labelled_world)]) :-
     audit_proof_tree(ready(ada), proof_tree(ready(ada), derived(ready(ada), rule(s3), [
