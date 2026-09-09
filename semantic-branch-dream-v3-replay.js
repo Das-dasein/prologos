@@ -1,0 +1,7 @@
+"use strict";
+const fs = require("node:fs"); const path = require("node:path");
+const { runSemanticBranchDream } = require("./semantic-branch-dream"); const { asV1 } = require("./semantic-branch-dream-v2-run");
+const stable = value => JSON.stringify(value, null, 2) + "\n";
+async function replay({ sampleFile, rawRoot, outputFile }) { const sample = JSON.parse(fs.readFileSync(sampleFile, "utf8")); const rows = []; for (const item of sample.cases) { const record = JSON.parse(fs.readFileSync(path.join(rawRoot, item.case_id, "record.json"), "utf8")); const trace = record.hypothesis && record.hypothesis.output ? await runSemanticBranchDream({ caseId: item.case_id, baseline: record.formalization.output, hypothesisSet: asV1(record.hypothesis.output), sourceSentences: item.world }) : { conclusion: "transport_error" }; rows.push({ case_id: item.case_id, expected_class: item.expected_class, trace }); } const result = { schema_version: "semantic-branch-dream-v3-fail-closed-replay-v1", status: "development-audit-not-cdr-receipt", model_calls: 0, rows }; fs.writeFileSync(outputFile, stable(result), { flag: "wx", mode: 0o600 }); return result; }
+if (require.main === module) { const [sample, raw, out] = process.argv.slice(2); replay({ sampleFile: sample, rawRoot: raw, outputFile: out }).then(result => console.log(JSON.stringify({ model_calls: 0, rows: result.rows.map(row => [row.case_id, row.trace.conclusion]) }))).catch(error => { console.error(error.stack || error); process.exitCode = 1; }); }
+module.exports = { replay };
