@@ -1,0 +1,11 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { candidateHash } = require("./semantic-branch-dream");
+const { asV1, declaredPrompt, formalPrompt, plainPrompt } = require("./semantic-branch-dream-v2-run");
+const item = { case_id: "v2-orxor-01", target_sentence_id: "s2", world: [{ id: "s1", text: "Iris studies." }, { id: "s2", text: "Iris either studies or works." }], question: "Does Iris work?" };
+const baseline = { program: "domain(person,[iris]).\naxiom(s1,studies(iris)).\naxiom(s2,or(studies(iris),works(iris))).", query: "works(iris)" };
+assert.match(formalPrompt(item), /bare phrase “either A or B”, use or/);
+assert.match(plainPrompt(item, baseline), /return an empty hypotheses array/);
+assert.match(declaredPrompt(item, baseline), /assessment to exactly one of ambiguous/);
+assert.deepEqual(asV1({ case_id: item.case_id, baseline_candidate_sha256: candidateHash(baseline), hypotheses: [] }), { schema_version: "semantic-branch-dream-hypothesis-v1", case_id: item.case_id, baseline_candidate_sha256: candidateHash(baseline), hypotheses: [] });
+console.log("semantic-branch-dream-v2-run ok: same baseline has plain and declared abstention conditions");

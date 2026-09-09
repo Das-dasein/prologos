@@ -41,4 +41,4 @@ async function main(sampleFile, rawRoot) {
   write(path.join(rawRoot, "aggregate-not-a-cdr-receipt.json"), { schema_version: "semantic-branch-dream-run-v1", status: "completed-diagnostic-not-cdr-receipt", sample_sha256: sha256(sampleText), records: records.map(r => ({ case_id: r.case_id, source_id: r.source_id, class: r.class, formalization_error: r.formalization.error, hypotheses_error: r.hypotheses && r.hypotheses.error, conclusion: r.trace && r.trace.conclusion })) });
 }
 if (require.main === module) main(process.argv[2], process.argv[3]).catch(error => { console.error(error.stack || error); process.exitCode = 1; });
-module.exports = { FORM_SCHEMA, formalPrompt, hypothesisPrompt, inspect };
+module.exports = { FORM_SCHEMA, formalPrompt, hypothesisPrompt, inspect, invoke };
