@@ -26,42 +26,20 @@
         },
         "source_sentence_id": { "type": "string", "pattern": "^s[0-9]+$" },
         "source_quote": { "type": "string", "minLength": 1 },
-        "operation": {
-          "oneOf": [
-            { "$ref": "#/$defs/connector" },
-            { "$ref": "#/$defs/queryAlias" },
-            { "$ref": "#/$defs/typeFact" }
-          ]
-        }
+        "operation": { "$ref": "#/$defs/operation" }
       }
     },
-    "connector": {
+    "operation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "from", "to"],
+      "required": ["kind"],
       "properties": {
-        "kind": { "const": "replace_connector" },
+        "kind": { "enum": ["replace_connector", "replace_query_predicate", "add_type_fact"] },
         "from": { "enum": ["or", "xor"] },
-        "to": { "enum": ["or", "xor"] }
-      }
-    },
-    "queryAlias": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["kind", "from_predicate", "to_predicate", "arity"],
-      "properties": {
-        "kind": { "const": "replace_query_predicate" },
+        "to": { "enum": ["or", "xor"] },
         "from_predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
         "to_predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-        "arity": { "const": 1 }
-      }
-    },
-    "typeFact": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["kind", "predicate", "constant"],
-      "properties": {
-        "kind": { "const": "add_type_fact" },
+        "arity": { "type": "integer" },
         "predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
         "constant": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
       }
