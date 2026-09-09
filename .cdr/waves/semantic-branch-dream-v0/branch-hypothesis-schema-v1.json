@@ -11,37 +11,22 @@
     "hypotheses": {
       "type": "array",
       "maxItems": 2,
-      "items": { "$ref": "#/$defs/hypothesis" }
-    }
-  },
-  "$defs": {
-    "hypothesis": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "kind", "source_sentence_id", "source_quote", "operation"],
-      "properties": {
-        "id": { "type": "string", "pattern": "^h[1-2]$" },
-        "kind": {
-          "enum": ["connector_interpretation", "predicate_alias", "missing_type_assumption"]
-        },
-        "source_sentence_id": { "type": "string", "pattern": "^s[0-9]+$" },
-        "source_quote": { "type": "string", "minLength": 1 },
-        "operation": { "$ref": "#/$defs/operation" }
-      }
-    },
-    "operation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["kind"],
-      "properties": {
-        "kind": { "enum": ["replace_connector", "replace_query_predicate", "add_type_fact"] },
-        "from": { "enum": ["or", "xor"] },
-        "to": { "enum": ["or", "xor"] },
-        "from_predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-        "to_predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-        "arity": { "type": "integer" },
-        "predicate": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-        "constant": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "source_sentence_id", "source_quote", "candidate"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^h[1-2]$" },
+          "kind": { "enum": ["connector_interpretation", "predicate_alias", "missing_type_assumption"] },
+          "source_sentence_id": { "type": "string", "pattern": "^s[0-9]+$" },
+          "source_quote": { "type": "string", "minLength": 1 },
+          "candidate": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["program", "query"],
+            "properties": { "program": { "type": "string", "minLength": 1 }, "query": { "type": "string", "minLength": 1 } }
+          }
+        }
       }
     }
   }

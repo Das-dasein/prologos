@@ -56,7 +56,7 @@ the direct SWI test remains a fixture-only semantic check.
 
 ## Allowed hypotheses
 
-The schema permits only these fixed, source-cited changes:
+The schema permits only these fixed, source-cited alternatives:
 
 1. `connector_interpretation`: replace one labelled source formula's `or` with
    `xor`, or the reverse, when the cited wording explicitly leaves that
@@ -68,11 +68,11 @@ The schema permits only these fixed, source-cited changes:
    source itself states that membership. It is an assumption, not recovered
    knowledge.
 
-The branch proposal must quote the exact numbered source sentence and name its
-single operation. It cannot use scorer-only fields, arbitrary Prolog text,
-`consult`, `call`, `assert`, `retract`, filesystem, network, or a loop of
-repairs. A branch is a full immutable candidate, not a mutation of a running
-program.
+The branch proposal must quote the exact numbered source sentence and return a
+complete immutable `program + query` candidate. It cannot use scorer-only
+fields, Prolog directives, `consult`, `call`, `assert`, `retract`, filesystem,
+network, or a loop of repairs. There is no intermediate Prolog AST or edit
+language: the only executable inputs are complete candidates.
 
 ## Sample and blinding
 
