@@ -5,6 +5,7 @@ const item = { world: [{ id: "s1", text: "Ada paints." }], question: "Is Ada rea
 const baseline = { program: "axiom(s1, paints(ada)).", query: "ready(ada)" };
 assert.match(formalPrompt(item), /s1: Ada paints\./); assert.match(formalPrompt(item), /Question:/);
 assert.match(hypothesisPrompt(item, baseline), /Do not repair the baseline/); assert.match(hypothesisPrompt(item, baseline), /complete replacement program \+ query/); assert.match(hypothesisPrompt(item, baseline), /axiom\(s1/);
+assert.match(hypothesisPrompt({ ...item, case_id: "proverqa-hard-31" }, baseline), /case_id exactly to proverqa-hard-31/);
 const notice = "Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.";
 assert.deepEqual(inspect(`${JSON.stringify({ type: "item.completed", item: { type: "error", message: notice } })}\n${JSON.stringify({ type: "turn.completed" })}\n`), { completed_turns: 1, benign_notices: 1, forbidden: [] });
 console.log("semantic-branch-dream-run ok: frozen baseline and bounded-hypothesis prompts are separated");
