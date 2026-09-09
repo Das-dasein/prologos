@@ -2,7 +2,7 @@
 
 // This runner is deliberately unable to call a model while the source
 // artifacts are drafts.  A later freeze must pin their hashes in the protocol.
-// It never reads the scorer-only gold file.
+// It reads scorer-only bytes/status solely for the pre-call hash gate.
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -89,7 +89,7 @@ function preflight(wave = DEFAULT_WAVE) {
     const assembled = prompts(item);
     return { case_id: item.case_id, order: inputs.protocol.condition_order[item.case_id], prompt_sha256: Object.fromEntries(CONDITIONS.map(condition => [condition, sha256(assembled[condition])])) };
   });
-  return { status: "preflight-passed-no-model-call", hashes: inputs.hashes, rows, calls_planned: 18, gold_read: false };
+  return { status: "preflight-passed-no-model-call", hashes: inputs.hashes, rows, calls_planned: 18, scorer_read_for_hash_only: true };
 }
 function receiptError(receipt) {
   if (receipt.error) return receipt.error;
