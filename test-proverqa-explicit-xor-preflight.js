@@ -1,0 +1,14 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { compatible, build } = require("./proverqa-explicit-xor-preflight");
+const row = (id, answer, sentence, formula = "p(A) ⊕ q(A)") => ({ id, answer, context: `Context ${id}`, question: `Question ${id}`, nl2fol: { [sentence]: formula } });
+assert.equal(compatible(row(1, "A", "A is either p or q, but not both.")), true);
+assert.equal(compatible(row(2, "A", "A is either p or q, but not necessarily both.")), false);
+assert.equal(compatible(row(3, "A", "A and B are not mutually exclusive.")), false);
+const rows = ["A", "B", "C"].flatMap((answer, offset) => Array.from({ length: 10 }, (_, index) => row(offset * 10 + index, answer, "A is either p or q, but not both.")));
+const result = build({ sourceBytes: JSON.stringify([...rows, ...Array.from({ length: 470 }, (_, index) => row(100 + index, "A", "A is either p or q, but not necessarily both."))]), excluded: new Set(), seed: "test" });
+assert.equal(result.fixture.cases.length, 30);
+assert.deepEqual(Object.values(result.scorer.answers).sort(), [...Array(10).fill("A"), ...Array(10).fill("B"), ...Array(10).fill("C")]);
+assert.equal(JSON.stringify(result.fixture).includes("nl2fol"), false);
+assert.equal(JSON.stringify(result.fixture).includes('"answer"'), false);
+console.log("explicit xor preflight ok");
