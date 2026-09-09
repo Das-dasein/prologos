@@ -3,12 +3,12 @@
 <title>Semantic branch dream — controlled OR/XOR review</title>
 <style>body{font:16px system-ui;margin:40px;max-width:900px;color:#172033;background:#f7f8fb}.sub{color:#596579}.cards{display:flex;gap:12px;margin:24px 0}.card{background:white;border-radius:12px;padding:16px;min-width:150px;box-shadow:0 1px 4px #ccd}.n{font-size:30px;font-weight:700}table{border-collapse:collapse;background:white;width:100%}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}.bad{color:#9f1239;font-weight:700}code{background:#eef;padding:2px 4px;border-radius:4px}</style>
 <h1>Сон с ветками: контролируемый OR/XOR-цикл</h1>
-<p class="sub">Статус: <span class="bad">REVISE</span>. Это диагностический прогон на восьми заранее зафиксированных фразах.</p>
-<div class="cards"><div class="card"><div class="n">8/8</div>clean replay</div><div class="card"><div class="n">4/4</div>ветка на голом “either-or”</div><div class="card"><div class="n">4/4</div>ложная ветка на контролях</div><div class="card"><div class="n">0</div>новых model calls при replay</div></div>
-<p><b>Простой смысл:</b> Luna умеет построить две полные Prolog-версии с <code>or</code> и <code>xor</code>. Но пока она предлагает вторую версию даже там, где текст прямо говорит «не оба» или «оба разрешены». Поэтому ветка ещё не означает, что модель нашла реальную неоднозначность.</p>
+<p class="sub">Статус: <span class="bad">REVISE</span>. Восемь трасс чисто переигрываются, но сам вопрос эксперимента промпт не задал.</p>
+<div class="cards"><div class="card"><div class="n">8/8</div>clean replay</div><div class="card"><div class="n">0</div>проверенных отказов на контролях</div><div class="card"><div class="n">1</div>alias исказил c01</div><div class="card"><div class="n">0</div>новых model calls при replay</div></div>
+<p><b>Простой смысл:</b> мы попросили Luna строить контрфактические OR/XOR-версии, но не потребовали молчать, когда текст уже однозначен. Поэтому ветки на контролях говорят о конструкции промпта, а не доказывают, что модель не различает смысл.</p>
 <table><thead><tr><th>Текст</th><th>Что должна была сделать модель</th><th>Что получилось</th></tr></thead><tbody>
-<tr><td>“either A or B”</td><td>можно предложить альтернативу</td><td>4 из 4 ветвятся</td></tr>
-<tr><td>“either A or B, but not both”</td><td>не предлагать OR</td><td class="bad">2 из 2 предложили OR</td></tr>
-<tr><td>“either A or B, or both” / “both are allowed”</td><td>не предлагать XOR</td><td class="bad">2 из 2 предложили XOR</td></tr>
+<tr><td>“either A or B”</td><td>модель получила приглашение к альтернативе</td><td>c02–c04 меняют статус; c01 меняется только alias-веткой</td></tr>
+<tr><td>“either A or B, but not both”</td><td>нужна была явная инструкция воздержаться</td><td class="bad">в v1 её не было</td></tr>
+<tr><td>“either A or B, or both” / “both are allowed”</td><td>нужна была явная инструкция воздержаться</td><td class="bad">в v1 её не было</td></tr>
 </tbody></table>
-<p><b>Следующий ремонт:</b> сначала требовать от Luna явную классификацию фразы: ambiguous / explicit_xor / explicit_or. Создавать Prolog-ветку разрешать только при <code>ambiguous</code>, а контролями измерять ложные срабатывания.</p>
+<p><b>Честный следующий тест:</b> сравнить на новых текстах простой запрос «ветка только при неоднозначности» с тем же запросом и явной меткой <code>ambiguous / explicit_xor / explicit_or</code>. Без отдельного фильтра, который сам решает за модель.</p>
