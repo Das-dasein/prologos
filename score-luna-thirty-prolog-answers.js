@@ -13,7 +13,8 @@ const write = (file, value) => fs.writeFileSync(file, json(value), { flag: "wx",
 function score({ executionRoot, scorerFile, outputFile }) {
   const execution = JSON.parse(fs.readFileSync(path.join(executionRoot, "results-unscored.json"), "utf8"));
   const scorerText = fs.readFileSync(scorerFile, "utf8");
-  const gold = JSON.parse(scorerText);
+  const parsedScorer = JSON.parse(scorerText);
+  const gold = parsedScorer.answers || parsedScorer;
   if (execution.status !== "completed-unscored-prolog-answer-reexecution" || execution.planned !== 30 || execution.completed !== 30 || execution.resolved !== 29) throw Error("unscored_execution_not_complete");
   const ids = Object.keys(execution.answers).map(Number).sort((a, b) => a - b);
   if (ids.length !== 30 || ids.some(id => !["A", "B", "C"].includes(gold[id]))) throw Error("scorer_does_not_cover_execution");
