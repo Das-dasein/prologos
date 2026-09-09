@@ -1,0 +1,2009 @@
+<!doctype html><meta charset="utf-8"><title>Semantic branch dream v2.1 — full alpha review</title><style>body{font:16px system-ui;margin:32px auto;max-width:1280px;color:#172033;background:#f7f8fb;line-height:1.45}.sub{color:#596579}.note{background:#eaf5ff;border-left:4px solid #2563eb;padding:12px;border-radius:6px}details{background:#fff;border:1px solid #dde3ea;border-radius:8px;margin:10px 0;padding:10px}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#101827;color:#e5eefb;padding:14px;border-radius:6px;font-size:12px}.case{border-left:5px solid #2563eb}.casebody{padding:8px}.conditions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.condition{border-left:3px solid #64748b;padding-left:12px;min-width:0}@media(max-width:850px){.conditions{grid-template-columns:1fr}}</style><h1>Сон с ветками v2.1: полный alpha-разбор</h1><p class="sub">Каждый вход, ответ, неизменяемый Prolog-кандидат и результат исполнения находятся в этом HTML. Beta ещё не проводилась.</p><div class="note"><b>Что здесь проверяется:</b> один baseline Luna, затем два равнобюджетных условия на том же baseline. Plain просит ветвиться только при неоднозначности. Declared делает то же и называет свою оценку. Независимый класс был скрыт от модели и раскрыт здесь только для review.</div><h2>Alpha conclusion and protocol</h2><details open><summary>Alpha report</summary><pre># Alpha report — semantic branch dream v2.1
+
+Status: `alpha observed-not-scored`; not a CDR receipt. Beta review is pending.
+
+v2 was aborted before a valid trace because its formalization prompt mixed an
+incompatible `atom(...)` profile into executable candidates. v2.1 excluded the
+one exposed case, replaced it before any new model call, and froze the amended
+fixture and prompt revision in commit `726477f`.
+
+The valid v2.1 alpha run used eight fresh controlled texts. Every case received
+one Luna baseline formalization and two hypothesis calls over that exact same
+baseline: `plain` and `declared`. The declared response adds an
+`ambiguous/explicit_xor/explicit_or` field; it does not receive a separate
+model call. Alias/type branches are structurally impossible in both schemas.
+
+| Frozen independent class | Cases | Plain: accepted connector branch | Declared: accepted connector branch | Declared assessment |
+| --- | ---: | ---: | ---: | --- |
+| bare `either … or` | 4 | 4 / 4 | 4 / 4 | 4 / 4 `ambiguous` |
+| explicit XOR | 2 | 0 / 2 | 0 / 2 | 2 / 2 `explicit_xor` |
+| explicit inclusive OR | 2 | 0 / 2 | 0 / 2 | 2 / 2 `explicit_or` |
+
+The fail-closed replay made zero model calls and reproduced all 16 condition
+traces: each bare case is `branch_dependent`; every explicit control is
+`unresolved` because it contains no accepted branch. This is a successful
+controlled alpha observation that the clear abstention instruction separates
+these eight templates. It does not show a benefit from the declared field,
+because both conditions behaved identically; it does not establish general
+natural-language disambiguation, answer accuracy, or a memory benefit.
+
+Next CDR gate: fresh Beta verifies commit/sample hashes, v2 exclusion, prompt
+equivalence apart from the declaration, no hidden labels in requests, schema
+scope, raw receipts, and replay. Gamma may record only Beta's calibrated
+conclusion.
+</pre></details><details open><summary>Raw provenance</summary><pre>{
+  &quot;status&quot;: &quot;development-diagnostic-not-cdr-receipt&quot;,
+  &quot;sample_sha256&quot;: &quot;a27dc3f5bc5c2cd89bc483120b2a3e27b1b5e23c0bfdfbe107433d5c00cd9508&quot;,
+  &quot;model&quot;: &quot;gpt-5.6-luna&quot;,
+  &quot;conditions&quot;: [
+    &quot;plain&quot;,
+    &quot;declared&quot;
+  ],
+  &quot;model_calls_per_case&quot;: 3,
+  &quot;started_at&quot;: &quot;2026-09-09T10:28:43.283Z&quot;
+}</pre></details><details><summary>Frozen v2.1 fixture</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-v2-controlled-sample-v2.1&quot;,
+  &quot;status&quot;: &quot;frozen-before-model-output&quot;,
+  &quot;selection&quot;: {
+    &quot;method&quot;: &quot;v2.1 replaces exposed v2c01 after an aborted invalid-profile call; remaining seven cases unchanged and unexposed&quot;
+  },
+  &quot;cases&quot;: [
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+      &quot;source_id&quot;: &quot;v2c09&quot;,
+      &quot;expected_class&quot;: &quot;ambiguous&quot;,
+      &quot;target_sentence_id&quot;: &quot;s2&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Quinn gardens.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Quinn either gardens or reads.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Quinn read?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+      &quot;source_id&quot;: &quot;v2c02&quot;,
+      &quot;expected_class&quot;: &quot;ambiguous&quot;,
+      &quot;target_sentence_id&quot;: &quot;s2&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Jules runs.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Jules either runs or swims.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Jules swim?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+      &quot;source_id&quot;: &quot;v2c03&quot;,
+      &quot;expected_class&quot;: &quot;ambiguous&quot;,
+      &quot;target_sentence_id&quot;: &quot;s2&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Kai reads.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Kai either reads or sketches.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Kai sketch?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+      &quot;source_id&quot;: &quot;v2c04&quot;,
+      &quot;expected_class&quot;: &quot;ambiguous&quot;,
+      &quot;target_sentence_id&quot;: &quot;s2&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Lina travels.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Lina either travels or rests.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Lina rest?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+      &quot;source_id&quot;: &quot;v2c05&quot;,
+      &quot;expected_class&quot;: &quot;explicit_xor&quot;,
+      &quot;target_sentence_id&quot;: &quot;s2&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Mira cooks.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Mira either cooks or cleans, but not both.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Mira clean?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+      &quot;source_id&quot;: &quot;v2c06&quot;,
+      &quot;expected_class&quot;: &quot;explicit_xor&quot;,
+      &quot;target_sentence_id&quot;: &quot;s2&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Noel sings.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Noel either sings or dances, but not both.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Noel dance?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+      &quot;source_id&quot;: &quot;v2c07&quot;,
+      &quot;expected_class&quot;: &quot;explicit_or&quot;,
+      &quot;target_sentence_id&quot;: &quot;s2&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Omar paints.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Omar either paints or writes, and doing both is possible.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Omar write?&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+      &quot;source_id&quot;: &quot;v2c08&quot;,
+      &quot;expected_class&quot;: &quot;explicit_or&quot;,
+      &quot;target_sentence_id&quot;: &quot;s2&quot;,
+      &quot;world&quot;: [
+        {
+          &quot;id&quot;: &quot;s1&quot;,
+          &quot;text&quot;: &quot;Pia reads.&quot;
+        },
+        {
+          &quot;id&quot;: &quot;s2&quot;,
+          &quot;text&quot;: &quot;Pia either reads or writes; both are allowed.&quot;
+        }
+      ],
+      &quot;question&quot;: &quot;Does Pia write?&quot;
+    }
+  ]
+}</pre></details><details open><summary>Fail-closed replay, zero model calls</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-v2-fail-closed-replay-v1&quot;,
+  &quot;status&quot;: &quot;development-audit-not-cdr-receipt&quot;,
+  &quot;model_calls&quot;: 0,
+  &quot;rows&quot;: [
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+      &quot;expected_class&quot;: &quot;ambiguous&quot;,
+      &quot;plain&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [
+          {
+            &quot;id&quot;: &quot;h1&quot;,
+            &quot;kind&quot;: &quot;connector_interpretation&quot;,
+            &quot;hypothesis&quot;: {
+              &quot;id&quot;: &quot;h1&quot;,
+              &quot;kind&quot;: &quot;connector_interpretation&quot;,
+              &quot;source_sentence_id&quot;: &quot;s2&quot;,
+              &quot;source_quote&quot;: &quot;Quinn either gardens or reads.&quot;,
+              &quot;candidate&quot;: {
+                &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,xor(gardens(quinn),reads(quinn))).&quot;,
+                &quot;query&quot;: &quot;reads(quinn)&quot;
+              }
+            },
+            &quot;candidate_sha256&quot;: &quot;23e68a69d841f7095d9179245cca34253da359925136251589618e607b40934b&quot;,
+            &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+            &quot;semantic_status&quot;: &quot;contradicted&quot;,
+            &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+            &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+          }
+        ],
+        &quot;conclusion&quot;: &quot;branch_dependent&quot;
+      },
+      &quot;declared&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [
+          {
+            &quot;id&quot;: &quot;h1&quot;,
+            &quot;kind&quot;: &quot;connector_interpretation&quot;,
+            &quot;hypothesis&quot;: {
+              &quot;id&quot;: &quot;h1&quot;,
+              &quot;kind&quot;: &quot;connector_interpretation&quot;,
+              &quot;source_sentence_id&quot;: &quot;s2&quot;,
+              &quot;source_quote&quot;: &quot;Quinn either gardens or reads.&quot;,
+              &quot;candidate&quot;: {
+                &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,xor(gardens(quinn),reads(quinn))).&quot;,
+                &quot;query&quot;: &quot;reads(quinn)&quot;
+              }
+            },
+            &quot;candidate_sha256&quot;: &quot;23e68a69d841f7095d9179245cca34253da359925136251589618e607b40934b&quot;,
+            &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+            &quot;semantic_status&quot;: &quot;contradicted&quot;,
+            &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+            &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+          }
+        ],
+        &quot;conclusion&quot;: &quot;branch_dependent&quot;
+      },
+      &quot;assessment&quot;: &quot;ambiguous&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+      &quot;expected_class&quot;: &quot;ambiguous&quot;,
+      &quot;plain&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [
+          {
+            &quot;id&quot;: &quot;h1&quot;,
+            &quot;kind&quot;: &quot;connector_interpretation&quot;,
+            &quot;hypothesis&quot;: {
+              &quot;id&quot;: &quot;h1&quot;,
+              &quot;kind&quot;: &quot;connector_interpretation&quot;,
+              &quot;source_sentence_id&quot;: &quot;s2&quot;,
+              &quot;source_quote&quot;: &quot;Jules either runs or swims.&quot;,
+              &quot;candidate&quot;: {
+                &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,xor(runs(jules),swims(jules))).&quot;,
+                &quot;query&quot;: &quot;swims(jules)&quot;
+              }
+            },
+            &quot;candidate_sha256&quot;: &quot;64f30ebf6ff484ea1777c46ef063f20f46a26474ea41a5f36e72632e5c8b4ec5&quot;,
+            &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+            &quot;semantic_status&quot;: &quot;contradicted&quot;,
+            &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+            &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+          }
+        ],
+        &quot;conclusion&quot;: &quot;branch_dependent&quot;
+      },
+      &quot;declared&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [
+          {
+            &quot;id&quot;: &quot;h1&quot;,
+            &quot;kind&quot;: &quot;connector_interpretation&quot;,
+            &quot;hypothesis&quot;: {
+              &quot;id&quot;: &quot;h1&quot;,
+              &quot;kind&quot;: &quot;connector_interpretation&quot;,
+              &quot;source_sentence_id&quot;: &quot;s2&quot;,
+              &quot;source_quote&quot;: &quot;Jules either runs or swims.&quot;,
+              &quot;candidate&quot;: {
+                &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,xor(runs(jules),swims(jules))).&quot;,
+                &quot;query&quot;: &quot;swims(jules)&quot;
+              }
+            },
+            &quot;candidate_sha256&quot;: &quot;64f30ebf6ff484ea1777c46ef063f20f46a26474ea41a5f36e72632e5c8b4ec5&quot;,
+            &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+            &quot;semantic_status&quot;: &quot;contradicted&quot;,
+            &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+            &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+          }
+        ],
+        &quot;conclusion&quot;: &quot;branch_dependent&quot;
+      },
+      &quot;assessment&quot;: &quot;ambiguous&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+      &quot;expected_class&quot;: &quot;ambiguous&quot;,
+      &quot;plain&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [
+          {
+            &quot;id&quot;: &quot;h1&quot;,
+            &quot;kind&quot;: &quot;connector_interpretation&quot;,
+            &quot;hypothesis&quot;: {
+              &quot;id&quot;: &quot;h1&quot;,
+              &quot;kind&quot;: &quot;connector_interpretation&quot;,
+              &quot;source_sentence_id&quot;: &quot;s2&quot;,
+              &quot;source_quote&quot;: &quot;Kai either reads or sketches.&quot;,
+              &quot;candidate&quot;: {
+                &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,xor(reads(kai),sketches(kai))).&quot;,
+                &quot;query&quot;: &quot;sketches(kai)&quot;
+              }
+            },
+            &quot;candidate_sha256&quot;: &quot;e0c97aced91805412591038352188200a46334313b377e7c4eacc1534d99625b&quot;,
+            &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+            &quot;semantic_status&quot;: &quot;contradicted&quot;,
+            &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+            &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+          }
+        ],
+        &quot;conclusion&quot;: &quot;branch_dependent&quot;
+      },
+      &quot;declared&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [
+          {
+            &quot;id&quot;: &quot;h1&quot;,
+            &quot;kind&quot;: &quot;connector_interpretation&quot;,
+            &quot;hypothesis&quot;: {
+              &quot;id&quot;: &quot;h1&quot;,
+              &quot;kind&quot;: &quot;connector_interpretation&quot;,
+              &quot;source_sentence_id&quot;: &quot;s2&quot;,
+              &quot;source_quote&quot;: &quot;Kai either reads or sketches.&quot;,
+              &quot;candidate&quot;: {
+                &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,xor(reads(kai),sketches(kai))).&quot;,
+                &quot;query&quot;: &quot;sketches(kai)&quot;
+              }
+            },
+            &quot;candidate_sha256&quot;: &quot;e0c97aced91805412591038352188200a46334313b377e7c4eacc1534d99625b&quot;,
+            &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+            &quot;semantic_status&quot;: &quot;contradicted&quot;,
+            &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+            &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+          }
+        ],
+        &quot;conclusion&quot;: &quot;branch_dependent&quot;
+      },
+      &quot;assessment&quot;: &quot;ambiguous&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+      &quot;expected_class&quot;: &quot;ambiguous&quot;,
+      &quot;plain&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [
+          {
+            &quot;id&quot;: &quot;h1&quot;,
+            &quot;kind&quot;: &quot;connector_interpretation&quot;,
+            &quot;hypothesis&quot;: {
+              &quot;id&quot;: &quot;h1&quot;,
+              &quot;kind&quot;: &quot;connector_interpretation&quot;,
+              &quot;source_sentence_id&quot;: &quot;s2&quot;,
+              &quot;source_quote&quot;: &quot;Lina either travels or rests.&quot;,
+              &quot;candidate&quot;: {
+                &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, xor(travels(lina), rests(lina))).&quot;,
+                &quot;query&quot;: &quot;rests(lina)&quot;
+              }
+            },
+            &quot;candidate_sha256&quot;: &quot;ae826be9fb3783330f0939962a6938631d76cdc16106f2e7e0b0e3af9a92bbfb&quot;,
+            &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+            &quot;semantic_status&quot;: &quot;contradicted&quot;,
+            &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+            &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+          }
+        ],
+        &quot;conclusion&quot;: &quot;branch_dependent&quot;
+      },
+      &quot;declared&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [
+          {
+            &quot;id&quot;: &quot;h1&quot;,
+            &quot;kind&quot;: &quot;connector_interpretation&quot;,
+            &quot;hypothesis&quot;: {
+              &quot;id&quot;: &quot;h1&quot;,
+              &quot;kind&quot;: &quot;connector_interpretation&quot;,
+              &quot;source_sentence_id&quot;: &quot;s2&quot;,
+              &quot;source_quote&quot;: &quot;Lina either travels or rests.&quot;,
+              &quot;candidate&quot;: {
+                &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, xor(travels(lina), rests(lina))).&quot;,
+                &quot;query&quot;: &quot;rests(lina)&quot;
+              }
+            },
+            &quot;candidate_sha256&quot;: &quot;ae826be9fb3783330f0939962a6938631d76cdc16106f2e7e0b0e3af9a92bbfb&quot;,
+            &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+            &quot;semantic_status&quot;: &quot;contradicted&quot;,
+            &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+            &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+          }
+        ],
+        &quot;conclusion&quot;: &quot;branch_dependent&quot;
+      },
+      &quot;assessment&quot;: &quot;ambiguous&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+      &quot;expected_class&quot;: &quot;explicit_xor&quot;,
+      &quot;plain&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;contradicted&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [],
+        &quot;conclusion&quot;: &quot;unresolved&quot;
+      },
+      &quot;declared&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;contradicted&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [],
+        &quot;conclusion&quot;: &quot;unresolved&quot;
+      },
+      &quot;assessment&quot;: &quot;explicit_xor&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+      &quot;expected_class&quot;: &quot;explicit_xor&quot;,
+      &quot;plain&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;contradicted&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [],
+        &quot;conclusion&quot;: &quot;unresolved&quot;
+      },
+      &quot;declared&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;contradicted&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [],
+        &quot;conclusion&quot;: &quot;unresolved&quot;
+      },
+      &quot;assessment&quot;: &quot;explicit_xor&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+      &quot;expected_class&quot;: &quot;explicit_or&quot;,
+      &quot;plain&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [],
+        &quot;conclusion&quot;: &quot;unresolved&quot;
+      },
+      &quot;declared&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [],
+        &quot;conclusion&quot;: &quot;unresolved&quot;
+      },
+      &quot;assessment&quot;: &quot;explicit_or&quot;
+    },
+    {
+      &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+      &quot;expected_class&quot;: &quot;explicit_or&quot;,
+      &quot;plain&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [],
+        &quot;conclusion&quot;: &quot;unresolved&quot;
+      },
+      &quot;declared&quot;: {
+        &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+        &quot;status&quot;: &quot;observed-not-scored&quot;,
+        &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+        &quot;baseline&quot;: {
+          &quot;candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+          &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+          &quot;semantic_status&quot;: &quot;unknown&quot;,
+          &quot;bindings&quot;: &quot;labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))&quot;,
+          &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+        },
+        &quot;branches&quot;: [],
+        &quot;conclusion&quot;: &quot;unresolved&quot;
+      },
+      &quot;assessment&quot;: &quot;explicit_or&quot;
+    }
+  ]
+}</pre></details><h2>All cases — prompts, Luna answers, Prolog traces</h2><details class="case"><summary><b>v2-orxor-09</b> · hidden review class revealed: ambiguous</summary><div class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Quinn gardens.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Quinn either gardens or reads.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Quinn read?&quot;,
+  &quot;target_sentence_id&quot;: &quot;s2&quot;
+}</pre></details><details><summary>Formalization prompt</summary><pre>Formalize every numbered English sentence as one complete executable candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]) and exactly one axiom(sN, Formula) per source sentence. A fact is exactly axiom(s1, studies(iris)). Use only lower-case unary terms such as studies(iris), not(studies(iris)), and(A,B), or(A,B), xor(A,B), implies(A,B), and forall(var(x,person), Formula); no atom(...), rule, infix operators, ordinary Prolog clauses, directives, files, network, or uppercase variables. For a bare phrase “either A or B”, use or(A,B). Use xor(A,B) only if its text explicitly says “but not both”. If it says “or both”, “both are allowed”, or equivalent, use or(A,B). Preserve every sentence. Query is one lower-case ground unary predicate from the question, using program vocabulary.
+
+World:
+s1: Quinn gardens.
+s2: Quinn either gardens or reads.
+
+Question:
+Does Quinn read?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,or(gardens(quinn),reads(quinn))).&quot;,
+  &quot;query&quot;: &quot;reads(quinn)&quot;
+}</pre></details><details><summary>Baseline execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><div class="conditions"><section class="condition"><h3>Plain</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-09; baseline_candidate_sha256 exactly to 53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Quinn gardens.
+s2: Quinn either gardens or reads.
+
+Target sentence: s2
+Frozen program:
+domain(person,[quinn]).
+axiom(s1,gardens(quinn)).
+axiom(s2,or(gardens(quinn),reads(quinn))).
+Frozen query:
+reads(quinn)
+Schema version: semantic-branch-dream-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Quinn either gardens or reads.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,xor(gardens(quinn),reads(quinn))).&quot;,
+        &quot;query&quot;: &quot;reads(quinn)&quot;
+      }
+    }
+  ]
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Quinn either gardens or reads.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,xor(gardens(quinn),reads(quinn))).&quot;,
+          &quot;query&quot;: &quot;reads(quinn)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;23e68a69d841f7095d9179245cca34253da359925136251589618e607b40934b&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Quinn either gardens or reads.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,xor(gardens(quinn),reads(quinn))).&quot;,
+          &quot;query&quot;: &quot;reads(quinn)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;23e68a69d841f7095d9179245cca34253da359925136251589618e607b40934b&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details></section><section class="condition"><h3>Declared</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-09; baseline_candidate_sha256 exactly to 53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Quinn gardens.
+s2: Quinn either gardens or reads.
+
+Target sentence: s2
+Frozen program:
+domain(person,[quinn]).
+axiom(s1,gardens(quinn)).
+axiom(s2,or(gardens(quinn),reads(quinn))).
+Frozen query:
+reads(quinn)
+Before choosing hypotheses, set assessment to exactly one of ambiguous, explicit_xor, explicit_or based only on the target sentence. Set hypotheses empty unless assessment is ambiguous. Schema version: semantic-branch-dream-declared-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-declared-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+  &quot;assessment&quot;: &quot;ambiguous&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Quinn either gardens or reads.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,xor(gardens(quinn),reads(quinn))).&quot;,
+        &quot;query&quot;: &quot;reads(quinn)&quot;
+      }
+    }
+  ]
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Quinn either gardens or reads.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,xor(gardens(quinn),reads(quinn))).&quot;,
+          &quot;query&quot;: &quot;reads(quinn)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;23e68a69d841f7095d9179245cca34253da359925136251589618e607b40934b&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-09&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;53490190d155cff7f55f36c3a0c4ad1b862e760e935eb6ad3b71717361aaa41a&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(gardens,[quinn]),holds(reads,[quinn])]),false_model([holds(gardens,[quinn])]))))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Quinn either gardens or reads.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[quinn]).\naxiom(s1,gardens(quinn)).\naxiom(s2,xor(gardens(quinn),reads(quinn))).&quot;,
+          &quot;query&quot;: &quot;reads(quinn)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;23e68a69d841f7095d9179245cca34253da359925136251589618e607b40934b&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(reads(quinn),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([reads/1]),world_predicates([gardens/1,reads/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[quinn])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(reads(quinn),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details></section></div></div></details>
+<details class="case"><summary><b>v2-orxor-02</b> · hidden review class revealed: ambiguous</summary><div class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Jules runs.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Jules either runs or swims.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Jules swim?&quot;,
+  &quot;target_sentence_id&quot;: &quot;s2&quot;
+}</pre></details><details><summary>Formalization prompt</summary><pre>Formalize every numbered English sentence as one complete executable candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]) and exactly one axiom(sN, Formula) per source sentence. A fact is exactly axiom(s1, studies(iris)). Use only lower-case unary terms such as studies(iris), not(studies(iris)), and(A,B), or(A,B), xor(A,B), implies(A,B), and forall(var(x,person), Formula); no atom(...), rule, infix operators, ordinary Prolog clauses, directives, files, network, or uppercase variables. For a bare phrase “either A or B”, use or(A,B). Use xor(A,B) only if its text explicitly says “but not both”. If it says “or both”, “both are allowed”, or equivalent, use or(A,B). Preserve every sentence. Query is one lower-case ground unary predicate from the question, using program vocabulary.
+
+World:
+s1: Jules runs.
+s2: Jules either runs or swims.
+
+Question:
+Does Jules swim?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,or(runs(jules),swims(jules))).&quot;,
+  &quot;query&quot;: &quot;swims(jules)&quot;
+}</pre></details><details><summary>Baseline execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><div class="conditions"><section class="condition"><h3>Plain</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-02; baseline_candidate_sha256 exactly to b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Jules runs.
+s2: Jules either runs or swims.
+
+Target sentence: s2
+Frozen program:
+domain(person,[jules]).
+axiom(s1,runs(jules)).
+axiom(s2,or(runs(jules),swims(jules))).
+Frozen query:
+swims(jules)
+Schema version: semantic-branch-dream-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Jules either runs or swims.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,xor(runs(jules),swims(jules))).&quot;,
+        &quot;query&quot;: &quot;swims(jules)&quot;
+      }
+    }
+  ]
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Jules either runs or swims.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,xor(runs(jules),swims(jules))).&quot;,
+          &quot;query&quot;: &quot;swims(jules)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;64f30ebf6ff484ea1777c46ef063f20f46a26474ea41a5f36e72632e5c8b4ec5&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Jules either runs or swims.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,xor(runs(jules),swims(jules))).&quot;,
+          &quot;query&quot;: &quot;swims(jules)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;64f30ebf6ff484ea1777c46ef063f20f46a26474ea41a5f36e72632e5c8b4ec5&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details></section><section class="condition"><h3>Declared</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-02; baseline_candidate_sha256 exactly to b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Jules runs.
+s2: Jules either runs or swims.
+
+Target sentence: s2
+Frozen program:
+domain(person,[jules]).
+axiom(s1,runs(jules)).
+axiom(s2,or(runs(jules),swims(jules))).
+Frozen query:
+swims(jules)
+Before choosing hypotheses, set assessment to exactly one of ambiguous, explicit_xor, explicit_or based only on the target sentence. Set hypotheses empty unless assessment is ambiguous. Schema version: semantic-branch-dream-declared-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-declared-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+  &quot;assessment&quot;: &quot;ambiguous&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Jules either runs or swims.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,xor(runs(jules),swims(jules))).&quot;,
+        &quot;query&quot;: &quot;swims(jules)&quot;
+      }
+    }
+  ]
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Jules either runs or swims.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,xor(runs(jules),swims(jules))).&quot;,
+          &quot;query&quot;: &quot;swims(jules)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;64f30ebf6ff484ea1777c46ef063f20f46a26474ea41a5f36e72632e5c8b4ec5&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-02&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;b19ee8f07a97dfa36fba25b68c92ae41c97616355e19843ffbbd1a033efaeb26&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(runs,[jules]),holds(swims,[jules])]),false_model([holds(runs,[jules])]))))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Jules either runs or swims.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[jules]).\naxiom(s1,runs(jules)).\naxiom(s2,xor(runs(jules),swims(jules))).&quot;,
+          &quot;query&quot;: &quot;swims(jules)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;64f30ebf6ff484ea1777c46ef063f20f46a26474ea41a5f36e72632e5c8b4ec5&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(swims(jules),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([swims/1]),world_predicates([runs/1,swims/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[jules])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(swims(jules),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details></section></div></div></details>
+<details class="case"><summary><b>v2-orxor-03</b> · hidden review class revealed: ambiguous</summary><div class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Kai reads.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Kai either reads or sketches.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Kai sketch?&quot;,
+  &quot;target_sentence_id&quot;: &quot;s2&quot;
+}</pre></details><details><summary>Formalization prompt</summary><pre>Formalize every numbered English sentence as one complete executable candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]) and exactly one axiom(sN, Formula) per source sentence. A fact is exactly axiom(s1, studies(iris)). Use only lower-case unary terms such as studies(iris), not(studies(iris)), and(A,B), or(A,B), xor(A,B), implies(A,B), and forall(var(x,person), Formula); no atom(...), rule, infix operators, ordinary Prolog clauses, directives, files, network, or uppercase variables. For a bare phrase “either A or B”, use or(A,B). Use xor(A,B) only if its text explicitly says “but not both”. If it says “or both”, “both are allowed”, or equivalent, use or(A,B). Preserve every sentence. Query is one lower-case ground unary predicate from the question, using program vocabulary.
+
+World:
+s1: Kai reads.
+s2: Kai either reads or sketches.
+
+Question:
+Does Kai sketch?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,or(reads(kai),sketches(kai))).&quot;,
+  &quot;query&quot;: &quot;sketches(kai)&quot;
+}</pre></details><details><summary>Baseline execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><div class="conditions"><section class="condition"><h3>Plain</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-03; baseline_candidate_sha256 exactly to f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Kai reads.
+s2: Kai either reads or sketches.
+
+Target sentence: s2
+Frozen program:
+domain(person,[kai]).
+axiom(s1,reads(kai)).
+axiom(s2,or(reads(kai),sketches(kai))).
+Frozen query:
+sketches(kai)
+Schema version: semantic-branch-dream-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Kai either reads or sketches.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,xor(reads(kai),sketches(kai))).&quot;,
+        &quot;query&quot;: &quot;sketches(kai)&quot;
+      }
+    }
+  ]
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Kai either reads or sketches.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,xor(reads(kai),sketches(kai))).&quot;,
+          &quot;query&quot;: &quot;sketches(kai)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;e0c97aced91805412591038352188200a46334313b377e7c4eacc1534d99625b&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Kai either reads or sketches.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,xor(reads(kai),sketches(kai))).&quot;,
+          &quot;query&quot;: &quot;sketches(kai)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;e0c97aced91805412591038352188200a46334313b377e7c4eacc1534d99625b&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details></section><section class="condition"><h3>Declared</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-03; baseline_candidate_sha256 exactly to f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Kai reads.
+s2: Kai either reads or sketches.
+
+Target sentence: s2
+Frozen program:
+domain(person,[kai]).
+axiom(s1,reads(kai)).
+axiom(s2,or(reads(kai),sketches(kai))).
+Frozen query:
+sketches(kai)
+Before choosing hypotheses, set assessment to exactly one of ambiguous, explicit_xor, explicit_or based only on the target sentence. Set hypotheses empty unless assessment is ambiguous. Schema version: semantic-branch-dream-declared-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-declared-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+  &quot;assessment&quot;: &quot;ambiguous&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Kai either reads or sketches.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,xor(reads(kai),sketches(kai))).&quot;,
+        &quot;query&quot;: &quot;sketches(kai)&quot;
+      }
+    }
+  ]
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Kai either reads or sketches.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,xor(reads(kai),sketches(kai))).&quot;,
+          &quot;query&quot;: &quot;sketches(kai)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;e0c97aced91805412591038352188200a46334313b377e7c4eacc1534d99625b&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-03&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;f340be7660b4aa437997a93bdef8497f4627c31713cb30269474e6bf74f51c8f&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[kai]),holds(sketches,[kai])]),false_model([holds(reads,[kai])]))))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Kai either reads or sketches.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[kai]).\naxiom(s1,reads(kai)).\naxiom(s2,xor(reads(kai),sketches(kai))).&quot;,
+          &quot;query&quot;: &quot;sketches(kai)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;e0c97aced91805412591038352188200a46334313b377e7c4eacc1534d99625b&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(sketches(kai),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([sketches/1]),world_predicates([reads/1,sketches/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[kai])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(sketches(kai),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details></section></div></div></details>
+<details class="case"><summary><b>v2-orxor-04</b> · hidden review class revealed: ambiguous</summary><div class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Lina travels.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Lina either travels or rests.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Lina rest?&quot;,
+  &quot;target_sentence_id&quot;: &quot;s2&quot;
+}</pre></details><details><summary>Formalization prompt</summary><pre>Formalize every numbered English sentence as one complete executable candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]) and exactly one axiom(sN, Formula) per source sentence. A fact is exactly axiom(s1, studies(iris)). Use only lower-case unary terms such as studies(iris), not(studies(iris)), and(A,B), or(A,B), xor(A,B), implies(A,B), and forall(var(x,person), Formula); no atom(...), rule, infix operators, ordinary Prolog clauses, directives, files, network, or uppercase variables. For a bare phrase “either A or B”, use or(A,B). Use xor(A,B) only if its text explicitly says “but not both”. If it says “or both”, “both are allowed”, or equivalent, use or(A,B). Preserve every sentence. Query is one lower-case ground unary predicate from the question, using program vocabulary.
+
+World:
+s1: Lina travels.
+s2: Lina either travels or rests.
+
+Question:
+Does Lina rest?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, or(travels(lina), rests(lina))).&quot;,
+  &quot;query&quot;: &quot;rests(lina)&quot;
+}</pre></details><details><summary>Baseline execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><div class="conditions"><section class="condition"><h3>Plain</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-04; baseline_candidate_sha256 exactly to aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Lina travels.
+s2: Lina either travels or rests.
+
+Target sentence: s2
+Frozen program:
+domain(person,[lina]).
+axiom(s1, travels(lina)).
+axiom(s2, or(travels(lina), rests(lina))).
+Frozen query:
+rests(lina)
+Schema version: semantic-branch-dream-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Lina either travels or rests.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, xor(travels(lina), rests(lina))).&quot;,
+        &quot;query&quot;: &quot;rests(lina)&quot;
+      }
+    }
+  ]
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Lina either travels or rests.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, xor(travels(lina), rests(lina))).&quot;,
+          &quot;query&quot;: &quot;rests(lina)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;ae826be9fb3783330f0939962a6938631d76cdc16106f2e7e0b0e3af9a92bbfb&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Lina either travels or rests.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, xor(travels(lina), rests(lina))).&quot;,
+          &quot;query&quot;: &quot;rests(lina)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;ae826be9fb3783330f0939962a6938631d76cdc16106f2e7e0b0e3af9a92bbfb&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details></section><section class="condition"><h3>Declared</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-04; baseline_candidate_sha256 exactly to aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Lina travels.
+s2: Lina either travels or rests.
+
+Target sentence: s2
+Frozen program:
+domain(person,[lina]).
+axiom(s1, travels(lina)).
+axiom(s2, or(travels(lina), rests(lina))).
+Frozen query:
+rests(lina)
+Before choosing hypotheses, set assessment to exactly one of ambiguous, explicit_xor, explicit_or based only on the target sentence. Set hypotheses empty unless assessment is ambiguous. Schema version: semantic-branch-dream-declared-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-declared-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+  &quot;assessment&quot;: &quot;ambiguous&quot;,
+  &quot;hypotheses&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;source_sentence_id&quot;: &quot;s2&quot;,
+      &quot;source_quote&quot;: &quot;Lina either travels or rests.&quot;,
+      &quot;candidate&quot;: {
+        &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, xor(travels(lina), rests(lina))).&quot;,
+        &quot;query&quot;: &quot;rests(lina)&quot;
+      }
+    }
+  ]
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Lina either travels or rests.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, xor(travels(lina), rests(lina))).&quot;,
+          &quot;query&quot;: &quot;rests(lina)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;ae826be9fb3783330f0939962a6938631d76cdc16106f2e7e0b0e3af9a92bbfb&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-04&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;aa02bd4c800b907c82fc47c2effe5bd19f76f1d8d60871c0a1c763143d44c9ee&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(rests,[lina]),holds(travels,[lina])]),false_model([holds(travels,[lina])]))))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [
+    {
+      &quot;id&quot;: &quot;h1&quot;,
+      &quot;kind&quot;: &quot;connector_interpretation&quot;,
+      &quot;hypothesis&quot;: {
+        &quot;id&quot;: &quot;h1&quot;,
+        &quot;kind&quot;: &quot;connector_interpretation&quot;,
+        &quot;source_sentence_id&quot;: &quot;s2&quot;,
+        &quot;source_quote&quot;: &quot;Lina either travels or rests.&quot;,
+        &quot;candidate&quot;: {
+          &quot;program&quot;: &quot;domain(person,[lina]).\naxiom(s1, travels(lina)).\naxiom(s2, xor(travels(lina), rests(lina))).&quot;,
+          &quot;query&quot;: &quot;rests(lina)&quot;
+        }
+      },
+      &quot;candidate_sha256&quot;: &quot;ae826be9fb3783330f0939962a6938631d76cdc16106f2e7e0b0e3af9a92bbfb&quot;,
+      &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+      &quot;semantic_status&quot;: &quot;contradicted&quot;,
+      &quot;bindings&quot;: &quot;labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))&quot;,
+      &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(rests(lina),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([rests/1]),world_predicates([rests/1,travels/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[lina])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(rests(lina),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+    }
+  ],
+  &quot;conclusion&quot;: &quot;branch_dependent&quot;
+}</pre></details></section></div></div></details>
+<details class="case"><summary><b>v2-orxor-05</b> · hidden review class revealed: explicit_xor</summary><div class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Mira cooks.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Mira either cooks or cleans, but not both.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Mira clean?&quot;,
+  &quot;target_sentence_id&quot;: &quot;s2&quot;
+}</pre></details><details><summary>Formalization prompt</summary><pre>Formalize every numbered English sentence as one complete executable candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]) and exactly one axiom(sN, Formula) per source sentence. A fact is exactly axiom(s1, studies(iris)). Use only lower-case unary terms such as studies(iris), not(studies(iris)), and(A,B), or(A,B), xor(A,B), implies(A,B), and forall(var(x,person), Formula); no atom(...), rule, infix operators, ordinary Prolog clauses, directives, files, network, or uppercase variables. For a bare phrase “either A or B”, use or(A,B). Use xor(A,B) only if its text explicitly says “but not both”. If it says “or both”, “both are allowed”, or equivalent, use or(A,B). Preserve every sentence. Query is one lower-case ground unary predicate from the question, using program vocabulary.
+
+World:
+s1: Mira cooks.
+s2: Mira either cooks or cleans, but not both.
+
+Question:
+Does Mira clean?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[mira]).\naxiom(s1,cooks(mira)).\naxiom(s2,xor(cooks(mira),cleans(mira))).&quot;,
+  &quot;query&quot;: &quot;cleans(mira)&quot;
+}</pre></details><details><summary>Baseline execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><div class="conditions"><section class="condition"><h3>Plain</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-05; baseline_candidate_sha256 exactly to 2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Mira cooks.
+s2: Mira either cooks or cleans, but not both.
+
+Target sentence: s2
+Frozen program:
+domain(person,[mira]).
+axiom(s1,cooks(mira)).
+axiom(s2,xor(cooks(mira),cleans(mira))).
+Frozen query:
+cleans(mira)
+Schema version: semantic-branch-dream-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+  &quot;hypotheses&quot;: []
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;contradicted&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;contradicted&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details></section><section class="condition"><h3>Declared</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-05; baseline_candidate_sha256 exactly to 2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Mira cooks.
+s2: Mira either cooks or cleans, but not both.
+
+Target sentence: s2
+Frozen program:
+domain(person,[mira]).
+axiom(s1,cooks(mira)).
+axiom(s2,xor(cooks(mira),cleans(mira))).
+Frozen query:
+cleans(mira)
+Before choosing hypotheses, set assessment to exactly one of ambiguous, explicit_xor, explicit_or based only on the target sentence. Set hypotheses empty unless assessment is ambiguous. Schema version: semantic-branch-dream-declared-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-declared-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+  &quot;assessment&quot;: &quot;explicit_xor&quot;,
+  &quot;hypotheses&quot;: []
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;contradicted&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-05&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;2e3e518d72788ebdc265fc7d277fdd50325f11daac01c5e09c0cd2c5ecef5cc1&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;contradicted&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(cleans(mira),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([cleans/1]),world_predicates([cleans/1,cooks/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[mira])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(cleans(mira),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details></section></div></div></details>
+<details class="case"><summary><b>v2-orxor-06</b> · hidden review class revealed: explicit_xor</summary><div class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Noel sings.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Noel either sings or dances, but not both.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Noel dance?&quot;,
+  &quot;target_sentence_id&quot;: &quot;s2&quot;
+}</pre></details><details><summary>Formalization prompt</summary><pre>Formalize every numbered English sentence as one complete executable candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]) and exactly one axiom(sN, Formula) per source sentence. A fact is exactly axiom(s1, studies(iris)). Use only lower-case unary terms such as studies(iris), not(studies(iris)), and(A,B), or(A,B), xor(A,B), implies(A,B), and forall(var(x,person), Formula); no atom(...), rule, infix operators, ordinary Prolog clauses, directives, files, network, or uppercase variables. For a bare phrase “either A or B”, use or(A,B). Use xor(A,B) only if its text explicitly says “but not both”. If it says “or both”, “both are allowed”, or equivalent, use or(A,B). Preserve every sentence. Query is one lower-case ground unary predicate from the question, using program vocabulary.
+
+World:
+s1: Noel sings.
+s2: Noel either sings or dances, but not both.
+
+Question:
+Does Noel dance?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[noel]).\naxiom(s1,sings(noel)).\naxiom(s2,xor(sings(noel),dances(noel))).&quot;,
+  &quot;query&quot;: &quot;dances(noel)&quot;
+}</pre></details><details><summary>Baseline execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;contradicted&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><div class="conditions"><section class="condition"><h3>Plain</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-06; baseline_candidate_sha256 exactly to 51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Noel sings.
+s2: Noel either sings or dances, but not both.
+
+Target sentence: s2
+Frozen program:
+domain(person,[noel]).
+axiom(s1,sings(noel)).
+axiom(s2,xor(sings(noel),dances(noel))).
+Frozen query:
+dances(noel)
+Schema version: semantic-branch-dream-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+  &quot;hypotheses&quot;: []
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;contradicted&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;contradicted&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details></section><section class="condition"><h3>Declared</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-06; baseline_candidate_sha256 exactly to 51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Noel sings.
+s2: Noel either sings or dances, but not both.
+
+Target sentence: s2
+Frozen program:
+domain(person,[noel]).
+axiom(s1,sings(noel)).
+axiom(s2,xor(sings(noel),dances(noel))).
+Frozen query:
+dances(noel)
+Before choosing hypotheses, set assessment to exactly one of ambiguous, explicit_xor, explicit_or based only on the target sentence. Set hypotheses empty unless assessment is ambiguous. Schema version: semantic-branch-dream-declared-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-declared-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+  &quot;assessment&quot;: &quot;explicit_xor&quot;,
+  &quot;hypotheses&quot;: []
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;contradicted&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-06&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;51a37f1b81afb96ab10c0f4d67c6d5b902a20cdc72579490f2e47d21b9225aa2&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;contradicted&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(dances(noel),contradicted,explanation(status(contradicted),source_axioms([s1,s2]),signature_audit(goal_predicates([dances/1]),world_predicates([dances/1,sings/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[noel])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(model_check(no_supporting_model)))),audit_proof_tree(dances(noel),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details></section></div></div></details>
+<details class="case"><summary><b>v2-orxor-07</b> · hidden review class revealed: explicit_or</summary><div class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Omar paints.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Omar either paints or writes, and doing both is possible.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Omar write?&quot;,
+  &quot;target_sentence_id&quot;: &quot;s2&quot;
+}</pre></details><details><summary>Formalization prompt</summary><pre>Formalize every numbered English sentence as one complete executable candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]) and exactly one axiom(sN, Formula) per source sentence. A fact is exactly axiom(s1, studies(iris)). Use only lower-case unary terms such as studies(iris), not(studies(iris)), and(A,B), or(A,B), xor(A,B), implies(A,B), and forall(var(x,person), Formula); no atom(...), rule, infix operators, ordinary Prolog clauses, directives, files, network, or uppercase variables. For a bare phrase “either A or B”, use or(A,B). Use xor(A,B) only if its text explicitly says “but not both”. If it says “or both”, “both are allowed”, or equivalent, use or(A,B). Preserve every sentence. Query is one lower-case ground unary predicate from the question, using program vocabulary.
+
+World:
+s1: Omar paints.
+s2: Omar either paints or writes, and doing both is possible.
+
+Question:
+Does Omar write?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[omar]).\naxiom(s1,paints(omar)).\naxiom(s2,or(paints(omar),writes(omar))).&quot;,
+  &quot;query&quot;: &quot;writes(omar)&quot;
+}</pre></details><details><summary>Baseline execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><div class="conditions"><section class="condition"><h3>Plain</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-07; baseline_candidate_sha256 exactly to eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Omar paints.
+s2: Omar either paints or writes, and doing both is possible.
+
+Target sentence: s2
+Frozen program:
+domain(person,[omar]).
+axiom(s1,paints(omar)).
+axiom(s2,or(paints(omar),writes(omar))).
+Frozen query:
+writes(omar)
+Schema version: semantic-branch-dream-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+  &quot;hypotheses&quot;: []
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details></section><section class="condition"><h3>Declared</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-07; baseline_candidate_sha256 exactly to eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Omar paints.
+s2: Omar either paints or writes, and doing both is possible.
+
+Target sentence: s2
+Frozen program:
+domain(person,[omar]).
+axiom(s1,paints(omar)).
+axiom(s2,or(paints(omar),writes(omar))).
+Frozen query:
+writes(omar)
+Before choosing hypotheses, set assessment to exactly one of ambiguous, explicit_xor, explicit_or based only on the target sentence. Set hypotheses empty unless assessment is ambiguous. Schema version: semantic-branch-dream-declared-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-declared-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+  &quot;assessment&quot;: &quot;explicit_or&quot;,
+  &quot;hypotheses&quot;: []
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-07&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;eb23df7da956545e29d0e5508733123de23a902dda84cb8d95aabab53335c9ad&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(omar),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([paints/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[omar])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(paints,[omar]),holds(writes,[omar])]),false_model([holds(paints,[omar])]))))),audit_proof_tree(writes(omar),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details></section></div></div></details>
+<details class="case"><summary><b>v2-orxor-08</b> · hidden review class revealed: explicit_or</summary><div class="casebody"><details open><summary>Visible English world + question</summary><pre>{
+  &quot;world&quot;: [
+    {
+      &quot;id&quot;: &quot;s1&quot;,
+      &quot;text&quot;: &quot;Pia reads.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;s2&quot;,
+      &quot;text&quot;: &quot;Pia either reads or writes; both are allowed.&quot;
+    }
+  ],
+  &quot;question&quot;: &quot;Does Pia write?&quot;,
+  &quot;target_sentence_id&quot;: &quot;s2&quot;
+}</pre></details><details><summary>Formalization prompt</summary><pre>Formalize every numbered English sentence as one complete executable candidate. Return JSON only. Use domain(person,[all_lowercase_named_entities]) and exactly one axiom(sN, Formula) per source sentence. A fact is exactly axiom(s1, studies(iris)). Use only lower-case unary terms such as studies(iris), not(studies(iris)), and(A,B), or(A,B), xor(A,B), implies(A,B), and forall(var(x,person), Formula); no atom(...), rule, infix operators, ordinary Prolog clauses, directives, files, network, or uppercase variables. For a bare phrase “either A or B”, use or(A,B). Use xor(A,B) only if its text explicitly says “but not both”. If it says “or both”, “both are allowed”, or equivalent, use or(A,B). Preserve every sentence. Query is one lower-case ground unary predicate from the question, using program vocabulary.
+
+World:
+s1: Pia reads.
+s2: Pia either reads or writes; both are allowed.
+
+Question:
+Does Pia write?</pre></details><details open><summary>Luna baseline program + query</summary><pre>{
+  &quot;program&quot;: &quot;domain(person,[pia]).\naxiom(s1,reads(pia)).\naxiom(s2,or(reads(pia),writes(pia))).&quot;,
+  &quot;query&quot;: &quot;writes(pia)&quot;
+}</pre></details><details><summary>Baseline execution</summary><pre>{
+  &quot;candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+  &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+  &quot;semantic_status&quot;: &quot;unknown&quot;,
+  &quot;bindings&quot;: &quot;labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))&quot;,
+  &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+}</pre></details><div class="conditions"><section class="condition"><h3>Plain</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-08; baseline_candidate_sha256 exactly to 9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Pia reads.
+s2: Pia either reads or writes; both are allowed.
+
+Target sentence: s2
+Frozen program:
+domain(person,[pia]).
+axiom(s1,reads(pia)).
+axiom(s2,or(reads(pia),writes(pia))).
+Frozen query:
+writes(pia)
+Schema version: semantic-branch-dream-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+  &quot;hypotheses&quot;: []
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details></section><section class="condition"><h3>Declared</h3><details><summary>Exact prompt</summary><pre>Audit one frozen complete Prolog candidate against its English source. Focus only on s2. Return zero or one complete connector_interpretation hypothesis. Propose a branch only if the wording of that target sentence reasonably permits both inclusive OR and exclusive XOR. If it explicitly says “but not both”, “or both”, “both are allowed”, or equivalent, return an empty hypotheses array. Do not repair unrelated errors. If you propose a branch, copy the baseline byte-for-byte except changing exactly one or( token to xor( or one xor( token to or(; keep query byte-identical.
+
+Set case_id exactly to v2-orxor-08; baseline_candidate_sha256 exactly to 9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24. No aliases, type assumptions, extra facts, explanations, external knowledge, directives, ordinary Prolog, AST, or edit operations.
+
+World:
+s1: Pia reads.
+s2: Pia either reads or writes; both are allowed.
+
+Target sentence: s2
+Frozen program:
+domain(person,[pia]).
+axiom(s1,reads(pia)).
+axiom(s2,or(reads(pia),writes(pia))).
+Frozen query:
+writes(pia)
+Before choosing hypotheses, set assessment to exactly one of ambiguous, explicit_xor, explicit_or based only on the target sentence. Set hypotheses empty unless assessment is ambiguous. Schema version: semantic-branch-dream-declared-connector-v2.</pre></details><details open><summary>Luna JSON answer</summary><pre>{
+  &quot;schema_version&quot;: &quot;semantic-branch-dream-declared-connector-v2&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+  &quot;baseline_candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+  &quot;assessment&quot;: &quot;explicit_or&quot;,
+  &quot;hypotheses&quot;: []
+}</pre></details><details open><summary>Alpha execution trace</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details><details><summary>Fail-closed replay</summary><pre>{
+  &quot;schema_version&quot;: &quot;dream-trace-v1&quot;,
+  &quot;status&quot;: &quot;observed-not-scored&quot;,
+  &quot;case_id&quot;: &quot;v2-orxor-08&quot;,
+  &quot;baseline&quot;: {
+    &quot;candidate_sha256&quot;: &quot;9632463997906ae1947c77a0981354fd11ba0f5ce8bd5b0871288257c3db8c24&quot;,
+    &quot;execution_outcome&quot;: &quot;succeeded&quot;,
+    &quot;semantic_status&quot;: &quot;unknown&quot;,
+    &quot;bindings&quot;: &quot;labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))&quot;,
+    &quot;transcript&quot;: &quot;PAM_DIAGNOSTIC_BINDINGS: labelled_explanation(writes(pia),unknown,explanation(status(unknown),source_axioms([s1,s2]),signature_audit(goal_predicates([writes/1]),world_predicates([reads/1,writes/1]),only_in_goal([])),domain_audit(declared_domains([domain(person,[pia])]),outside_declared_domains([]),quantified_rules([])),quantifier_audit([]),certificate(open_pair(true_model([holds(reads,[pia]),holds(writes,[pia])]),false_model([holds(reads,[pia])]))))),audit_proof_tree(writes(pia),no_forward_trace(no_supported_rule_path))\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;
+  },
+  &quot;branches&quot;: [],
+  &quot;conclusion&quot;: &quot;unresolved&quot;
+}</pre></details></section></div></div></details>
