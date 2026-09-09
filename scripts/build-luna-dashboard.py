@@ -11,6 +11,8 @@ BASE = ROOT / ".cdr/waves/luna-thirty-paired-v1"
 read = lambda p: json.loads(p.read_text())
 results = read(BASE / "raw-r1-verdicts/results.json")
 audit = read(BASE / "audit-results.json")
+analysis_file = ROOT / "reports/luna-thirty-error-analysis.json"
+error_analysis = read(analysis_file) if analysis_file.exists() else None
 cases = {item["id"]: item for item in read(BASE / "cases.json")}
 translations = {
     25: "Рамон не станет легендой шахмат.", 30: "Рэйлин создаёт инновационные продукты.",
@@ -49,7 +51,16 @@ for result in results["records"]:
         "prompts": {stage: read(directory / stage / "request.json")["prompt"] for stage in ["formalization", "M1", "M2"]}})
 assert len(rows) == 30 and sum(r["outcome"] == "helped" for r in rows) == 5
 assert audit["unique_model_threads"] == 90 and audit["correct"] == {"M1": 12, "M2": 17}
+if error_analysis:
+    findings = {case["id"]: case for case in error_analysis["cases"]}
+    assert len(findings) == len(error_analysis["cases"]) == 13
+    assert set(findings) == {row["id"] for row in rows if row["outcome"] == "missed"}
+    assert all(finding["confidence"] in {"confirmed", "likely", "unresolved"} for finding in findings.values())
+    for row in rows:
+        row["analysis"] = findings.get(row["id"])
 data = {"rows": rows, "summary": results["summary"], "audit": audit,
+    "error_analysis": error_analysis,
+    "error_analysis_sha256": hashlib.sha256(analysis_file.read_bytes()).hexdigest() if error_analysis else None,
     "results_sha256": hashlib.sha256((BASE / "raw-r1-verdicts/results.json").read_bytes()).hexdigest(),
     "commit": "a5be7d6", "manifest_sha256": results["manifest_sha256"]}
 
@@ -84,6 +95,7 @@ let filter='all',selected=47,search='',toastTimer;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const visible=()=>D.rows.filter(r=>(filter==='all'||r.outcome===filter)&&(`${r.id} ${r.translation} ${r.question}`.toLocaleLowerCase('ru').includes(search.toLocaleLowerCase('ru'))));
 function narrative(r){
+ if(r.analysis)return r.analysis.explanation;
  if(r.id===378)return 'Здесь видна конкретная несогласованность: в программе написано receive_accolades, а в запросе — receives_accolades. Для Prolog это разные предикаты. Он проверяет записанную программу и не исправляет имена по смыслу. Это наблюдаемая проблема этой формализации; полный разбор остальных правил ещё не проведён.';
  if(r.id===404)return 'Эту программу Prolog отклонил: внутри формулы оказался недопустимый аргумент. Луна в обоих вариантах ответила «неопределённо», хотя эталон — «истина». Задачу сохранили в общем подсчёте. Это ошибка формата программы, а не доказательство неопределённости исходной задачи.';
  if(r.outcome==='helped')return `Без исполнения Луна ответила «${labels[r.M1.answer].toLowerCase()}». Prolog проверил ту же программу и вернул: ${statuses[r.executor_status]}. Получив этот результат, Луна ответила «${labels[r.M2.answer].toLowerCase()}» — это совпало с эталоном. Формализацию между вариантами не меняли.`;
@@ -92,7 +104,7 @@ function narrative(r){
 }
 function renderGrid(){const rows=visible();document.getElementById('case-grid').innerHTML=rows.length?rows.map(r=>`<button class="case ${r.outcome}" data-case="${r.id}" aria-pressed="${r.id===selected}" aria-controls="case-detail" aria-label="Задача ${r.id}: ${esc(r.translation)} ${outcomeNames[r.outcome]}"><span class="case-top"><span>№ ${r.id}</span><span aria-label="Ответы M1 и M2">${r.M1.answer} → ${r.M2.answer}</span></span><span class="case-question">${esc(r.translation)}</span><span class="outcome">${outcomeNames[r.outcome]}</span></button>`).join(''):'<div class="empty">Ничего не найдено. Попробуйте другой номер или текст.</div>';document.getElementById('list-status').textContent=`Показано ${rows.length} из 30. A — истина, B — ложь, C — неопределённо.`;}
 function answerBox(title,answer,gold,isGold=false){const ok=answer===gold;return `<div class="answer-box ${isGold?'':ok?'correct':'wrong'}"><span class="label">${title}</span><strong>${labels[answer]}</strong><span class="check">${isGold?'Эталон датасета':ok?'✓ Совпало с эталоном':'× Не совпало с эталоном'}</span></div>`;}
-function renderDetail(){const r=D.rows.find(r=>r.id===selected);const list=visible(),index=list.findIndex(x=>x.id===selected);document.getElementById('case-detail').innerHTML=`<div class="detail-heading"><div><p class="eyebrow">Задача ${r.id} / ${outcomeNames[r.outcome]}</p><h3>${esc(r.translation)}</h3><p class="text-note">Перевод вопроса для удобства. Ответ оценивается на исходном английском тексте.</p></div><div class="step-nav"><button data-nav="-1" aria-label="Предыдущая задача" ${index<=0?'disabled':''}>←</button><button data-nav="1" aria-label="Следующая задача" ${index<0||index>=list.length-1?'disabled':''}>→</button></div></div><p class="original"><b>Оригинальный вопрос:</b> ${esc(r.question)}</p><div class="answer-grid">${answerBox('Без исполнения · M1',r.M1.answer,r.gold)}${answerBox('С результатом Prolog · M2',r.M2.answer,r.gold)}${answerBox('Правильный ответ',r.gold,r.gold,true)}</div><div class="explanation"><p>${esc(narrative(r))}</p></div><p class="small">Результат исполнителя: <b>${statuses[r.executor_status]}</b>. Статус относится к программе, написанной моделью.</p><details><summary>Что написала Луна: оба объяснения без изменений</summary><div class="raw-columns"><div><h3>Без исполнения</h3><p>${esc(r.M1.explanation)}</p></div><div><h3>С результатом Prolog</h3><p>${esc(r.M2.explanation)}</p></div></div><p class="text-note">Оригинальные ответы на английском. Объяснение модели само по себе не является проверенным доказательством.</p></details><details><summary>Исходные условия задачи</summary><p class="world">${esc(r.context)}</p></details><details><summary>Программа и запрос, общие для обоих вариантов</summary><div class="copy-head"><span class="small">Написано Луной, без исправлений</span><button class="copy-btn" data-copy="program">Копировать программу</button></div><pre>${esc(r.program)}</pre><p class="small">Запрос к исполнителю</p><pre>${esc(r.query)}</pre><p class="small">SHA-256 программы: <code>${r.program_sha256}</code></p></details><details><summary>Полный вывод Prolog</summary><p class="text-note">Сохранённый вывод, включая предупреждения и диагностические данные. Это содержимое получила Луна в M2.</p><pre>${esc(r.transcript)}</pre></details><details><summary>Точные запросы к модели</summary>${[['formalization','Общая формализация'],['M1','Итоговый ответ без исполнения'],['M2','Итоговый ответ с исполнением']].map(([key,title])=>`<details><summary>${title}</summary><pre>${esc(r.prompts[key])}</pre></details>`).join('')}</details>`;}
+function renderDetail(){const panel=document.getElementById('case-detail');panel.hidden=visible().length===0;if(panel.hidden)return;const r=D.rows.find(r=>r.id===selected);const list=visible(),index=list.findIndex(x=>x.id===selected);document.getElementById('case-detail').innerHTML=`<div class="detail-heading"><div><p class="eyebrow">Задача ${r.id} / ${outcomeNames[r.outcome]}</p><h3>${esc(r.translation)}</h3><p class="text-note">Перевод вопроса для удобства. Ответ оценивается на исходном английском тексте.</p></div><div class="step-nav"><button data-nav="-1" aria-label="Предыдущая задача" ${index<=0?'disabled':''}>←</button><button data-nav="1" aria-label="Следующая задача" ${index<0||index>=list.length-1?'disabled':''}>→</button></div></div><p class="original"><b>Оригинальный вопрос:</b> ${esc(r.question)}</p><div class="answer-grid">${answerBox('Без исполнения · M1',r.M1.answer,r.gold)}${answerBox('С результатом Prolog · M2',r.M2.answer,r.gold)}${answerBox('Правильный ответ',r.gold,r.gold,true)}</div><div class="explanation"><p>${esc(narrative(r))}</p></div><p class="small">Результат исполнителя: <b>${statuses[r.executor_status]}</b>. Статус относится к программе, написанной моделью.</p><details><summary>Что написала Луна: оба объяснения без изменений</summary><div class="raw-columns"><div><h3>Без исполнения</h3><p>${esc(r.M1.explanation)}</p></div><div><h3>С результатом Prolog</h3><p>${esc(r.M2.explanation)}</p></div></div><p class="text-note">Оригинальные ответы на английском. Объяснение модели само по себе не является проверенным доказательством.</p></details><details><summary>Исходные условия задачи</summary><p class="world">${esc(r.context)}</p></details><details><summary>Программа и запрос, общие для обоих вариантов</summary><div class="copy-head"><span class="small">Написано Луной, без исправлений</span><button class="copy-btn" data-copy="program">Копировать программу</button></div><pre>${esc(r.program)}</pre><p class="small">Запрос к исполнителю</p><pre>${esc(r.query)}</pre><p class="small">SHA-256 программы: <code>${r.program_sha256}</code></p></details><details><summary>Полный вывод Prolog</summary><p class="text-note">Сохранённый вывод, включая предупреждения и диагностические данные. Это содержимое получила Луна в M2.</p><pre>${esc(r.transcript)}</pre></details><details><summary>Точные запросы к модели</summary>${[['formalization','Общая формализация'],['M1','Итоговый ответ без исполнения'],['M2','Итоговый ответ с исполнением']].map(([key,title])=>`<details><summary>${title}</summary><pre>${esc(r.prompts[key])}</pre></details>`).join('')}</details>`;}
 function selectCase(id,scroll=false){selected=id;renderGrid();renderDetail();if(scroll)document.getElementById('case-detail').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
 document.querySelector('.filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(!b)return;filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const rows=visible();if(rows.length&&!rows.some(r=>r.id===selected))selected=rows[0].id;renderGrid();renderDetail();});
 document.getElementById('search').addEventListener('input',e=>{search=e.target.value.trim();const rows=visible();if(rows.length&&!rows.some(r=>r.id===selected))selected=rows[0].id;renderGrid();renderDetail();});
@@ -103,6 +115,43 @@ document.getElementById('download').addEventListener('click',()=>{const data={so
 const fmt=n=>n.toLocaleString('ru-RU');document.getElementById('usage-body').innerHTML=[['formalization','Общая формализация'],['M1','Ответ без исполнения'],['M2','Ответ с исполнением']].map(([k,t])=>`<tr><td>${t}</td><td>${fmt(D.audit.usage_by_stage[k].input_tokens)}</td><td>${fmt(D.audit.usage_by_stage[k].output_tokens)}</td></tr>`).join('');document.getElementById('hashes').textContent=`SHA-256 результатов\n${D.results_sha256}\n\nSHA-256 условий\n${D.manifest_sha256}`;
 renderGrid();renderDetail();
 </script></body></html>'''
+assets = Path(__file__).resolve().parent
+TEMPLATE = TEMPLATE.replace("</style>", (assets / "luna-dashboard-analysis.css").read_text() + "\n</style>")
+TEMPLATE = TEMPLATE.replace('<section id="cases">', (assets / "luna-dashboard-analysis.html").read_text() + '\n<section id="cases">')
+TEMPLATE = TEMPLATE.replace("\nrenderGrid();renderDetail();\n", "\n" + (assets / "luna-dashboard-analysis.js").read_text() + "\nrenderGrid();renderDetail();renderErrorAudit();\n")
+TEMPLATE = TEMPLATE.replace('<p class="small">Результат исполнителя:', '${analysisDetail(r)}<p class="small">Результат исполнителя:')
+TEMPLATE = TEMPLATE.replace('source_commit:D.commit,results_sha256:', 'source_commit:D.commit,error_analysis:D.error_analysis,results_sha256:')
+if error_analysis:
+    replacements = {
+        '<a href="#method">Как сравнивали</a>': '<a href="#errors">Разбор ошибок</a>',
+        'Да, <em>прогресс</em><br>есть.': 'Разбираемся,<br><em>где ошибка.</em>',
+        'С результатом Prolog Луна решила на <b>пять задач больше</b>. На одной и той же программе исполнение помогло исправить ответы, с которыми модель сама не справилась.': 'С результатом Prolog Луна дала на <b>пять совпадений с эталоном больше</b>. Теперь разбираем оставшиеся 13 расхождений: проверяем и формализацию Луны, и условия самого датасета.',
+        'Правильные ответы</span>': 'Совпадения с эталоном</span>',
+        'ответов исправлены': 'новых совпадений',
+        'ответов ухудшились': 'совпадений потеряно',
+        'Правильный ответ не стал ошибочным': 'Все 12 прежних совпадений сохранились',
+        'задач ещё не решены': 'расхождений с эталоном',
+        'Оба верно': 'Оба совпали',
+        'оба верно': 'оба совпали',
+        'Оба неверно': 'Оба расходятся',
+        'оба неверно': 'оба расходятся',
+        'Остались ошибки · 13': 'Расхождения · 13',
+        '13 не решены': '13 расходятся с эталоном',
+        'В 13 задачах исполнение не привело к правильному ответу.': 'В 13 задачах оба ответа расходятся с эталоном. Разбор выявил как дефекты формализации, так и проблемы в самом источнике.',
+        'Программа может не сохранять смысл исходного текста.': 'Программа может терять факты и менять смысл исходного текста.',
+        'Разные имена одного понятия могут разорвать цепочку вывода.': 'Английский текст датасета может расходиться с формулой, из которой получен эталон.',
+        'Луна справилась и без исполнения.': 'Луна совпала с эталоном и без исполнения.',
+        '13 ошибок: где теряется ответ': '13 расхождений: где теряется ответ',
+        'Статус «подтверждён» относится к указанному дефекту; он не обещает, что одной правки хватит для правильного ответа.': 'Статус «подтверждён» относится к найденному дефекту программы или рассогласованию источника; он не обещает, что одной правки хватит для правильного ответа.',
+        'Разумный следующий шаг — разобрать 13 ошибок': 'Следующий шаг — проверить выводы на новых задачах',
+        'Сначала выяснить, где потерялся смысл: при переводе текста, проверке программы или чтении результата. Исправления проверять на новых задачах. Эти 30 после настройки по ним станут отладочной выборкой.': 'Разбор выше показывает конкретные дефекты и спорные места источника. Сначала проверить соответствие английских условий эталонным формулам, затем испытывать исправления на новой выборке. Эти 30 уже использованы для диагностики.',
+        'Семантику всех формализаций независимо не проверяли.': '13 расхождений разобраны сабагентом после получения результатов; полного слепого аудита всех 30 формализаций нет.',
+        'Правильный ответ\',r.gold': 'Ответ в эталоне\',r.gold',
+        'Это содержимое получила Луна в M2.': 'Это содержимое получила Луна в M2. Источник служебных singleton-предупреждений исправлен позже в 56edb3f; исторические записи сохранены без очистки.',
+    }
+    for old, new in replacements.items():
+        assert old in TEMPLATE, old
+        TEMPLATE = TEMPLATE.replace(old, new)
 payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
 target = ROOT / "luna-thirty-dashboard.html"
 target.write_text(TEMPLATE.replace("__DATA__", payload), encoding="utf-8")

@@ -1,0 +1,934 @@
+{
+  "status": "post-hoc-agent-audit",
+  "scope": "13 both-wrong cases from frozen Luna30; correctness means agreement with the original scorer-only gold",
+  "independent_cdr_review": false,
+  "source": {
+    "source_sha256": "79428ef614d43729ce82e4d065055fdc6a39abad0f20cb226c5288fc315468e4",
+    "excerpts": "reports/luna-thirty-error-probes/source-excerpts.json",
+    "scorer_only_fields_seen_after_experiment": [
+      "answer",
+      "reasoning",
+      "nl2fol",
+      "conclusion_fol"
+    ],
+    "results_sha256": "9fdfec7bca24139354c3ffefc62f64794dc7761894925d24ad7847822ac59405"
+  },
+  "probe_protocol": {
+    "fresh_processes": 41,
+    "full_immutable_candidate_per_process": true,
+    "timeout_seconds": 10,
+    "prover_commit": "56edb3f181705448be141b0d2dcd817f6af29846",
+    "frozen_results_commit": "a5be7d6",
+    "prover_sha256": "e3eb36e4dbfaaea112192720d929de3fef8cc373de9cbf8b199ea964ec1aa2d3",
+    "baseline_reproduced": {
+      "unknown": 12,
+      "invalid_program": 1
+    },
+    "artifacts": "reports/luna-thirty-error-probes/results.json",
+    "runner": "reports/run-luna-thirty-error-probes.py"
+  },
+  "summary": {
+    "reviewed": 13,
+    "frozen_M1_gold_matches": 12,
+    "frozen_M2_gold_matches": 17,
+    "frozen_total": 30,
+    "source_or_xor_disagreement_ids": [
+      25,
+      73,
+      105,
+      128,
+      263,
+      375,
+      406,
+      419
+    ],
+    "concrete_missing_fact_id": 155,
+    "concrete_query_name_mismatch_id": 378,
+    "concrete_invalid_program_id": 404,
+    "source_type_contract_ids": [
+      105,
+      298,
+      378,
+      404
+    ],
+    "categories_overlap": true,
+    "executor_bug_demonstrated": false
+  },
+  "limitations": [
+    "Это анализ после завершения опыта, с доступом к gold, reasoning и скрытым формулам. Он не является слепой оценкой и не заменяет независимую CDR-проверку.",
+    "41 отдельный offline-запуск SWI-Prolog проверяет заданные программы. Новых вызовов Луны не было; результат остаётся M1 12/30, M2 17/30 совпадений с исходным эталоном.",
+    "Контрфактические кандидаты специально используют найденные различия. Совпадение их статуса с gold не доказывает единственную причину промаха, семантическую верность всех правок или новую точность модели.",
+    "Сохранённые true/false worlds подтверждают неопределённость для формализованной программы. Перенос этого вывода на английский текст требует отдельной проверки семантической эквивалентности.",
+    "В 8 задачах видимый английский OR расходится со скрытым XOR. Это не 8 автоматически аннулированных задач и не основание пересчитать оценку без отдельного решения о контракте.",
+    "Повтор использует текущий prover 56edb3f после удаления singleton warnings; все 13 исходных статусов воспроизведены. Это не A/B-проверка влияния шума на модель.",
+    "confirmed означает непосредственно наблюдаемый дефект, а не доказанную достаточность единственного исправления. likely отмечает зависимость причинного объяснения от семантических соглашений."
+  ],
+  "cases": [
+    {
+      "id": 25,
+      "category": "source_semantics",
+      "category_label": "Текст и формула датасета расходятся",
+      "confidence": "likely",
+      "title": "«Не обязательно оба» превратилось в «ровно одно»",
+      "explanation": "Луна передала «not necessarily both» обычным «или»: оба варианта разрешены. Скрытая формула датасета использует XOR и запрещает оба. Поэтому из факта о новых дебютах эталон исключает анализ партий, затем выводит изучение соперников, победы и отсутствие статуса легенды. В показанном Луне тексте запрета на одновременность нет. Результат unknown согласуется с буквальным чтением. В объяснениях моделей также есть ошибки: M1 отрицает вывод частой практики, хотя он есть; M2 заявляет вывод побед, которого программа не гарантирует.",
+      "source_evidence": [
+        "For Ramon, he either develops new openings or analyzes games, but not necessarily both.",
+        "Ramon analyzes games or studies opponents."
+      ],
+      "source_formula_evidence": [
+        "For Ramon, he either develops new openings or analyzes games, but not necessarily both. → source nl2fol: develops_new_openings(Ramon) ⊕ analyzes_games(Ramon)",
+        "Ramon analyzes games or studies opponents. → source nl2fol: analyzes_games(Ramon) ∨ studies_opponents(Ramon)"
+      ],
+      "program_evidence": [
+        "s10: or(develops_new_openings(ramon), analyzes_games(ramon))",
+        "s6: strategic_mind(ramon) → xor(wins_major_tournaments(ramon), becomes_legend_in_chess(ramon))"
+      ],
+      "executor_evidence": "Замороженный статус unknown; повтор неизменённой программы дал unknown и два мира для not(becomes_legend_in_chess(ramon)). Замена только s10 на XOR, как в source nl2fol, дала entailed.",
+      "next_step": "Развести в следующем протоколе оценку по буквальному английскому тексту и по скрытой формуле источника; не учить модель читать любое «или» как XOR.",
+      "gold": "A",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "Uncertain. Ramon derives a strategic mind, which activates an exclusive-or between winning major tournaments and becoming a chess legend, but neither outcome is established. The explicit negation of dedicating time does not imply practicing often, so there is no derivation of either becoming or not becoming a legend.",
+        "M2": "Uncertain: the execution status for the submitted negated goal is unknown. Although Ramon can be derived to have a strategic mind and win major tournaments, the XOR premise does not yield a derivation of not becoming a legend, and no explicit negation of that statement is provided."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "entailed",
+        "change": "Только s10: OR → XOR согласно скрытой формуле источника; это изменение смысла показанного текста, а не бесспорное исправление.",
+        "artifact": "reports/luna-thirty-error-probes/case-25-source-xor-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-25-source-xor.pl",
+        "query": "labelled_explanation(not(becomes_legend_in_chess(ramon)), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-25-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-25-baseline.pl"
+          },
+          {
+            "name": "source-xor",
+            "status": "entailed",
+            "artifact": "reports/luna-thirty-error-probes/case-25-source-xor-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-25-source-xor.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(develops_new_openings,[ramon]),holds(practices_often,[ramon]),holds(sets_high_goals,[ramon]),holds(strategic_mind,[ramon]),holds(studies_opponents,[ramon]),holds(thinks_critically,[ramon]),holds(wins_major_tournaments,[ramon])]",
+          "query_false": "[holds(analyzes_games,[ramon]),holds(becomes_legend_in_chess,[ramon]),holds(develops_new_openings,[ramon]),holds(practices_often,[ramon]),holds(sets_high_goals,[ramon]),holds(strategic_mind,[ramon]),holds(thinks_critically,[ramon])]",
+          "artifact": "reports/luna-thirty-error-probes/case-25-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 73,
+      "category": "source_semantics",
+      "category_label": "Текст и формула датасета расходятся",
+      "confidence": "likely",
+      "title": "Эталон требует запрета, которого текст явно не задаёт",
+      "explanation": "Из защиты меньшинств и отсутствия поддержки свободы следует поддержка прав человека. Дальше эталон запрещает одновременно поддерживать права человека и продвигать социальную справедливость. Но текст говорит «no one necessarily does both», а не «никто не делает оба». Луна использовала обычное «или», source nl2fol — XOR. При буквальном чтении отрицание экстремизма не определяется. В исходном reasoning есть дополнительная ошибка знака: предпоследний вывод напечатан как «opposes extremism», хотя финальный ответ B и формула требуют отрицания.",
+      "source_evidence": [
+        "Lovie either supports human rights or promotes social justice, but no one necessarily does both.",
+        "For all humans, if they oppose extremism or value tolerance, then they promote social justice."
+      ],
+      "source_formula_evidence": [
+        "Lovie either supports human rights or promotes social justice, but no one necessarily does both. → source nl2fol: supports_human_rights(Lovie) ⊕ promotes_social_justice(Lovie)",
+        "For all humans, if they oppose extremism or value tolerance, then they promote social justice. → source nl2fol: ∀x ((opposes_extremism(x) ∨ values_tolerance(x)) → promotes_social_justice(x))"
+      ],
+      "program_evidence": [
+        "s8: or(supports_human_rights(lovie), promotes_social_justice(lovie))",
+        "s4: (opposes_extremism ∨ values_tolerance) → promotes_social_justice"
+      ],
+      "executor_evidence": "unknown воспроизведён. Только s8 OR → XOR даёт contradicted для положительного opposes_extremism(lovie), то есть B.",
+      "next_step": "Проверить формулировку дизъюнкции и знак в source reasoning; сохранить C как фактический ответ модели и B как неизменённый gold.",
+      "gold": "B",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "Neither opposes_extremism(lovie) nor its negation is given or derivable. The rules only use opposing extremism as a premise, so the statement remains uncertain.",
+        "M2": "Uncertain: the program neither derives nor negates opposes_extremism(lovie). The execution evidence explicitly reports status unknown."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "contradicted",
+        "change": "Только s8: OR → XOR согласно source nl2fol.",
+        "artifact": "reports/luna-thirty-error-probes/case-73-source-xor-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-73-source-xor.pl",
+        "query": "labelled_explanation(opposes_extremism(lovie), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-73-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-73-baseline.pl"
+          },
+          {
+            "name": "source-xor",
+            "status": "contradicted",
+            "artifact": "reports/luna-thirty-error-probes/case-73-source-xor-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-73-source-xor.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(advocates_for_freedom,[lilly]),holds(defends_minorities,[lovie]),holds(opposes_extremism,[lovie]),holds(preaches_understanding,[lovie]),holds(promotes_social_justice,[lovie]),holds(supports_human_rights,[lilly]),holds(supports_human_rights,[lovie])]",
+          "query_false": "[holds(advocates_for_freedom,[lilly]),holds(defends_minorities,[lovie]),holds(preaches_understanding,[lovie]),holds(supports_human_rights,[lilly]),holds(supports_human_rights,[lovie])]",
+          "artifact": "reports/luna-thirty-error-probes/case-73-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 105,
+      "category": "mixed_source_contract",
+      "category_label": "Смешались смысл «или» и область правил",
+      "confidence": "likely",
+      "title": "Для вывода не хватает двух разных соглашений",
+      "explanation": "Модель добавила farmer(X) в условия общих правил, но не установила farmer(ronan). В source nl2fol «фермеры» являются неявной областью всех объектов и отдельного условия farmer нет. Кроме того, «not necessarily both» модель передала через OR, а источник — через XOR. Только вместе эти различия разрывают путь к опытности Ронана и отрицанию новых методов. Нельзя честно свести промах к одному пропущенному факту или назвать добавление farmer однозначно неверным при буквальном чтении.",
+      "source_evidence": [
+        "Every dedicated farmer either improves their crops or is experienced (or both).",
+        "For all farmers, either they diversify their farm or improve their crops, but not necessarily both."
+      ],
+      "source_formula_evidence": [
+        "Every dedicated farmer either improves their crops or is experienced (or both). → source nl2fol: ∀x (dedicated(x) → (improve_crops(x) ∨ experienced(x)))",
+        "For all farmers, either they diversify their farm or improve their crops, but not necessarily both. → source nl2fol: ∀x (diversify_farm(x) ⊕ improve_crops(x))"
+      ],
+      "program_evidence": [
+        "s3: farmer(X) ∧ dedicated(X) → (improves_crops(X) ∨ experienced(X))",
+        "s4: farmer(X) → or(diversifies_farm(X), improves_crops(X))",
+        "Нет факта farmer(ronan)."
+      ],
+      "executor_evidence": "Baseline unknown. Только farmer(ronan) → unknown; только XOR в s4 → unknown; оба изменения → entailed для отрицательного запроса.",
+      "next_step": "Явно определить, являются ли все персонажи фермерами по контракту датасета, и отдельно решить неоднозначность OR/XOR до нового прогона.",
+      "gold": "A",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "Uncertain: the program provides neither a fact nor a rule deriving that Ronan does not develop new techniques, nor one deriving that he does. In particular, Ronan is not stated to be a farmer or experienced, so the relevant rule does not apply.",
+        "M2": "Uncertain. The supplied execution evidence reports unknown and provides models where Ronan both does and does not develop new techniques. No derivation establishes the queried negation, and Ronan's experience is not established to activate s10."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "entailed",
+        "change": "Добавлены farmer(ronan) и XOR в s4; обе гипотезы опираются на scorer-only source nl2fol.",
+        "artifact": "reports/luna-thirty-error-probes/case-105-type-and-source-xor-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-105-type-and-source-xor.pl",
+        "query": "labelled_explanation(not(develops_new_techniques(ronan)), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-105-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-105-baseline.pl"
+          },
+          {
+            "name": "type-only",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-105-type-only-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-105-type-only.pl"
+          },
+          {
+            "name": "source-xor-only",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-105-source-xor-only-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-105-source-xor-only.pl"
+          },
+          {
+            "name": "type-and-source-xor",
+            "status": "entailed",
+            "artifact": "reports/luna-thirty-error-probes/case-105-type-and-source-xor-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-105-type-and-source-xor.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(dedicated,[ronan]),holds(diversifies_farm,[bo]),holds(diversifies_farm,[ronan]),holds(increases_crop_yields,[ronan]),holds(rotates_fields,[ronan]),holds(uses_sustainable_methods,[ronan])]",
+          "query_false": "[holds(dedicated,[ronan]),holds(develops_new_techniques,[ronan]),holds(diversifies_farm,[bo]),holds(diversifies_farm,[ronan]),holds(increases_crop_yields,[ronan]),holds(rotates_fields,[ronan]),holds(uses_sustainable_methods,[ronan])]",
+          "artifact": "reports/luna-thirty-error-probes/case-105-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 128,
+      "category": "source_semantics",
+      "category_label": "Текст и формула датасета расходятся",
+      "confidence": "likely",
+      "title": "Два скрытых XOR меняют весь вывод",
+      "explanation": "Две фразы с обычным «either … or» источник кодирует как XOR: связь timid/takes risks и связь adventurous/loves nature. Луна использует OR в обоих местах. В исходном английском нет «but not both» для этих двух фраз, хотя в других правилах такой запрет написан явно. Поэтому вывод о небесстрашии зависит от скрытой семантики источника. Дополнительный нюанс: «mutually exclusive» Луна тоже кодирует XOR, хотя буквально это лишь запрет обоих; для Nathalia известная humility делает это различие несущественным в данной цепочке.",
+      "source_evidence": [
+        "If Nathalia is either timid or takes risks, then she is adventurous.",
+        "If someone is an explorer, then they are either adventurous or love nature."
+      ],
+      "source_formula_evidence": [
+        "If Nathalia is either timid or takes risks, then she is adventurous. → source nl2fol: (takes_risks(Nathalia) ⊕ timid(Nathalia)) → adventurous(Nathalia)",
+        "If someone is an explorer, then they are either adventurous or love nature. → source nl2fol: ∀x (is_explorer(x) → (adventurous(x) ⊕ loves_nature(x)))"
+      ],
+      "program_evidence": [
+        "s9: (timid(nathalia) ∨ takes_risks(nathalia)) → adventurous(nathalia)",
+        "s20: explorer(X) → (adventurous(X) ∨ loves_nature(X))"
+      ],
+      "executor_evidence": "Baseline unknown. XOR только в s9 оставляет unknown. XOR только в s20 создаёт conflict. Два XOR, как в source nl2fol, дают entailed для not(fearless(nathalia)).",
+      "next_step": "Не менять дизъюнкции по одной ради совпадения с gold: сначала согласовать смысл полного исходного набора правил.",
+      "gold": "A",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "Neither not fearless(nathalia) nor fearless(nathalia) is derivable. The XOR statement only constrains them to be exclusive; it does not establish which holds, so the statement is uncertain.",
+        "M2": "The execution status is unknown. The program permits a model where Nathalia is timid and not fearless, and another where she is fearless; XOR does not provide a derivation of not(fearless(nathalia)). Thus the statement is uncertain."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "entailed",
+        "change": "s9 и s20: OR → XOR согласно скрытым формулам; частичные замены проверены отдельно.",
+        "artifact": "reports/luna-thirty-error-probes/case-128-source-two-xors-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-128-source-two-xors.pl",
+        "query": "labelled_explanation(not(fearless(nathalia)), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-128-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-128-baseline.pl"
+          },
+          {
+            "name": "source-xor-s9",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-128-source-xor-s9-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-128-source-xor-s9.pl"
+          },
+          {
+            "name": "source-xor-s20",
+            "status": "conflict",
+            "artifact": "reports/luna-thirty-error-probes/case-128-source-xor-s20-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-128-source-xor-s20.pl"
+          },
+          {
+            "name": "source-two-xors",
+            "status": "entailed",
+            "artifact": "reports/luna-thirty-error-probes/case-128-source-two-xors-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-128-source-two-xors.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(adventurous,[nathalia]),holds(adventurous,[zainab]),holds(enjoys_adventure,[nathalia]),holds(enjoys_challenges,[nathalia]),holds(enjoys_challenges,[zainab]),holds(explorer,[nathalia]),holds(explorer,[zainab]),holds(goes_hiking,[mae]),holds(goes_hiking,[nathalia]),holds(loves_nature,[nathalia]),holds(outdoor_hobbies,[nathalia]),holds(practices_camping,[mae]),holds(takes_risks,[nathalia]),holds(timid,[mae]),holds(timid,[nathalia]),holds(values_humility,[nathalia]),holds(values_humility,[owen]),holds(values_humility,[zainab])]",
+          "query_false": "[holds(adventurous,[nathalia]),holds(adventurous,[zainab]),holds(cautious,[nathalia]),holds(enjoys_adventure,[nathalia]),holds(enjoys_challenges,[nathalia]),holds(enjoys_challenges,[zainab]),holds(explorer,[nathalia]),holds(explorer,[zainab]),holds(fearless,[nathalia]),holds(goes_hiking,[mae]),holds(goes_hiking,[nathalia]),holds(loves_nature,[nathalia]),holds(outdoor_hobbies,[nathalia]),holds(practices_camping,[mae]),holds(takes_risks,[nathalia]),holds(timid,[mae]),holds(values_humility,[nathalia]),holds(values_humility,[owen]),holds(values_humility,[zainab])]",
+          "artifact": "reports/luna-thirty-error-probes/case-128-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 155,
+      "category": "translation",
+      "category_label": "Потеря факта и разрыв названий",
+      "confidence": "confirmed",
+      "title": "Луна пропустила важное отрицание",
+      "explanation": "В исходнике есть «Elina does not perform well», но этой аксиомы в программе нет. Именно она нужна для вывода отсутствия успеха, затем целей, затем преодоления страха. Дополнительно «can overcome fear» и «overcomes fear» получили разные имена. Удалён также XOR про Bridget, но он не относится к вопросу об Elina. Пропуск факта подтверждён напрямую. Сведение can/overcomes в один предикат соответствует скрытой формуле датасета, но это всё ещё семантическое соглашение, а не общий закон о способности и действии.",
+      "source_evidence": [
+        "Elina does not perform well.",
+        "If Elina masters extreme sports, then she can overcome fear.",
+        "If Elina is a professional athlete, then she either overcomes fear or stays disciplined, but not both."
+      ],
+      "source_formula_evidence": [
+        "Elina does not perform well. → source nl2fol: ¬performs_well(Elina)",
+        "If Elina masters extreme sports, then she can overcome fear. → source nl2fol: master_extreme_sports(Elina) → overcome_fear(Elina)",
+        "If Elina is a professional athlete, then she either overcomes fear or stays disciplined, but not both. → source nl2fol: professional_athlete(Elina) → (overcome_fear(Elina) ⊕ stay_disciplined(Elina))"
+      ],
+      "program_evidence": [
+        "Есть not(performs_well(bridget)), но нет not(performs_well(elina)).",
+        "s15: masters_extreme_sports(elina) → can_overcome_fear(elina)",
+        "s17 использует overcomes_fear(elina), другой предикат."
+      ],
+      "executor_evidence": "Baseline unknown. Восстановить только отрицание → unknown. Исправить только имя → unknown. Восстановить отрицание и свести имена → entailed для not(masters_extreme_sports(elina)).",
+      "next_step": "Добавить отдельный контроль полноты переноса всех исходных утверждений и словарь одинаковых понятий; тестировать на новой выборке, без ремонта текущих результатов.",
+      "gold": "A",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "Neither masters_extreme_sports(elina) nor its negation is given or derivable. The rule about mastering sports only has mastering as a premise, so the statement remains uncertain.",
+        "M2": "Uncertain: the program neither derives that Elina masters extreme sports nor its negation. The execution status is unknown, with models supporting both possibilities."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "entailed",
+        "change": "Добавлен пропущенный not(performs_well(elina)); can_overcome_fear сведён к overcomes_fear.",
+        "artifact": "reports/luna-thirty-error-probes/case-155-normalize-and-restore-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-155-normalize-and-restore.pl",
+        "query": "labelled_explanation(not(masters_extreme_sports(elina)), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-155-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-155-baseline.pl"
+          },
+          {
+            "name": "normalize-fear",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-155-normalize-fear-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-155-normalize-fear.pl"
+          },
+          {
+            "name": "restore-negative",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-155-restore-negative-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-155-restore-negative.pl"
+          },
+          {
+            "name": "normalize-and-restore",
+            "status": "entailed",
+            "artifact": "reports/luna-thirty-error-probes/case-155-normalize-and-restore-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-155-normalize-and-restore.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(faces_challenges,[elina]),holds(is_professional_athlete,[elina]),holds(is_professional_athlete,[remington]),holds(learns_from_failures,[elina]),holds(loves_reading,[elina]),holds(overcomes_fear,[bridget]),holds(overcomes_fear,[remington]),holds(overcomes_fear,[stella]),holds(stays_disciplined,[elina]),holds(stays_disciplined,[remington])]",
+          "query_false": "[holds(can_overcome_fear,[elina]),holds(faces_challenges,[elina]),holds(is_professional_athlete,[elina]),holds(is_professional_athlete,[remington]),holds(learns_from_failures,[elina]),holds(loves_reading,[elina]),holds(masters_extreme_sports,[elina]),holds(overcomes_fear,[bridget]),holds(overcomes_fear,[remington]),holds(overcomes_fear,[stella]),holds(stays_disciplined,[elina]),holds(stays_disciplined,[remington])]",
+          "artifact": "reports/luna-thirty-error-probes/case-155-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 198,
+      "category": "translation",
+      "category_label": "Разрыв названий понятий",
+      "confidence": "likely",
+      "title": "Одна цепочка раскололась на четыре названия",
+      "explanation": "Программа различает has_training и has_proper_training, а также responds_to_emergencies и responds_to_emergencies_effectively. Source nl2fol использует по одному предикату на каждую пару. Поэтому нельзя связать отсутствие реакции на чрезвычайные ситуации с приоритетом безопасности и храбростью. Оба разрыва нужно устранить одновременно. При буквальном чтении «прошёл обучение» и «имеет подходящую подготовку» не всегда равнозначны: это расхождение с условным языком датасета, а не доказательство произвольной ошибки мира.",
+      "source_evidence": [
+        "Gary gains experience or has training.",
+        "Anyone who prioritizes their own safety and has proper training can respond to emergencies effectively.",
+        "Anyone who responds to emergencies either stays calm under pressure or leads others effectively (or both)."
+      ],
+      "source_formula_evidence": [
+        "Gary gains experience or has training. → source nl2fol: gains_experience(Gary) ∨ has_training(Gary)",
+        "Anyone who prioritizes their own safety and has proper training can respond to emergencies effectively. → source nl2fol: ∀x ((prioritize_self_safety(x) ∧ has_training(x)) → responds_to_emergencies(x))",
+        "Anyone who responds to emergencies either stays calm under pressure or leads others effectively (or both). → source nl2fol: ∀x (responds_to_emergencies(x) → (stays_calm_under_pressure(x) ∨ leads_others_effectively(x)))"
+      ],
+      "program_evidence": [
+        "s5 использует has_training(gary), s9 требует has_proper_training(X).",
+        "s9 заключает responds_to_emergencies_effectively(X), s10 требует responds_to_emergencies(X)."
+      ],
+      "executor_evidence": "Baseline unknown. Каждая нормализация отдельно оставляет unknown; обе вместе дают contradicted для not(earns_accolades(gary)), то есть B. В source reasoning последний шаг ошибочно содержит not, несмотря на положительное следствие и ответ B.",
+      "next_step": "Зафиксировать допустимое отождествление словесных вариантов до формализации; отдельно проверять знак отрицательного вопроса.",
+      "gold": "B",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "There is no fact or rule deriving not(earns_accolades(gary)). The only rule deriving earns_accolades(gary) requires brave(gary), which is not established by the disjunctive premise. Thus the statement is uncertain.",
+        "M2": "Uncertain: the program derives neither not(earns_accolades(gary)) nor earns_accolades(gary). Gary's bravery is not established, so the rule linking bravery to accolades cannot settle the claim; the execution status is unknown."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "contradicted",
+        "change": "Сведены has_proper_training/has_training и responds_to_emergencies_effectively/responds_to_emergencies.",
+        "artifact": "reports/luna-thirty-error-probes/case-198-normalize-both-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-198-normalize-both.pl",
+        "query": "labelled_explanation(not(earns_accolades(gary)), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-198-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-198-baseline.pl"
+          },
+          {
+            "name": "normalize-training",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-198-normalize-training-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-198-normalize-training.pl"
+          },
+          {
+            "name": "normalize-response",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-198-normalize-response-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-198-normalize-response.pl"
+          },
+          {
+            "name": "normalize-both",
+            "status": "contradicted",
+            "artifact": "reports/luna-thirty-error-probes/case-198-normalize-both-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-198-normalize-both.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(communicates_clearly,[gary]),holds(has_training,[gary]),holds(makes_tactical_decisions,[gary]),holds(performs_heroic_actions,[gary]),holds(prioritizes_own_safety,[gary]),holds(thinks_quickly,[gary])]",
+          "query_false": "[holds(brave,[gary]),holds(communicates_clearly,[gary]),holds(earns_accolades,[gary]),holds(has_training,[gary]),holds(makes_tactical_decisions,[gary]),holds(performs_heroic_actions,[gary]),holds(thinks_quickly,[gary])]",
+          "artifact": "reports/luna-thirty-error-probes/case-198-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 263,
+      "category": "source_semantics",
+      "category_label": "Текст и формула датасета расходятся",
+      "confidence": "likely",
+      "title": "Адаптация не означает отсутствие выживания",
+      "explanation": "Источник из способности адаптироваться выводит отсутствие выживания, потому что скрытая формула содержит XOR. В английской фразе про адаптацию или выживание запрет одновременности не указан. Луна передала OR. При таком чтении Queenie может и адаптироваться, и выживать, поэтому дальнейшее исключение быстрого размножения не обязательно. Тип parasite(queenie) здесь установлен явно; объяснять этот промах отсутствием типа было бы ошибкой.",
+      "source_evidence": [
+        "All parasites are either able to adapt to their host or survive in its environment, if they reproduce successfully.",
+        "Queenie is able to adapt to her host."
+      ],
+      "source_formula_evidence": [
+        "All parasites are either able to adapt to their host or survive in its environment, if they reproduce successfully. → source nl2fol: ∀x (reproduce_successfully(x) → (adapt_to_host(x) ⊕ survive_environment(x)))",
+        "Queenie is able to adapt to her host. → source nl2fol: adapt_to_host(Queenie)"
+      ],
+      "program_evidence": [
+        "s10: (parasite(X) ∧ reproduces_successfully(X)) → or(adapts_to_host(X), survives_in_environment(X))",
+        "s15 содержит parasite(queenie)."
+      ],
+      "executor_evidence": "Baseline unknown с двумя мирами. Замена только s10 на XOR даёт contradicted для multiplies_rapidly(queenie), то есть B.",
+      "next_step": "Уточнить в тексте «но не оба», если нужен смысл скрытой формулы; иначе не считать буквальное OR доказанной ошибкой модели.",
+      "gold": "B",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "Queenie attaches, so she infects her host. The program then states that she either multiplies rapidly or evades defenses, but does not establish which one; neither multiplication nor its negation is given.",
+        "M2": "Uncertain. Queenie infects her host because she attaches, and the rule says infection implies either rapid multiplication or evasion, but does not establish which one. The execution evidence explicitly reports status unknown with both a model where she multiplies rapidly and one where she does not."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "contradicted",
+        "change": "Только s10: OR → XOR согласно source nl2fol.",
+        "artifact": "reports/luna-thirty-error-probes/case-263-source-xor-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-263-source-xor.pl",
+        "query": "labelled_explanation(multiplies_rapidly(queenie), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-263-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-263-baseline.pl"
+          },
+          {
+            "name": "source-xor",
+            "status": "contradicted",
+            "artifact": "reports/luna-thirty-error-probes/case-263-source-xor-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-263-source-xor.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(adapts_to_host,[queenie]),holds(attaches,[india]),holds(attaches,[queenie]),holds(dominates,[queenie]),holds(infects,[queenie]),holds(manipulates,[queenie]),holds(multiplies_rapidly,[queenie]),holds(parasite,[queenie]),holds(reproduces_successfully,[queenie]),holds(survives_in_environment,[queenie]),holds(virulent,[queenie])]",
+          "query_false": "[holds(adapts_to_host,[queenie]),holds(attaches,[india]),holds(attaches,[queenie]),holds(dominates,[queenie]),holds(evades_host_defenses,[queenie]),holds(infects,[queenie]),holds(manipulates,[queenie]),holds(parasite,[queenie]),holds(reproduces_successfully,[queenie]),holds(virulent,[queenie])]",
+          "artifact": "reports/luna-thirty-error-probes/case-263-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 298,
+      "category": "domain_contract",
+      "category_label": "Неявная область датасета",
+      "confidence": "likely",
+      "title": "Правила про роботов не знают, что Muppet — робот",
+      "explanation": "Модель поставила robot(X) в условия правил, но не добавила robot(muppet). Объявление domain(person,[muppet]) задаёт набор объектов решателя и само по себе не доказывает ни person(muppet), ни robot(muppet). Скрытые формулы датасета вообще не используют robot: все переменные уже предполагаются роботами. Поэтому literal typed reading и контракт генератора расходятся. Модель не могла увидеть скрытую формулу; добавлять тип автоматически без оговорённого контракта нельзя.",
+      "source_evidence": [
+        "Any robot that can process information is able to analyze data.",
+        "For all robots, if a robot has advanced sensors and has deep learning capabilities, then it can make informed decisions."
+      ],
+      "source_formula_evidence": [
+        "Any robot that can process information is able to analyze data. → source nl2fol: ∀x (process_information(x) → analyze_data(x))",
+        "For all robots, if a robot has advanced sensors and has deep learning capabilities, then it can make informed decisions. → source nl2fol: ∀x ((has_advanced_sensors(x) ∧ has_deep_learning_capabilities(x)) → can_make_informed_decisions(x))"
+      ],
+      "program_evidence": [
+        "domain(person,[muppet]).",
+        "s5 требует robot(X), s9 тоже требует robot(X).",
+        "Нет факта robot(muppet)."
+      ],
+      "executor_evidence": "Baseline unknown. В отдельном полном кандидате единственное добавление robot(muppet) даёт entailed для can_make_informed_decisions(muppet).",
+      "next_step": "Прописать в протоколе, что все объекты задачи принадлежат подразумеваемому классу, либо требовать явное членство в исходном тексте.",
+      "gold": "A",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "Uncertain: there is no derivation of can_make_informed_decisions(muppet). The relevant rule requires robot(muppet), advanced sensors, and deep learning capabilities, but robot(muppet) is not established. Failure to derive the goal does not prove it false.",
+        "M2": "Uncertain. The execution evidence explicitly reports status unknown and provides both a model where Muppet can make informed decisions and one where it cannot. The rules require robot(muppet), but the program declares Muppet only as a person and does not establish that predicate."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "entailed",
+        "change": "Добавлен robot(muppet), который неявно предполагается source nl2fol, но не утверждается отдельной фразой.",
+        "artifact": "reports/luna-thirty-error-probes/case-298-type-robot-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-298-type-robot.pl",
+        "query": "labelled_explanation(can_make_informed_decisions(muppet), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-298-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-298-baseline.pl"
+          },
+          {
+            "name": "type-robot",
+            "status": "entailed",
+            "artifact": "reports/luna-thirty-error-probes/case-298-type-robot-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-298-type-robot.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(acquires_new_skills,[muppet]),holds(can_make_informed_decisions,[muppet]),holds(can_process_information,[muppet]),holds(has_advanced_sensors,[muppet]),holds(improves_performance,[muppet]),holds(receives_remote_commands,[muppet])]",
+          "query_false": "[holds(acquires_new_skills,[muppet]),holds(can_process_information,[muppet]),holds(has_advanced_sensors,[muppet]),holds(improves_performance,[muppet]),holds(receives_remote_commands,[muppet])]",
+          "artifact": "reports/luna-thirty-error-probes/case-298-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 375,
+      "category": "source_semantics",
+      "category_label": "Текст прямо противоречит формуле датасета",
+      "confidence": "likely",
+      "title": "«Не взаимоисключающие» записано как XOR",
+      "explanation": "Это самый ясный конфликт источника: английский текст прямо разрешает сочетание городской жизни и любви к природе («not mutually exclusive»), а скрытая формула ставит XOR. Source reasoning затем неправомерно выводит отсутствие любви к природе из любви к городской жизни. При буквальном тексте допустим мир: Norah любит и город, и природу, но не ценит знания. Он делает отрицательный вопрос истинным, тогда как gold B требует его ложности. Допустим и мир с ценностью знаний. Поэтому C здесь нельзя безоговорочно называть логической ошибкой Луны.",
+      "source_evidence": [
+        "Everyone either enjoys city life or appreciates nature, but they are not mutually exclusive.",
+        "Norah either appreciates nature or values knowledge (or both)."
+      ],
+      "source_formula_evidence": [
+        "Everyone either enjoys city life or appreciates nature, but they are not mutually exclusive. → source nl2fol: ∀x (enjoy_city_life(x) ⊕ appreciate_nature(x))",
+        "Norah either appreciates nature or values knowledge (or both). → source nl2fol: appreciate_nature(Norah) ∨ value_knowledge(Norah)"
+      ],
+      "program_evidence": [
+        "s10: forall(var(x,person), or(enjoys_city_life(var(x)), appreciates_nature(var(x))))",
+        "s11: or(appreciates_nature(norah), values_knowledge(norah))"
+      ],
+      "executor_evidence": "Baseline unknown и два сохранённых мира для not(values_knowledge(norah)). Только подмена s10 OR на XOR даёт contradicted, совпадая с gold B.",
+      "next_step": "Пометить конфликт NL/FOL в данных и независимо рассмотреть исправление текста или gold. Сохранить исходный результат для воспроизводимости.",
+      "gold": "B",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "The program neither derives nor refutes that Norah does not value knowledge. The disjunction appreciates_nature(norah) or values_knowledge(norah) does not establish either disjunct, and no rule derives the negation. Thus the statement is uncertain.",
+        "M2": "Uncertain. The axioms support appreciating_nature(norah) or values_knowledge(norah), but do not establish that Norah does not value knowledge. The execution status is unknown, with models supporting both possibilities."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "contradicted",
+        "change": "Только s10: OR → XOR. Это противоречит буквальному not mutually exclusive, но воспроизводит source nl2fol.",
+        "artifact": "reports/luna-thirty-error-probes/case-375-source-xor-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-375-source-xor.pl",
+        "query": "labelled_explanation(not(values_knowledge(norah)), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-375-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-375-baseline.pl"
+          },
+          {
+            "name": "source-xor",
+            "status": "contradicted",
+            "artifact": "reports/luna-thirty-error-probes/case-375-source-xor-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-375-source-xor.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(appreciates_nature,[ashlynn]),holds(appreciates_nature,[jadiel]),holds(appreciates_nature,[norah]),holds(enjoys_city_life,[norah]),holds(enjoys_socializing,[jadiel]),holds(introspective,[norah]),holds(likes_crowds,[norah]),holds(lives_in_metropolis,[norah]),holds(loves_serene_atmosphere,[norah]),holds(prefers_urban_lifestyle,[norah])]",
+          "query_false": "[holds(appreciates_nature,[ashlynn]),holds(appreciates_nature,[jadiel]),holds(enjoys_city_life,[norah]),holds(enjoys_socializing,[jadiel]),holds(introspective,[norah]),holds(likes_crowds,[norah]),holds(lives_in_metropolis,[norah]),holds(loves_serene_atmosphere,[norah]),holds(prefers_urban_lifestyle,[norah]),holds(values_knowledge,[norah])]",
+          "artifact": "reports/luna-thirty-error-probes/case-375-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 378,
+      "category": "query_mismatch",
+      "category_label": "Запрос и программа говорят разными именами",
+      "confidence": "confirmed",
+      "title": "Запрос спрашивает о несуществующем предикате",
+      "explanation": "В программе есть receive_accolades, а запрос содержит receives_accolades. Для Prolog это два разных свойства: никакие правила не ограничивают предикат запроса. M1 сам это заметил; signature_audit пометил only_in_goal. Но одной опечаткой проблема не исчерпывается: develop/develops, improve/improves и разные advance_field тоже разбивают цепь, а scientist(clark) не установлен. Source nl2fol объединяет эти названия и предполагает научную область. Поэтому «исправить одну букву — и задача решена» было бы неверно.",
+      "source_evidence": [
+        "For all scientists, if a scientist is renowned, then they either make breakthrough discoveries or receive accolades (or both).",
+        "Every scientist who dedicates their career to research either improves existing processes or creates new materials.",
+        "If Dr. Clark either develops new techniques or makes breakthrough discoveries (but not both), then he will advance his field."
+      ],
+      "source_formula_evidence": [
+        "For all scientists, if a scientist is renowned, then they either make breakthrough discoveries or receive accolades (or both). → source nl2fol: ∀x (renowned(x) → (make_breakthrough_discoveries(x) ∨ receive_accolades(x)))",
+        "Every scientist who dedicates their career to research either improves existing processes or creates new materials. → source nl2fol: ∀x (dedicate_career_to_research(x) → (improve_existing_processes(x) ∨ create_new_materials(x)))",
+        "If Dr. Clark either develops new techniques or makes breakthrough discoveries (but not both), then he will advance his field. → source nl2fol: (develop_new_techniques(Clark) ⊕ make_breakthrough_discoveries(Clark)) → advance_the_field(Clark)"
+      ],
+      "program_evidence": [
+        "Программа: receive_accolades(var(x)); запрос: not(receives_accolades(clark)).",
+        "develop_new_techniques и develops_new_techniques; improve_existing_processes и improves_existing_processes.",
+        "advance_field, advances_his_field и advances_their_field; отсутствует scientist(clark)."
+      ],
+      "executor_evidence": "only_in_goal([receives_accolades/1]); baseline unknown. Только исправить запрос → unknown. Нормализовать также имена → unknown. Вместе с scientist(clark) → contradicted для отрицательного вопроса, то есть B.",
+      "next_step": "Проверять словарь запроса до запуска; отдельно проверять согласованность имён внутри правил и контракт области. Не выдавать совпадение после нескольких замен за измеренную точность модели.",
+      "gold": "B",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "Uncertain. The query concerns not(receives_accolades(clark)), but the program uses receive_accolades (without the final “s”) and provides no fact or rule deriving either predicate for Clark. Thus neither the queried statement nor its opposite is established.",
+        "M2": "Uncertain: the execution status is unknown, with one model where Clark receives accolades and another where he does not. No rule or fact establishes either the positive or negated accolade claim."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "contradicted",
+        "change": "Исправлен запрос, сведены четыре группы имён и явно добавлен scientist(clark) по соглашению источника.",
+        "artifact": "reports/luna-thirty-error-probes/case-378-normalize-and-type-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-378-normalize-and-type.pl",
+        "query": "labelled_explanation(not(receive_accolades(clark)), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-378-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-378-baseline.pl"
+          },
+          {
+            "name": "query-only",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-378-query-only-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-378-query-only.pl"
+          },
+          {
+            "name": "normalize-names",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-378-normalize-names-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-378-normalize-names.pl"
+          },
+          {
+            "name": "normalize-and-type",
+            "status": "contradicted",
+            "artifact": "reports/luna-thirty-error-probes/case-378-normalize-and-type-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-378-normalize-and-type.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(conducts_innovative_research,[clark]),holds(dedicates_career_to_research,[clark]),holds(improve_existing_processes,[clark]),holds(influences_others,[clark]),holds(leads_research_teams,[clark]),holds(publishes_papers,[clark]),holds(publishes_papers,[kylan]),holds(pursues_phd,[clark]),holds(pursues_phd,[harrison]),holds(renowned,[clark]),holds(teaches_at_a_university,[clark])]",
+          "query_false": "[holds(conducts_innovative_research,[clark]),holds(dedicates_career_to_research,[clark]),holds(improve_existing_processes,[clark]),holds(influences_others,[clark]),holds(leads_research_teams,[clark]),holds(publishes_papers,[clark]),holds(publishes_papers,[kylan]),holds(pursues_phd,[clark]),holds(pursues_phd,[harrison]),holds(receives_accolades,[clark]),holds(renowned,[clark]),holds(teaches_at_a_university,[clark])]",
+          "artifact": "reports/luna-thirty-error-probes/case-378-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 404,
+      "category": "invalid_program",
+      "category_label": "Невалидная программа плюс другие разрывы",
+      "confidence": "confirmed",
+      "title": "Список оказался там, где нужна формула",
+      "explanation": "В первом правиле результат записан как [or(...)], то есть список из одной формулы. Контракт rule(Body,Head) требует формулу в Head: список допустим только в Body. Исполнитель правильно отклонил программу. Это не предупреждение про singleton variables. После удаления лишних скобок задача всё ещё не решается: human(julian) отсутствует, а keeps_things_tidy и organized различаются, хотя скрытая формула их объединяет. Ответ M2 C на invalid_program нельзя считать логическим доказательством неопределённости.",
+      "source_evidence": [
+        "If Julian has hidden talents, then he is either organized or creates new opportunities (or both).",
+        "All humans with curiosity value knowledge and respect history.",
+        "If someone keeps things tidy and finds the resources they need, then they can achieve success."
+      ],
+      "source_formula_evidence": [
+        "If Julian has hidden talents, then he is either organized or creates new opportunities (or both). → source nl2fol: has_hidden_talents(Julian) → (organized(Julian) ∨ creates_new_opportunities(Julian))",
+        "All humans with curiosity value knowledge and respect history. → source nl2fol: ∀x (has_curiosity(x) → (values_knowledge(x) ∧ respects_history(x)))",
+        "If someone keeps things tidy and finds the resources they need, then they can achieve success. → source nl2fol: ∀x ((organized(x) ∧ finds_resources(x)) → achieves_success(x))"
+      ],
+      "program_evidence": [
+        "s1: rule([hidden_talents(julian)],[or(organized(julian),creates_new_opportunities(julian))])",
+        "s8 требует human(X), но human(julian) не установлен.",
+        "s11: keeps_things_tidy(X), последний XOR использует organized(julian)."
+      ],
+      "executor_evidence": "Замороженный и повторный статус invalid_program: non_atomic_argument(or(...)). Только исправить Head → unknown; плюс только тип или только имя → unknown; Head+тип+имя → entailed.",
+      "next_step": "Валидировать форму программы отдельным техническим шлюзом и отличать «программа не принята» от ответа C. Семантические изменения проверять отдельно от синтаксиса.",
+      "gold": "A",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "The program states that Julian is organized or disorganized, but not both. It provides no evidence identifying which one, so whether he is disorganized is uncertain.",
+        "M2": "Uncertain: execution reported invalid_program because of a non-atomic rule argument, so the formalization cannot reliably establish or refute disorganized(julian)."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "invalid_program",
+        "status_after": "entailed",
+        "change": "Убраны скобки списка из Head, keeps_things_tidy сведён к organized, добавлен human(julian).",
+        "artifact": "reports/luna-thirty-error-probes/case-404-head-name-type-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-404-head-name-type.pl",
+        "query": "labelled_explanation(disorganized(julian), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "invalid_program",
+            "artifact": "reports/luna-thirty-error-probes/case-404-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-404-baseline.pl"
+          },
+          {
+            "name": "valid-head-only",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-404-valid-head-only-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-404-valid-head-only.pl"
+          },
+          {
+            "name": "head-and-type",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-404-head-and-type-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-404-head-and-type.pl"
+          },
+          {
+            "name": "head-and-name",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-404-head-and-name-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-404-head-and-name.pl"
+          },
+          {
+            "name": "head-name-type",
+            "status": "entailed",
+            "artifact": "reports/luna-thirty-error-probes/case-404-head-name-type-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-404-head-name-type.pl"
+          }
+        ]
+      }
+    },
+    {
+      "id": 406,
+      "category": "mixed_source_contract",
+      "category_label": "Смешались названия и смысл «или»",
+      "confidence": "likely",
+      "title": "Исправить имя недостаточно: остаётся спорное «или»",
+      "explanation": "Модель выводит embrace_uncertainty, но другое правило требует embraces_uncertainty. Это разрыв имён относительно source nl2fol. Однако даже после их объединения из «любит приключения или занимается творчеством» нельзя выбрать первое. Source nl2fol дополнительно трактует «do not necessarily overlap» как XOR, хотя текст не запрещает пересечение. Только сочетание нормализации и этого усиления даёт gold. M2 ошибочно утверждает, что исходная программа уже выводит free_spirited: сохранённый контрмир это опровергает.",
+      "source_evidence": [
+        "Anyone who is spontaneous and trusts their intuition can learn to embrace uncertainty.",
+        "Anyone who values independence and embraces uncertainty is free-spirited.",
+        "Alana either pursues creative passions or appreciates simple things, but these two traits do not necessarily overlap in her life."
+      ],
+      "source_formula_evidence": [
+        "Anyone who is spontaneous and trusts their intuition can learn to embrace uncertainty. → source nl2fol: ∀x ((is_spontaneous(x) ∧ trusts_intuition(x)) → embraces_uncertainty(x))",
+        "Anyone who values independence and embraces uncertainty is free-spirited. → source nl2fol: ∀x ((values_independence(x) ∧ embraces_uncertainty(x)) → free_spirited(x))",
+        "Alana either pursues creative passions or appreciates simple things, but these two traits do not necessarily overlap in her life. → source nl2fol: appreciates_simple_things(Alana) ⊕ pursue_creative_passions(Alana)"
+      ],
+      "program_evidence": [
+        "s2 и s11 выводят embrace_uncertainty(X), s5 требует embraces_uncertainty(X).",
+        "s14: or(pursues_creative_passions(alana), appreciates_simple_things(alana))."
+      ],
+      "executor_evidence": "Baseline unknown. Только имя → unknown; только XOR s14 → unknown; оба изменения → entailed для loves_adventure(alana).",
+      "next_step": "Отдельно устранить разрыв имён и пометить неоднозначность текста. Не объяснять ошибку одной буквой.",
+      "gold": "A",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "The program does not derive loves_adventure(alana) or its negation. Even if Alana is free-spirited, the rule only gives a disjunction between loving adventure and pursuing creative passions, so the statement remains uncertain.",
+        "M2": "Uncertain. The rules derive that Alana is free-spirited, but s13 only states that she loves adventure or pursues creative passions; it does not establish which. The execution evidence explicitly reports status unknown with both true and false models."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "entailed",
+        "change": "embrace_uncertainty → embraces_uncertainty и s14 OR → XOR согласно source nl2fol.",
+        "artifact": "reports/luna-thirty-error-probes/case-406-normalize-and-source-xor-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-406-normalize-and-source-xor.pl",
+        "query": "labelled_explanation(loves_adventure(alana), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-406-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-406-baseline.pl"
+          },
+          {
+            "name": "normalize-name",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-406-normalize-name-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-406-normalize-name.pl"
+          },
+          {
+            "name": "source-xor-only",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-406-source-xor-only-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-406-source-xor-only.pl"
+          },
+          {
+            "name": "normalize-and-source-xor",
+            "status": "entailed",
+            "artifact": "reports/luna-thirty-error-probes/case-406-normalize-and-source-xor-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-406-normalize-and-source-xor.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(appreciates_simple_things,[alana]),holds(creative_nature,[alana]),holds(embrace_uncertainty,[alana]),holds(explores_new_places,[alana]),holds(loves_adventure,[alana]),holds(makes_own_decisions,[alana]),holds(spontaneous,[alana]),holds(takes_calculated_risks,[alana]),holds(trusts_intuition,[alana]),holds(values_independence,[alana])]",
+          "query_false": "[holds(appreciates_simple_things,[alana]),holds(creative_nature,[alana]),holds(embrace_uncertainty,[alana]),holds(explores_new_places,[alana]),holds(makes_own_decisions,[alana]),holds(spontaneous,[alana]),holds(takes_calculated_risks,[alana]),holds(trusts_intuition,[alana]),holds(values_independence,[alana])]",
+          "artifact": "reports/luna-thirty-error-probes/case-406-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    },
+    {
+      "id": 419,
+      "category": "source_semantics",
+      "category_label": "Текст и формула датасета расходятся",
+      "confidence": "likely",
+      "title": "Эталон исключает культурную традицию без явного запрета",
+      "explanation": "Из «embraces diversity» источник выводит «не чтит культуру», потому что его скрытая формула связывает эти свойства через XOR. Но в английском сказано «not necessarily both», а не «not both». Луна разрешила совместность через OR. Тогда можно чтить культуру, не соблюдать традиции и не ценить уникальность; цепь к крафтовому пиву не обязательна, а выбор массового пива остаётся открытым. По буквальному тексту наблюдаемый C обоснован.",
+      "source_evidence": [
+        "For Kahlani, she either honors her culture or embraces diversity, but not necessarily both.",
+        "Kahlani honors culture or respects tradition."
+      ],
+      "source_formula_evidence": [
+        "For Kahlani, she either honors her culture or embraces diversity, but not necessarily both. → source nl2fol: embraces_diversity(Kahlani) ⊕ honors_culture(Kahlani)",
+        "Kahlani honors culture or respects tradition. → source nl2fol: honors_culture(Kahlani) ∨ respects_tradition(Kahlani)"
+      ],
+      "program_evidence": [
+        "s14: or(honors_culture(kahlani), embraces_diversity(kahlani))",
+        "s16: or(honors_culture(kahlani), respects_tradition(kahlani))"
+      ],
+      "executor_evidence": "Baseline unknown с двумя мирами. Замена только s14 на XOR даёт contradicted для prefers_mass_produced_beer(kahlani), то есть B.",
+      "next_step": "Уточнить дизъюнкцию в источнике; не оптимизировать формализацию под скрытый gold за счёт изменения смысла.",
+      "gold": "B",
+      "M1": "C",
+      "M2": "C",
+      "model_explanations": {
+        "M1": "The program asserts that Kahlani enjoys craft beer XOR prefers mass-produced beer, but it derives neither disjunct decisively. Therefore the preference is uncertain.",
+        "M2": "Uncertain: the execution status is unknown, with a true model containing Kahlani's preference and a false model omitting it. The premises permit both possibilities."
+      },
+      "source_record_artifact": "reports/luna-thirty-error-probes/source-excerpts.json",
+      "probe": {
+        "status_before": "unknown",
+        "status_after": "contradicted",
+        "change": "Только s14: OR → XOR по скрытой формуле источника.",
+        "artifact": "reports/luna-thirty-error-probes/case-419-source-xor-stdout.txt",
+        "candidate": "reports/luna-thirty-error-probes/case-419-source-xor.pl",
+        "query": "labelled_explanation(prefers_mass_produced_beer(kahlani), Status, Package)",
+        "not_a_new_model_score": true,
+        "variants": [
+          {
+            "name": "baseline",
+            "status": "unknown",
+            "artifact": "reports/luna-thirty-error-probes/case-419-baseline-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-419-baseline.pl"
+          },
+          {
+            "name": "source-xor",
+            "status": "contradicted",
+            "artifact": "reports/luna-thirty-error-probes/case-419-source-xor-stdout.txt",
+            "candidate": "reports/luna-thirty-error-probes/case-419-source-xor.pl"
+          }
+        ],
+        "countermodels": {
+          "query_true": "[holds(embraces_diversity,[kahlani]),holds(honors_culture,[kahlani]),holds(knows_good_taste,[kahlani]),holds(prefers_mass_produced_beer,[kahlani]),holds(runs_a_brewpub,[kahlani]),holds(seeks_innovation,[kahlani]),holds(supports_local_business,[kahlani]),holds(values_quality,[kahlani])]",
+          "query_false": "[holds(embraces_diversity,[kahlani]),holds(enjoys_craft_beer,[kahlani]),holds(honors_culture,[kahlani]),holds(knows_good_taste,[kahlani]),holds(runs_a_brewpub,[kahlani]),holds(seeks_innovation,[kahlani]),holds(supports_local_business,[kahlani]),holds(values_quality,[kahlani])]",
+          "artifact": "reports/luna-thirty-error-probes/case-419-baseline-stdout.txt",
+          "meaning": "Два допустимых мира для неизменённой программы. true/false относятся к ПОЛНОМУ запросу, включая not(...). holds перечисляет истинные атомы, прочие атомы конечного словаря в этом мире ложны. Это свидетельства решателя, а не независимая семантическая проверка английского текста."
+        }
+      }
+    }
+  ]
+}
