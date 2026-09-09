@@ -2,6 +2,8 @@
 
 Changelog:
 
+- v0.1.3 — pinned the finite-FOL surface-language examples after the first
+  transport-valid Luna run exposed `forall(X,...)` as a systematic invalid form.
 - v0.1.2 — pinned the recovered safe-executor validation before the first
   Luna diagnostic is allowed.
 - v0.1.1 — separated post-hoc Luna30 diagnosis from the prospective sample and
