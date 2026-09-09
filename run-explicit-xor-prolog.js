@@ -24,16 +24,27 @@ function preflight({ waveRoot = wave }) {
   if (new Set(fixture.cases.map(item => item.id)).size !== 30 || fixture.cases.some(item => Object.keys(item).sort().join(",") !== "context,id,question")) throw Error("fixture_visible_contract_failed");
   return { fixture, fixture_sha256: sha256(fixtureText), formalization_template: templateText, formalization_template_sha256: sha256(templateText), scorer_read: false, model_calls_planned: 30 };
 }
-async function run({ outputRoot, waveRoot = wave, protocol, invokeModel = invoke, execute = runFreePrologDiagnostic }) {
+async function run({ outputRoot, waveRoot = wave, protocol, resumeAfterUserInterrupt = false, invokeModel = invoke, execute = runFreePrologDiagnostic }) {
   if (!protocol || protocol.status !== "frozen-before-model-output") throw Error("invalid_protocol");
-  if (fs.existsSync(outputRoot)) throw Error("output_root_must_not_exist_no_resume");
+  if (fs.existsSync(outputRoot) && !resumeAfterUserInterrupt) throw Error("output_root_must_not_exist_no_resume");
   const gate = preflight({ waveRoot });
   if (protocol.fixture_sha256 !== gate.fixture_sha256 || protocol.formalization_template_sha256 !== gate.formalization_template_sha256) throw Error("frozen_hash_gate_failed");
-  fs.mkdirSync(outputRoot, { recursive: true, mode: 0o700 });
-  write(path.join(outputRoot, "provenance.json"), { status: "formalize_then_deterministic_prolog_answer", fixture_sha256: gate.fixture_sha256, formalization_template_sha256: gate.formalization_template_sha256, scorer_read: false, model_calls_planned: gate.model_calls_planned, protocol });
+  const provenanceFile = path.join(outputRoot, "provenance.json");
+  if (resumeAfterUserInterrupt) {
+    if (!fs.existsSync(provenanceFile)) throw Error("resume_requires_original_provenance");
+    const prior = JSON.parse(fs.readFileSync(provenanceFile, "utf8"));
+    if (prior.fixture_sha256 !== gate.fixture_sha256 || prior.formalization_template_sha256 !== gate.formalization_template_sha256 || prior.scorer_read !== false) throw Error("resume_provenance_mismatch");
+    write(path.join(outputRoot, "user-authorized-resume.json"), { status: "resumed_once_after_user_interrupt", existing_records: gate.fixture.cases.filter(item => fs.existsSync(path.join(outputRoot, `case-${item.id}`, "record.json"))).map(item => item.id), remaining_records: gate.fixture.cases.filter(item => !fs.existsSync(path.join(outputRoot, `case-${item.id}`, "record.json"))).map(item => item.id) });
+  } else {
+    fs.mkdirSync(outputRoot, { recursive: true, mode: 0o700 });
+    write(provenanceFile, { status: "formalize_then_deterministic_prolog_answer", fixture_sha256: gate.fixture_sha256, formalization_template_sha256: gate.formalization_template_sha256, scorer_read: false, model_calls_planned: gate.model_calls_planned, protocol });
+  }
   const records = [];
   for (const item of gate.fixture.cases) {
     const root = path.join(outputRoot, `case-${item.id}`);
+    const recordFile = path.join(root, "record.json");
+    if (resumeAfterUserInterrupt && fs.existsSync(recordFile)) { records.push(JSON.parse(fs.readFileSync(recordFile, "utf8"))); continue; }
+    if (fs.existsSync(path.join(root, "formalization", "request.json"))) throw Error(`partial_model_call_cannot_be_retried_${item.id}`);
     const m0 = invokeModel(prompt(gate.formalization_template, item), FORM_SCHEMA, path.join(root, "formalization"), protocol);
     if (m0.error || !validCandidate(m0.output)) {
       const reason = m0.error || "invalid_candidate_schema";
@@ -43,7 +54,7 @@ async function run({ outputRoot, waveRoot = wave, protocol, invokeModel = invoke
     const observation = await execute({ caseId: `explicit-xor-${item.id}`, program: m0.output.program, query: benchmarkQuery(m0.output.query), source: "luna-explicit-xor-formalization", timeoutMs: protocol.runtime.timeout_ms, maxOutputBytes: protocol.runtime.max_output_bytes });
     const answer = observation.execution_outcome === "succeeded" ? answerFromTranscript(observation.runtime?.transcript?.transcript) : null;
     const record = { source_id: item.id, source_text_sha256: sha256(json(item)), program_sha256: sha256(m0.output.program), query_sha256: sha256(m0.output.query), formalization: m0, prolog_answer: answer, observation };
-    write(path.join(root, "record.json"), record);
+    write(recordFile, record);
     records.push(record);
     process.stdout.write(`${JSON.stringify({ source_id: item.id, prolog_answer: answer, execution_outcome: observation.execution_outcome })}\n`);
   }
@@ -54,6 +65,6 @@ async function run({ outputRoot, waveRoot = wave, protocol, invokeModel = invoke
 if (require.main === module) {
   const protocol = JSON.parse(fs.readFileSync(path.join(wave, "protocol-draft.json"), "utf8"));
   const outputRoot = process.argv[2] || path.join(wave, "raw-luna-explicit-xor-v1");
-  run({ outputRoot, protocol }).then(result => process.stdout.write(json(result))).catch(error => { process.stderr.write(`${error.stack || error}\n`); process.exitCode = 1; });
+  run({ outputRoot, protocol, resumeAfterUserInterrupt: process.argv.includes("--resume-after-user-interrupt") }).then(result => process.stdout.write(json(result))).catch(error => { process.stderr.write(`${error.stack || error}\n`); process.exitCode = 1; });
 }
 module.exports = { preflight, prompt, run, validCandidate };
