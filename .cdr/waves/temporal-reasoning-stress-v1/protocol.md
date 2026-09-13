@@ -38,7 +38,7 @@ Each case uses one frozen semantic world and query.
 2. P1 receives equivalent formal events, Prolog clauses and dependency fields,
    without checker output.
 3. P2 receives byte-identical P1 plus a trusted host receipt containing the
-   post-restart active projection, status and minimal support sets.
+   post-restart snapshot hash, status and minimal support set.
 
 The answer is one status plus the exact sorted item IDs supporting the query or
 its explicit opposite. `unknown` has an empty support list. Primary comparison:
