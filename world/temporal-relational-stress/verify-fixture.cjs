@@ -8,7 +8,7 @@ const path = require("node:path");
 const { check } = require("../checker");
 const { generateFixture, querySupport, stable, VERSION } = require("./generator.cjs");
 
-const EXPECTED_FIXTURE_SHA256 = "5548271441e7ef641f37b2032ffba0cc63e943ffe8332b15d16c85bec0538df4";
+const EXPECTED_FIXTURE_SHA256 = "d65c9825312799a608dc1f22b0829efec294d01953030cccb9affac22ce84cc2";
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 
 async function verifyFixture(file) {

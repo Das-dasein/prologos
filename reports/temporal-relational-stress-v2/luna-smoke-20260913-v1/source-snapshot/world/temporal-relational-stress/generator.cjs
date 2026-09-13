@@ -167,7 +167,7 @@ function renderFormal(world) {
 }
 
 function renderFlat(snapshot) { return snapshot.items.map(item => JSON.stringify({ id: item.id, program: item.program })).join("\n"); }
-const answerContract = "Return exactly one JSON object with keys status, positive_support_sets, negative_support_sets. The status value must be exactly one of entailed, contradicted, unknown, or conflict. Each support set is a sorted array of item IDs; sort the list of sets lexicographically. Use empty lists when absent. Do not add markdown or explanation.";
+const answerContract = "Return exactly one JSON object with keys status, positive_support_sets, negative_support_sets. Each support set is a sorted array of item IDs; sort the list of sets lexicographically. Use empty lists when absent. Do not add markdown or explanation.";
 const prompt = (representation, query) => `Reason over this finite persistent signed-Horn memory. Explicit negation is independent; absence is unknown. Apply replacement and dependency projection before logical inference.\n${representation}\nQUERY: ${query}\n${answerContract}`;
 const flatPrompt = (representation, query) => `Reason over this final active signed-Horn snapshot. Explicit negation is independent; absence is unknown. Replacement and dependency projection have already been applied; perform only logical inference over the listed clauses.\n${representation}\nQUERY: ${query}\n${answerContract}`;
 
