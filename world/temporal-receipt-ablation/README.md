@@ -30,6 +30,13 @@ node world/temporal-receipt-ablation/verify-report.cjs \
   reports/temporal-receipt-ablation-v3/luna-smoke-v1
 ```
 
+Produce replay-gated paired and stratified analysis:
+
+```sh
+node world/temporal-receipt-ablation/analyze-report.cjs \
+  reports/temporal-receipt-ablation-v3/luna-full-20260913-v1
+```
+
 Use `resume` with the same model and output path after interruption. Existing
 attempt directories are never redispatched if their record was not committed.
 For a full wave, replace `--cases ...` with `--cases all` and use a new output
