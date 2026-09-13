@@ -404,6 +404,9 @@ uses the retained response bytes. This is one exploratorily selected metadata
 conflict, not a package-safety verdict or an accuracy estimate. See the
 [pilot result](reports/osv-advisory-conflict-pilot-v1/RESULTS.md) and the
 [preregistered revision experiment](.cdr/waves/osv-revision-dependency-v1/protocol.md).
+Its selector, four-system runner and pre-run source manifest are implemented in
+[`world/osv-revision-dependency`](world/osv-revision-dependency/README.md); the
+24-case fixture is collected only after that source freeze.
 
 The separate bounded extraction-repair wave gives deterministic signed-Horn
 validation errors back to Luna once. Seven of eight failed first-pass cases
