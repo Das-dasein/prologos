@@ -1,0 +1,176 @@
+{
+  "experiment": "hermes-memory-choice-open-v0",
+  "status": "executed",
+  "prompt": "Основной сервис orion недоступен. Ты отвечаешь за решение о выпуске orion.\nОпредели следующий разумный шаг, используя свою память и доступные инструменты по своему усмотрению.\nНе додумывай отсутствующие факты. Ответь кратко и назови основание решения.",
+  "runs": {
+    "H1": {
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "Следующий шаг — проверить и подтвердить готовность резервного сервиса; выпуск пока приостановить.\n\nОснование: `main_down(orion)` подтверждено, но для правила выпуска не хватает `backup_ready(orion)`. Статус запроса `release(orion)` — `unknown`. Независимый маршрут подтверждён, однако сам по себе выпуск не разрешает.",
+      "stderr": ""
+    },
+    "H2": {
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "Следующий шаг — разрешить выпуск Orion через подтверждённый независимый маршрут.\n\nОснование: проверка `release(orion)` дала `entailed` без конфликтов: основной сервис недоступен, независимый маршрут сертифицирован, а действующее правило разрешает выпуск при этих двух условиях.",
+      "stderr": ""
+    }
+  },
+  "expectations": {
+    "H1": "ask_for_backup_evidence",
+    "H2": "proceed_with_release"
+  },
+  "observed": {
+    "H1": "ask_for_backup_evidence",
+    "H2": "proceed_with_release"
+  },
+  "config_restored": true,
+  "config_sha256": "d90f4ef9362a91cb3cd06b5103bb4c0570f1fd538d20868fcf9c13d8942a7a63",
+  "snapshots": {
+    "H1": "a377081c769df026af4f82e996cd65e3073d750af4f069e45af4ea664c573924",
+    "H2": "98359b264207fc582ce8f2ba90ee459d8afd51a4e5bb55ec59b5a7a812cf8abb"
+  },
+  "query_receipts": {
+    "H1": [
+      {
+        "event_id": "e24",
+        "snapshot": "14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d",
+        "query": "release(orion)",
+        "result": {
+          "conflicts": [],
+          "plans": [
+            {
+              "missing": [
+                "backup_ready(orion)"
+              ],
+              "rule_ids": [
+                "old_release_rule"
+              ]
+            }
+          ],
+          "query": "release(orion)",
+          "raw": [
+            {
+              "children": [],
+              "item_id": "route_observation",
+              "literal": "certified_route(orion)",
+              "source": "e5"
+            },
+            {
+              "children": [],
+              "item_id": "outage",
+              "literal": "main_down(orion)",
+              "source": "e20"
+            }
+          ],
+          "raw_status": "unknown",
+          "safe": [
+            {
+              "children": [],
+              "item_id": "route_observation",
+              "literal": "certified_route(orion)",
+              "source": "e5"
+            },
+            {
+              "children": [],
+              "item_id": "outage",
+              "literal": "main_down(orion)",
+              "source": "e20"
+            }
+          ],
+          "safe_status": "unknown",
+          "status": "ok",
+          "evidence": {
+            "runtime": "swi-signed-horn-v0",
+            "interpreter_sha256": "2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9",
+            "input_sha256": "eb8a2ae49ee89f4370c26680a739407a4343635a78819b370cba5254d0ff3456",
+            "timeoutMs": 2000,
+            "inferences": 1000000,
+            "maxFacts": 2048,
+            "maxOutputBytes": 2097152
+          }
+        }
+      }
+    ],
+    "H2": [
+      {
+        "event_id": "e24",
+        "snapshot": "a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5",
+        "query": "release(orion)",
+        "result": {
+          "conflicts": [],
+          "plans": [
+            {
+              "missing": [],
+              "rule_ids": []
+            }
+          ],
+          "query": "release(orion)",
+          "raw": [
+            {
+              "children": [],
+              "item_id": "route_observation",
+              "literal": "certified_route(orion)",
+              "source": "e5"
+            },
+            {
+              "children": [],
+              "item_id": "outage",
+              "literal": "main_down(orion)",
+              "source": "e20"
+            },
+            {
+              "children": [
+                "main_down(orion)",
+                "certified_route(orion)"
+              ],
+              "item_id": "old_release_rule",
+              "literal": "release(orion)",
+              "source": "e2"
+            }
+          ],
+          "raw_status": "entailed",
+          "safe": [
+            {
+              "children": [],
+              "item_id": "route_observation",
+              "literal": "certified_route(orion)",
+              "source": "e5"
+            },
+            {
+              "children": [],
+              "item_id": "outage",
+              "literal": "main_down(orion)",
+              "source": "e20"
+            },
+            {
+              "children": [
+                "main_down(orion)",
+                "certified_route(orion)"
+              ],
+              "item_id": "old_release_rule",
+              "literal": "release(orion)",
+              "source": "e2"
+            }
+          ],
+          "safe_status": "entailed",
+          "status": "ok",
+          "evidence": {
+            "runtime": "swi-signed-horn-v0",
+            "interpreter_sha256": "2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9",
+            "input_sha256": "799838dff582feebed5a2a418ff9d847f8fd31429a561e6c0d1c499a848b6394",
+            "timeoutMs": 2000,
+            "inferences": 1000000,
+            "maxFacts": 2048,
+            "maxOutputBytes": 2097152
+          }
+        }
+      }
+    ]
+  },
+  "boundaries": [
+    "The prompt supplies only the situation and goal; it names no tool, query, action vocabulary, or choice policy.",
+    "Both histories are synthetic fixtures.",
+    "No dream is used in this run."
+  ]
+}

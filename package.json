@@ -2,15 +2,46 @@
   "name": "prolog-agent-memory",
   "private": true,
   "scripts": {
+    "world": "node world/cli.js",
+    "test:paired-biographies": "node --test world/paired-biographies/test.cjs world/paired-biographies/argumentation.test.cjs world/paired-biographies/dream-matrix.test.cjs && /Users/artem/.hermes/hermes-agent/venv/bin/python world/paired-biographies/test_transport.py",
+    "test:paired-dream-report": "node world/paired-biographies/verify-dream-report.cjs",
+    "test:paired-dream-matrix-report": "node world/paired-biographies/verify-dream-matrix.cjs",
+    "eval:paired-biographies": "node world/paired-biographies/run.cjs",
+    "analyze:paired-argumentation": "node world/paired-biographies/argumentation-analysis.cjs",
+    "analyze:argumentation-search": "node world/argumentation-search.cjs",
+    "world:demo": "node world/demo.js",
+    "world:replay": "node world/replay.js",
+    "test:world": "node --test world/test.js world/provenance-policy.test.js world/hermes-bridge.test.js world/argumentation.test.js world/argumentation-search.test.js world/dream-policy-search.test.cjs world/dream-policy-trajectory.test.cjs world/provenance-policy-ablation/test.cjs world/datacite-lineage.test.js",
+    "analyze:dream-policy-search": "node world/dream-policy-search.cjs",
+    "analyze:dream-policy-trajectory": "node world/dream-policy-trajectory.cjs",
+    "test:provenance-decision-stress": "node world/provenance-decision-stress/test.cjs && node world/provenance-decision-stress/collector.test.cjs && node world/provenance-decision-stress/verify-report.cjs reports/provenance-decision-stress-v2/luna-full-20260913-v1 && node world/provenance-decision-stress/analyze-report.cjs reports/provenance-decision-stress-v2/luna-full-20260913-v1 reports/provenance-decision-stress-v2/luna-full-20260913-v1/analysis-v1.json",
+    "eval:provenance-decision-stress": "node world/provenance-decision-stress/collector.cjs",
+    "test:hermes-bridge": "node --test world/hermes-bridge.test.js",
+    "test:hermes-provider": "/Users/artem/.hermes/hermes-agent/venv/bin/python -m unittest integrations/hermes/test_provider.py",
+    "experiment:hermes-live": "node world/hermes-live-experiment.js",
+    "posttest": "node --test world/test.js world/provenance-policy.test.js world/hermes-bridge.test.js world/argumentation.test.js world/argumentation-search.test.js world/dream-policy-search.test.cjs world/dream-policy-trajectory.test.cjs world/provenance-policy-ablation/test.cjs world/datacite-lineage.test.js && node world/provenance-decision-stress/test.cjs && node world/provenance-decision-stress/collector.test.cjs && node world/provenance-decision-stress/verify-report.cjs reports/provenance-decision-stress-v2/luna-full-20260913-v1 && node world/provenance-decision-stress/analyze-report.cjs reports/provenance-decision-stress-v2/luna-full-20260913-v1 reports/provenance-decision-stress-v2/luna-full-20260913-v1/analysis-v1.json && node world/provenance-policy-ablation/verify.cjs .cdr/waves/provenance-policy-ablation-v1/fixture.json reports/provenance-policy-ablation-v1/report.json && node world/datacite-lineage-verify.cjs reports/datacite-lineage-intake-v1/live-v47.json && node world/datacite-lineage-verify.cjs reports/datacite-lineage-intake-v1/live-dryad.json && node world/datacite-lineage-e2e-verify.cjs reports/datacite-lineage-intake-v1/live-v47.json reports/datacite-lineage-intake-v1/live-dryad.json reports/datacite-lineage-intake-v1/world-e2e.json",
     "chat": "node chat.js",
     "chat:api": "LLM_PROVIDER=openai-api node chat.js",
+    "test:product-extraction-v3-smoke": "node verify-product-extraction-v3-smoke.cjs reports/product-extraction-v3-smoke-v2/luna/report.json .cdr/waves/product-extraction-v3-smoke-v2/fixture.json",
+    "test:product-extraction-v3-eval": "node verify-product-extraction-v3-eval.cjs reports/product-extraction-v3-eval-v1/luna/report.json .cdr/waves/product-extraction-v3-eval-v1/fixture.jsonl .cdr/datasets/extraction-annotation-pilot-v1.jsonl",
+    "test:product-extraction-validator-v2": "node product-extraction-validator-v2-replay.cjs --report reports/product-extraction-v3-eval-v1/luna/report.json --fixture .cdr/waves/product-extraction-v3-eval-v1/fixture.jsonl --verify reports/product-extraction-v3-eval-v1/luna/validator-v2-replay.json",
+    "test:product-extraction-validator-v2-control": "node verify-product-extraction-v3-control.cjs reports/product-extraction-validator-v2-control-v1/luna/report.json .cdr/waves/product-extraction-validator-v2-control-v1/fixture.jsonl .cdr/waves/product-extraction-validator-v2-control-v1/gold.jsonl",
+    "test:product-extraction-v4-smoke": "node test-product-extraction-v4-smoke.js",
+    "test:product-extraction-v4-eval": "node verify-product-extraction-v4-eval.cjs reports/product-extraction-v4-eval-v1/luna/report.json .cdr/waves/product-extraction-v4-eval-v1/fixture.jsonl .cdr/waves/product-extraction-v4-eval-v1/gold.jsonl",
+    "test:product-extraction-validator-v3": "node product-extraction-validator-v3-replay.cjs reports/product-extraction-validator-v2-control-v1/luna/report.json .cdr/waves/product-extraction-validator-v2-control-v1/fixture.jsonl .cdr/waves/product-extraction-validator-v2-control-v1/gold.jsonl reports/product-extraction-validator-v2-control-v1/luna/validator-v3-replay.json && node product-extraction-validator-v3-replay.cjs reports/product-extraction-v4-eval-v1/luna/report.json .cdr/waves/product-extraction-v4-eval-v1/fixture.jsonl .cdr/waves/product-extraction-v4-eval-v1/gold.jsonl reports/product-extraction-v4-eval-v1/luna/validator-v3-replay.json",
+    "test:product-extraction-v4-coref-control": "node verify-product-extraction-v4-coref-control.cjs reports/product-extraction-v4-coref-control-v1/luna/report.json .cdr/waves/product-extraction-v4-coref-control-v1/fixture.jsonl .cdr/waves/product-extraction-v4-coref-control-v1/gold.jsonl",
+    "test:grounding-review": "node verify-grounding-review-eval.cjs reports/memory-grounding-review-v1/luna/report.json .cdr/waves/memory-grounding-review-v1/fixture.jsonl .cdr/waves/memory-grounding-review-v1/gold.jsonl",
+    "test:grounding-review-hybrid": "node grounding-review-hybrid-replay.cjs reports/memory-grounding-review-v1/luna/report.json .cdr/waves/memory-grounding-review-v1/fixture.jsonl .cdr/waves/memory-grounding-review-v1/gold.jsonl reports/memory-grounding-review-v1/luna/hybrid-replay.json",
+    "test:extraction-grounding-e2e": "node verify-extraction-grounding-e2e.cjs reports/extraction-grounding-e2e-v1/luna/report.json .cdr/waves/extraction-grounding-e2e-v1/fixture.jsonl .cdr/waves/extraction-grounding-e2e-v1/gold.jsonl && node adjudicate-extraction-grounding-e2e.cjs reports/extraction-grounding-e2e-v1/luna/report.json reports/extraction-grounding-e2e-v1/luna/adjudication-v1.json",
+    "test:predicate-grounding-policy": "node test-predicate-grounding-policy.js && node adjudicate-predicate-grounding-policy-v1.cjs reports/predicate-grounding-policy-v1/adjudication.json",
+    "test:grounding-review-v2-smoke": "node test-grounding-review-v2.js && node test-grounding-review-v2-smoke.js && node verify-grounding-review-v2-smoke.cjs reports/memory-grounding-review-v2-smoke-v1/luna/report.json .cdr/waves/memory-grounding-review-v2-smoke-v1/fixture.json",
     "demo": "node cli.js demo.pl",
     "reflect": "node memory-reflection.js",
     "reflect:agent": "node reflection-agent.js",
     "reflect:apply": "node reflection-apply.js",
     "elenchus": "node elenchus-cli.js",
     "ontology": "node ontology-server.js",
-    "test": "node test.js && node test-ontology-harness.js && node test-elenchus.js && node test-registry-ingestion.js && node test-live-extraction.js && node test-trusted-proof-preflight.js && node test-trusted-proof-answering.js && node test-representation-live-evaluator.js && node test-representation-codex-seatbelt.js && node test-proverqa-hard-preflight.js && node test-proverqa-hard-hybrid-broker.js && node test-proverqa-hard-hybrid-collector.js && node test-proverqa-hard-codex-collector.js && node test-proverqa-hard-multicall-gate.js && node test-proverqa-hard-multicall-broker.js && node test-proverqa-hard-multicall-collector.js && node test-finite-fol-meta-prover.js && node test-free-prolog-diagnostic.js && node test-free-prolog-diagnostic-collector.js && node test-codex-free-prolog-generator.js",
+    "test": "node test.js && node test-openai-product-v5.js && node test-ontology-harness.js && node test-elenchus.js && node test-registry-ingestion.js && node test-live-extraction.js && node test-extraction-admission-policy.js && node test-extraction-admission.js && node test-product-extraction-v3-eval.js && node test-product-extraction-v3-control.js && node test-product-extraction-v4-smoke.js && node test-product-extraction-v4-eval.js && node verify-product-extraction-v4-eval.cjs reports/product-extraction-v4-eval-v1/luna/report.json .cdr/waves/product-extraction-v4-eval-v1/fixture.jsonl .cdr/waves/product-extraction-v4-eval-v1/gold.jsonl && node test-product-extraction-v4-coref-control.js && node verify-product-extraction-v4-coref-control.cjs reports/product-extraction-v4-coref-control-v1/luna/report.json .cdr/waves/product-extraction-v4-coref-control-v1/fixture.jsonl .cdr/waves/product-extraction-v4-coref-control-v1/gold.jsonl && node test-grounding-review-eval.js && node verify-grounding-review-eval.cjs reports/memory-grounding-review-v1/luna/report.json .cdr/waves/memory-grounding-review-v1/fixture.jsonl .cdr/waves/memory-grounding-review-v1/gold.jsonl && node grounding-review-hybrid-replay.cjs reports/memory-grounding-review-v1/luna/report.json .cdr/waves/memory-grounding-review-v1/fixture.jsonl .cdr/waves/memory-grounding-review-v1/gold.jsonl reports/memory-grounding-review-v1/luna/hybrid-replay.json && node test-predicate-grounding-policy.js && node adjudicate-predicate-grounding-policy-v1.cjs reports/predicate-grounding-policy-v1/adjudication.json && node test-grounding-review-v2.js && node test-grounding-review-v2-smoke.js && node verify-grounding-review-v2-smoke.cjs reports/memory-grounding-review-v2-smoke-v1/luna/report.json .cdr/waves/memory-grounding-review-v2-smoke-v1/fixture.json && node test-product-extraction-v5-contract.js && node test-product-extraction-v5-product-smoke.js && node test-extraction-policy-identity-validator.js && node test-product-extraction-v4-v5-paired.js && node verify-product-extraction-v4-v5-paired.cjs reports/product-extraction-v4-v5-paired-control-v1/luna/report.json .cdr/waves/product-extraction-v4-v5-paired-control-v1/fixture.jsonl .cdr/waves/product-extraction-v4-v5-paired-control-v1/gold.jsonl && node replay-product-extraction-v4-v5-policy-identity.cjs reports/product-extraction-v4-v5-paired-control-v1/luna/report.json .cdr/waves/product-extraction-v4-v5-paired-control-v1/fixture.jsonl .cdr/waves/product-extraction-v4-v5-paired-control-v1/gold.jsonl reports/product-extraction-v4-v5-paired-control-v1/luna/policy-identity-replay-v4.json && node test-product-extraction-v5-identity-control.js && node verify-product-extraction-v5-identity-control.cjs reports/product-extraction-v5-identity-control-v1/luna/report.json .cdr/waves/product-extraction-v5-identity-control-v1/fixture.jsonl .cdr/waves/product-extraction-v5-identity-control-v1/gold.jsonl && node test-grounding-review-v2-policy-eval.js && node test-grounding-review-v2-policy-resume.js && node verify-grounding-review-v2-policy-eval.cjs reports/memory-grounding-review-v2-policy-control-v1/luna/report.json .cdr/waves/memory-grounding-review-v2-policy-control-v1/fixture.jsonl .cdr/waves/memory-grounding-review-v2-policy-control-v1/gold.jsonl && node test-extraction-grounding-e2e.js && node verify-extraction-grounding-e2e.cjs reports/extraction-grounding-e2e-v1/luna/report.json .cdr/waves/extraction-grounding-e2e-v1/fixture.jsonl .cdr/waves/extraction-grounding-e2e-v1/gold.jsonl && node adjudicate-extraction-grounding-e2e.cjs reports/extraction-grounding-e2e-v1/luna/report.json reports/extraction-grounding-e2e-v1/luna/adjudication-v1.json && node test-trusted-proof-preflight.js && node test-trusted-proof-answering.js && node test-representation-live-evaluator.js && node test-representation-codex-seatbelt.js && node test-proverqa-hard-preflight.js && node test-proverqa-hard-hybrid-broker.js && node test-proverqa-hard-hybrid-collector.js && node test-proverqa-hard-codex-collector.js && node test-proverqa-hard-multicall-gate.js && node test-proverqa-hard-multicall-broker.js && node test-proverqa-hard-multicall-collector.js && node test-finite-fol-meta-prover.js && node test-free-prolog-diagnostic.js && node test-free-prolog-diagnostic-collector.js && node test-codex-free-prolog-generator.js",
     "test:cdr-annotation": "node test-cdr-annotation.js",
     "test:cdr-gold": "node cdr-eval-harness.js --config .cdr/results/prolog-memory-eval-v0/eval-config-v1.json --dataset .cdr/datasets/dialogues-pilot-v1.jsonl --oracle .cdr/results/prolog-memory-eval-v0/pilot-oracle.json",
     "test:cdr-matrix": "node cdr-matrix-harness.js",
@@ -22,38 +53,48 @@
     "eval:proverqa-hard-codex": "node proverqa-hard-codex-collector.js",
     "eval:proverqa-hard-multicall": "node proverqa-hard-multicall-collector.js",
     "test:representation-live-evaluator": "node test-representation-live-evaluator.js",
-    "eval:representation-live": "node representation-live-evaluator.js"
-    ,"test:memconflict-adapter": "node test-memconflict-adapter.js"
-    ,"pilot": "node pilot-runner.js"
-    ,"pilot:dashboard": "node pilot-dashboard.js"
-    ,"test:pilot": "node test-pilot-runner.js"
-    ,"test:pilot:preflight": "node test-live-v2-preflight.js"
-    ,"eval:offline:v3": "node offline-eval-v3.js"
-    ,"test:offline-eval:v3": "node test-offline-eval-v3.js"
-    ,"test:offline-eval:schema": "node validate-offline-eval-v3.js"
-    ,"test:cognitive-memory": "node test-cognitive-memory.js"
-    ,"test:trusted-proof-preflight": "node test-trusted-proof-preflight.js"
-    ,"test:trusted-proof-answering": "node test-trusted-proof-answering.js"
-    ,"test:trusted-proof-live-candidate": "node test-trusted-proof-live-candidate.js"
-    ,"test:trusted-proof-codex-exec-live-candidate": "node test-trusted-proof-codex-exec-live-candidate.js"
-    ,"test:trusted-proof-codex-diagnostic:v9": "node test-trusted-proof-codex-diagnostic-v9.js"
-    ,"test:trusted-proof-codex-diagnostic-live:v9": "node test-trusted-proof-codex-diagnostic-live-v9.js"
-    ,"test:cdr-receipt-intake": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v1.js --self-test"
-    ,"test:cdr-receipt-intake:v2": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v2.js --self-test"
-    ,"test:cdr-receipt-intake:v3": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v3.js --self-test"
-    ,"test:cdr-receipt-intake:v4": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v4.js --self-test"
-    ,"test:cdr-receipt-intake:v5": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v5.js --self-test"
-    ,"test:cdr-receipt-intake:v6": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v6.js --self-test"
-    ,"test:cdr-receipt-intake:v7": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v7.js --self-test"
-    ,"test:cdr-receipt-intake:v8": "node .cdr/waves/cognitive-proof-eval-v1/validate-codex-exec-receipt-intake-v8.js --self-test"
-    ,"test:codex-diagnostic:v9": "node .cdr/waves/cognitive-proof-eval-v1/validate-codex-diagnostic-v9.js --self-test"
-    ,"test:trusted-proof-codex-seatbelt:v10": "node test-trusted-proof-codex-seatbelt-v10.js"
-    ,"test:trusted-proof-codex-clean-replay:v10": "node test-trusted-proof-codex-clean-replay-v10.js"
-    ,"test:representation-codex-seatbelt": "node test-representation-codex-seatbelt.js"
-    ,"test:semantic-branch-dream": "node test-semantic-branch-dream.js"
-    ,"test:semantic-branch-dream:direct": "node test-semantic-branch-dream-direct.js"
-    ,"test:semantic-branch-dream-preflight": "node test-semantic-branch-dream-preflight.js"
-    ,"test:semantic-branch-dream-run": "node test-semantic-branch-dream-run.js"
+    "eval:representation-live": "node representation-live-evaluator.js",
+    "test:memconflict-adapter": "node test-memconflict-adapter.js",
+    "pilot": "node pilot-runner.js",
+    "pilot:dashboard": "node pilot-dashboard.js",
+    "test:pilot": "node test-pilot-runner.js",
+    "test:pilot:preflight": "node test-live-v2-preflight.js",
+    "eval:offline:v3": "node offline-eval-v3.js",
+    "test:offline-eval:v3": "node test-offline-eval-v3.js",
+    "test:offline-eval:schema": "node validate-offline-eval-v3.js",
+    "test:cognitive-memory": "node test-cognitive-memory.js",
+    "test:trusted-proof-preflight": "node test-trusted-proof-preflight.js",
+    "test:trusted-proof-answering": "node test-trusted-proof-answering.js",
+    "test:trusted-proof-live-candidate": "node test-trusted-proof-live-candidate.js",
+    "test:trusted-proof-codex-exec-live-candidate": "node test-trusted-proof-codex-exec-live-candidate.js",
+    "test:trusted-proof-codex-diagnostic:v9": "node test-trusted-proof-codex-diagnostic-v9.js",
+    "test:trusted-proof-codex-diagnostic-live:v9": "node test-trusted-proof-codex-diagnostic-live-v9.js",
+    "test:cdr-receipt-intake": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v1.js --self-test",
+    "test:cdr-receipt-intake:v2": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v2.js --self-test",
+    "test:cdr-receipt-intake:v3": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v3.js --self-test",
+    "test:cdr-receipt-intake:v4": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v4.js --self-test",
+    "test:cdr-receipt-intake:v5": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v5.js --self-test",
+    "test:cdr-receipt-intake:v6": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v6.js --self-test",
+    "test:cdr-receipt-intake:v7": "node .cdr/waves/cognitive-proof-eval-v1/validate-receipt-intake-v7.js --self-test",
+    "test:cdr-receipt-intake:v8": "node .cdr/waves/cognitive-proof-eval-v1/validate-codex-exec-receipt-intake-v8.js --self-test",
+    "test:codex-diagnostic:v9": "node .cdr/waves/cognitive-proof-eval-v1/validate-codex-diagnostic-v9.js --self-test",
+    "test:trusted-proof-codex-seatbelt:v10": "node test-trusted-proof-codex-seatbelt-v10.js",
+    "test:trusted-proof-codex-clean-replay:v10": "node test-trusted-proof-codex-clean-replay-v10.js",
+    "test:representation-codex-seatbelt": "node test-representation-codex-seatbelt.js",
+    "test:semantic-branch-dream": "node test-semantic-branch-dream.js",
+    "test:semantic-branch-dream:direct": "node test-semantic-branch-dream-direct.js",
+    "test:semantic-branch-dream-preflight": "node test-semantic-branch-dream-preflight.js",
+    "test:semantic-branch-dream-run": "node test-semantic-branch-dream-run.js",
+    "test:grounding-review-v2-policy": "node test-grounding-review-v2-policy-eval.js && node test-grounding-review-v2-policy-resume.js && node verify-grounding-review-v2-policy-eval.cjs reports/memory-grounding-review-v2-policy-control-v1/luna/report.json .cdr/waves/memory-grounding-review-v2-policy-control-v1/fixture.jsonl .cdr/waves/memory-grounding-review-v2-policy-control-v1/gold.jsonl",
+    "test:product-extraction-v5-contract": "node test-product-extraction-v5-contract.js",
+    "test:product-extraction-v5-product-smoke": "node test-product-extraction-v5-product-smoke.js",
+    "test:product-extraction-v4-v5-paired": "node test-product-extraction-v4-v5-paired.js && node verify-product-extraction-v4-v5-paired.cjs reports/product-extraction-v4-v5-paired-control-v1/luna/report.json .cdr/waves/product-extraction-v4-v5-paired-control-v1/fixture.jsonl .cdr/waves/product-extraction-v4-v5-paired-control-v1/gold.jsonl && node replay-product-extraction-v4-v5-policy-identity.cjs reports/product-extraction-v4-v5-paired-control-v1/luna/report.json .cdr/waves/product-extraction-v4-v5-paired-control-v1/fixture.jsonl .cdr/waves/product-extraction-v4-v5-paired-control-v1/gold.jsonl reports/product-extraction-v4-v5-paired-control-v1/luna/policy-identity-replay-v4.json",
+    "test:extraction-policy-identity-validator": "node test-extraction-policy-identity-validator.js",
+    "test:extraction-admission-policy": "node test-extraction-admission-policy.js",
+    "test:product-extraction-v5-identity-control": "node test-product-extraction-v5-identity-control.js && node verify-product-extraction-v5-identity-control.cjs reports/product-extraction-v5-identity-control-v1/luna/report.json .cdr/waves/product-extraction-v5-identity-control-v1/fixture.jsonl .cdr/waves/product-extraction-v5-identity-control-v1/gold.jsonl",
+    "test:provenance-policy-ablation": "node --test world/provenance-policy-ablation/test.cjs && node world/provenance-policy-ablation/verify.cjs .cdr/waves/provenance-policy-ablation-v1/fixture.json reports/provenance-policy-ablation-v1/report.json",
+    "test:datacite-lineage": "node --test world/datacite-lineage.test.js && node world/datacite-lineage-verify.cjs reports/datacite-lineage-intake-v1/live-v47.json && node world/datacite-lineage-verify.cjs reports/datacite-lineage-intake-v1/live-dryad.json && node world/datacite-lineage-e2e-verify.cjs reports/datacite-lineage-intake-v1/live-v47.json reports/datacite-lineage-intake-v1/live-dryad.json reports/datacite-lineage-intake-v1/world-e2e.json",
+    "intake:datacite-lineage": "node world/datacite-lineage-cli.cjs"
   },
   "dependencies": {
     "openai": "^7.9.0",

@@ -1,0 +1,456 @@
+{
+  "status": "ok",
+  "inference_calls": 1,
+  "tools": [],
+  "api_requests": [
+    {
+      "model": "gpt-5.6-luna",
+      "instructions": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.",
+      "input": [
+        {
+          "role": "user",
+          "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_a_3\na_seed(cedar).\n% item i2; source_group event_a_3\na_gate_1(cedar).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_a_3\na_gate_2(cedar).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_a_3\na_gate_3(cedar).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(garnet).\n% item i10; source_group event_shared_3\nb_gate_1(garnet).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(garnet).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(garnet).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(marble).\n% item i18; source_group event_c_3\nc_gate_1(marble).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(marble).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(marble).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(cedar)\nExplicit opposite: neg(ready(cedar))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(cedar)\",\"opposite_query\":\"neg(ready(cedar))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_a_3\"],\"rule_source_group_ids\":[\"rules_a\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"5efac8888d802edd7b79b0a6038e7347787613aa36a3c9bd733b30cd71b7c3f5\",\"receipt_sha256\":\"87b68cd96f23324b0fae1332b9ba57ae2285c7ccdb16f46f56e4e91d3f3386ed\"}"
+        }
+      ],
+      "store": false,
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "timeout": 1800.0,
+      "prompt_cache_key": "pck_781d319c7646adb762e0f262",
+      "extra_headers": {
+        "session_id": "fc4a8c53-a7f2-4bca-bb99-34c3643c2238",
+        "x-client-request-id": "fc4a8c53-a7f2-4bca-bb99-34c3643c2238"
+      }
+    }
+  ],
+  "api_responses": [
+    {
+      "output": [
+        {
+          "id": "rs_060b8b330a479c58016aa67ae2445c87d2ab178846dff5da41",
+          "summary": [
+            {
+              "text": "**Assessing support paths completeness**",
+              "type": "summary_text"
+            }
+          ],
+          "type": "reasoning",
+          "content": [],
+          "encrypted_content": "gAAAAABqpnrj1Rs3eBMhNxrDxD4LTHoePLEbPe1QGFOMYTXlwN242JSDYvCfyhYyGXooG_70O0kZM_iWTOuptBRUFvzmZFjWd7cs5GsU7fHNbVtfl12d966aBDA217g4N863358zsIz99kgimurPaacTfAD9V09YDq0arm-VPt8euSaGTpwUXXhOq0BkISR8_omoBoapGF3EhPba4QPlF1zppKVitHWI1lPU5yGZDBSkH-8sQJqM9xt1l9YL9JgruSYdS4KzNJXftVdSTLz6WerX-Y4ZZRBJ9_kXjpZgukZbP-wuIf09OtrRbRik8BpERJJskb5-QBEmOVIeIRWcu2e4k5tZFKBy6QSkrYuGDiqhVuc_lwbwCCpkJ_0bgQuBhr1ykrHtM2phKcBcRClJwFd2foWismwlE1P3OpYVdO6N7FJFnb27Kpp8mh8r6iDeTJeZ2mbj-8TvhHiin7iJrbOjd0_hsI5LjDqTwIOhZhdwBX9eowj6pam4zka8KFW0xZ0M7VYXFAxwPoT8IbG1e15eRJByzxuoqJXBp5V3IeOOQWK9KsPjOP206p4Dq2BfCK_fBoKyk173J7H_TeHwnDqUgkGujgYbDCkgMWlfcPr8Nnox09-BHGkfEs199_XbUAcafQBYa1fpOQR09A0uNuLjXYvcPG9BX-G6nDmjJSjkKRAvjd8hvVkjY8s0m3HgY1PH-hIy-gYIzZF4MuvU9cioTaX1vC1SjEfPXjWydtlX1DPWW5SJ9Nq9LOVUxFgeWlnXEPponTvoafHz8ZzmiASFqlXb-mh76RhJar9uF2Z9i-O-tO-PQEDIrIK9sqF4cQd-n6VHoc0FKsHs3_1r53pIqgVaf3JAYsTyPVN12_ypwKPnQf2Rk72gjcKTBH4RB1ORJvfmA_isUHn3Luud4N-e8sOLYatbdEOt63Zn6nnIqkEZ1zOigjLNeXmntxMWHlDRjmbVsnb7soHQmiM3CgdfggQBoAcr8jK4UN0W5YYT--718n43bLueWKEe0amT6gncBKLmUSwv4O8mwxQod1fZo1MwtTWRWYSEKOyDVvRaX6zr9P5MoSt3QzxaQRDyqeA8YiN3xG0cK9CqcLpGYRoAbC--GZgYqMe7DuEUuYbN-6ljVOs4RRzWUX95qcAf2OnXtEA-ZWKgzGs_l3501jZ1umsShZCCSeIxLWgLIwKMxtHsvbZp2SsT359WNJCX_ZZmK6Rqj9Jnf-QNc4ed7ZL4snm2lvrkacZkICaHRl89rpPJvacWw27zs4q1WfBV-sgMh8c2kDGWD7b6kxC_joAtz3Wf5_SM2rAPiHfrRbIGEdhx8PZys0lHCFc6Zq7LYLndZvYBaxYqNO9hx6fxJYPJhEktmX8awZiW2AgjOBWieLoRkYDlswC6edxAOag2vd2g_dh29KS7NGIq09dRXvoPzYsrpmzwxBpwrXyfp16q4pAkw3NsrCKMorg6Is0r5oZHJF0VkKreS720Dft_1F68UT6aiYfmYJptmyZ6Hm7dcepyPCBAzV6PjrSutz6ATr7HawkPEjKkHo-bQpiTmCm-RL0Q3SQnaNW2WJim7uyC6aOU5LXDVblVLmr8YqgQkvQ7HcMdxNk1QUMP4bkIbLSrWeP-TFNdQg==",
+          "status": null
+        },
+        {
+          "id": "msg_060b8b330a479c58016aa67ae3fdec87d2bd437bc12fbd9ac7",
+          "content": [
+            {
+              "annotations": [],
+              "text": "DECISION: ask\nSUPPORT: none",
+              "type": "output_text",
+              "logprobs": []
+            }
+          ],
+          "role": "assistant",
+          "status": "completed",
+          "type": "message",
+          "phase": "final_answer"
+        }
+      ],
+      "output_text": "DECISION: ask\nSUPPORT: none",
+      "usage": {
+        "input_tokens": 963,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 77,
+        "output_tokens_details": {
+          "reasoning_tokens": 62
+        },
+        "total_tokens": 1040,
+        "attribution": {
+          "items": {
+            "msg_060b8b330a479c58016aa67ae1bb6087d2808b96a73eebfdbd": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "content": [
+                {
+                  "cache_write_tokens": 0,
+                  "cached_tokens": 0,
+                  "input_tokens": 929,
+                  "output_tokens": 0
+                }
+              ],
+              "input_tokens": 929,
+              "output_tokens": 0
+            },
+            "rs_060b8b330a479c58016aa67ae2445c87d2ab178846dff5da41": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "input_tokens": 2,
+              "output_tokens": 62
+            },
+            "msg_060b8b330a479c58016aa67ae3fdec87d2bd437bc12fbd9ac7": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "content": [
+                {
+                  "cache_write_tokens": 0,
+                  "cached_tokens": 0,
+                  "input_tokens": 0,
+                  "output_tokens": 15
+                }
+              ],
+              "input_tokens": 0,
+              "output_tokens": 15
+            }
+          },
+          "request_fields": {
+            "instructions": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "input_tokens": 32,
+              "output_tokens": 0
+            }
+          }
+        }
+      },
+      "status": "completed",
+      "id": "resp_060b8b330a479c58016aa67ae1b39087d2b947feca71b57f88",
+      "model": "gpt-5.6-luna",
+      "incomplete_details": null,
+      "error": null
+    }
+  ],
+  "session_id": "fc4a8c53-a7f2-4bca-bb99-34c3643c2238",
+  "started_at": 1789295327.0989828,
+  "requested_config": {
+    "runtime_fingerprint": "a00cac42469c082fddd02c2a34814b183bee9ebade9ae536c495c742b2fe6d60",
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "reasoning_effort": "low",
+    "max_tokens": 1024,
+    "max_iterations": 1,
+    "timeout_ms": 120000,
+    "retries": 0,
+    "fallback": null,
+    "tools": []
+  },
+  "prompt": {
+    "system": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.",
+    "user": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_a_3\na_seed(cedar).\n% item i2; source_group event_a_3\na_gate_1(cedar).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_a_3\na_gate_2(cedar).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_a_3\na_gate_3(cedar).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(garnet).\n% item i10; source_group event_shared_3\nb_gate_1(garnet).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(garnet).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(garnet).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(marble).\n% item i18; source_group event_c_3\nc_gate_1(marble).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(marble).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(marble).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(cedar)\nExplicit opposite: neg(ready(cedar))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(cedar)\",\"opposite_query\":\"neg(ready(cedar))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_a_3\"],\"rule_source_group_ids\":[\"rules_a\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"5efac8888d802edd7b79b0a6038e7347787613aa36a3c9bd733b30cd71b7c3f5\",\"receipt_sha256\":\"87b68cd96f23324b0fae1332b9ba57ae2285c7ccdb16f46f56e4e91d3f3386ed\"}"
+  },
+  "runtime_identity": {
+    "hermes_sources": [
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/run_agent.py",
+        "sha256": "dfc94193e130e977b111426b095d56cbe47b4ec4b883fdf6feab555172adc803"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/agent_init.py",
+        "sha256": "d16019506e607087a2bd5a2569c6350048515c9c0177a6748a46a66b7d5c2ecf"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/system_prompt.py",
+        "sha256": "615cc103d06461f44d6d8c13208485042d865e1c0bf5095525bc33460c850910"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/codex_runtime.py",
+        "sha256": "27a855ed55a36ac63083bdae66c995365cfdb848b562e6a898ddfdf2e28692d8"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/codex_responses_adapter.py",
+        "sha256": "362d46bdb7e3c8b567d0404a8301fdbbb16d09efb86026564b3551e48a6d05f7"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/chat_completion_helpers.py",
+        "sha256": "87c3fcee774b28cadac640244f86b6f241df35c6add64326566a388033d0841a"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/relay_llm.py",
+        "sha256": "dae5059a16e4b185b0fab68aaed1f89c557dd3b4843777d54668be904ad17e2a"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/transports/codex.py",
+        "sha256": "3219613af8873320ede4d7bc1de30b3dc47868471589814294f1d6a96f5f21a4"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/hermes_cli/runtime_provider.py",
+        "sha256": "d1427c0769e909446170e3dd222ec26643b6bf014a661847ed012b913aec0141"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/hermes_cli/config.py",
+        "sha256": "0eca789d0351fa0f0f311934730629b76be6d1ff7b0182fb7bfa06fa79b2725c"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/openai/_base_client.py",
+        "sha256": "383b1acf9de56a41533ca7fd1a39836f68a396f212b938a9c75f68a71c895347"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/openai/_client.py",
+        "sha256": "d5529cc5855ae6c753abc93140c0cd7be08806c326b0f7a4708036f43d167e6a"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/httpx/_client.py",
+        "sha256": "c43f941baefe58c91e96d00039e1868fe719d91453026d7db1647194563bff8d"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/httpx/_transports/default.py",
+        "sha256": "03379a454c95c0271c4f2c8d25ec437f49f57457f3cf2769748420bf0ecf2e79"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/httpcore/_sync/connection.py",
+        "sha256": "f5ec4639bdcf07e329d93d7eb1c91278bdadfad27ff7e357a2657c8a19960a05"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py",
+        "sha256": "6be4fc2d3b14c5ceebd16c356ad7c7483a163e34347c0f1497b4b7f85d0c8fbd"
+      }
+    ],
+    "node": "v24.7.0",
+    "swipl": "SWI-Prolog version 10.0.2 for arm64-darwin",
+    "python": "3.11.13",
+    "python_executable": "/Users/artem/.hermes/hermes-agent/venv/bin/python",
+    "packages": {
+      "openai": "2.24.0",
+      "httpx": "0.28.1",
+      "httpcore": "1.0.9",
+      "jsonschema": "4.26.0"
+    },
+    "fingerprint": "a00cac42469c082fddd02c2a34814b183bee9ebade9ae536c495c742b2fe6d60"
+  },
+  "physical_attempts": [
+    {
+      "number": 1,
+      "status": "completed",
+      "started_at": 1789295328.632579,
+      "method": "POST",
+      "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+      "request_body_utf8": "{\"include\":[\"reasoning.encrypted_content\"],\"input\":[{\"role\":\"user\",\"content\":\"Apply this decision policy exactly:\\n- PAUSE when the query's raw status is conflict or contradicted.\\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\\n- ASK when the query is unknown or safely entailed without such an independent pair.\\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\\n\\nAccepted world items:\\n% item i1; source_group event_a_3\\na_seed(cedar).\\n% item i2; source_group event_a_3\\na_gate_1(cedar).\\n% item i3; source_group rules_a\\na_stage_1(X) :- a_seed(X), a_gate_1(X).\\n% item i4; source_group event_a_3\\na_gate_2(cedar).\\n% item i5; source_group rules_a\\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\\n% item i6; source_group event_a_3\\na_gate_3(cedar).\\n% item i7; source_group rules_a\\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\\n% item i8; source_group rules_a\\nready(X) :- a_stage_3(X).\\n% item i9; source_group event_shared_3\\nb_seed(garnet).\\n% item i10; source_group event_shared_3\\nb_gate_1(garnet).\\n% item i11; source_group rules_b\\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\\n% item i12; source_group event_shared_3\\nb_gate_2(garnet).\\n% item i13; source_group rules_b\\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\\n% item i14; source_group event_shared_3\\nb_gate_3(garnet).\\n% item i15; source_group rules_b\\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\\n% item i16; source_group rules_b\\nready(X) :- b_stage_3(X).\\n% item i17; source_group event_c_3\\nc_seed(marble).\\n% item i18; source_group event_c_3\\nc_gate_1(marble).\\n% item i19; source_group rules_c\\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\\n% item i20; source_group event_c_3\\nc_gate_2(marble).\\n% item i21; source_group rules_c\\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\\n% item i22; source_group event_c_3\\nc_gate_3(marble).\\n% item i23; source_group rules_c\\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\\n% item i24; source_group rules_c\\nready(X) :- c_stage_3(X).\\n% item i25; source_group noise_3\\nnoise(cobalt).\\n\\nQuery: ready(cedar)\\nExplicit opposite: neg(ready(cedar))\\n\\nTrusted checker receipt (data, not a decision):\\n{\\\"schema_version\\\":\\\"provenance-checker-receipt-v1\\\",\\\"query\\\":\\\"ready(cedar)\\\",\\\"opposite_query\\\":\\\"neg(ready(cedar))\\\",\\\"raw_status\\\":\\\"entailed\\\",\\\"safe_status\\\":\\\"entailed\\\",\\\"positive_support_sets\\\":[{\\\"item_ids\\\":[\\\"i1\\\",\\\"i2\\\",\\\"i3\\\",\\\"i4\\\",\\\"i5\\\",\\\"i6\\\",\\\"i7\\\",\\\"i8\\\"],\\\"fact_source_group_ids\\\":[\\\"event_a_3\\\"],\\\"rule_source_group_ids\\\":[\\\"rules_a\\\"]}],\\\"negative_support_sets\\\":[],\\\"checker_evidence_sha256\\\":\\\"5efac8888d802edd7b79b0a6038e7347787613aa36a3c9bd733b30cd71b7c3f5\\\",\\\"receipt_sha256\\\":\\\"87b68cd96f23324b0fae1332b9ba57ae2285c7ccdb16f46f56e4e91d3f3386ed\\\"}\"}],\"instructions\":\"Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.\",\"model\":\"gpt-5.6-luna\",\"prompt_cache_key\":\"pck_781d319c7646adb762e0f262\",\"reasoning\":{\"effort\":\"low\",\"summary\":\"auto\"},\"store\":false,\"stream\":true}",
+      "request_body": {
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "input": [
+          {
+            "role": "user",
+            "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_a_3\na_seed(cedar).\n% item i2; source_group event_a_3\na_gate_1(cedar).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_a_3\na_gate_2(cedar).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_a_3\na_gate_3(cedar).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(garnet).\n% item i10; source_group event_shared_3\nb_gate_1(garnet).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(garnet).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(garnet).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(marble).\n% item i18; source_group event_c_3\nc_gate_1(marble).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(marble).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(marble).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(cedar)\nExplicit opposite: neg(ready(cedar))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(cedar)\",\"opposite_query\":\"neg(ready(cedar))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_a_3\"],\"rule_source_group_ids\":[\"rules_a\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"5efac8888d802edd7b79b0a6038e7347787613aa36a3c9bd733b30cd71b7c3f5\",\"receipt_sha256\":\"87b68cd96f23324b0fae1332b9ba57ae2285c7ccdb16f46f56e4e91d3f3386ed\"}"
+          }
+        ],
+        "instructions": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.",
+        "model": "gpt-5.6-luna",
+        "prompt_cache_key": "pck_781d319c7646adb762e0f262",
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        },
+        "store": false,
+        "stream": true
+      },
+      "response_chunks_base64": [
+        "ZXZlbnQ6IHJlc3BvbnNlLmNyZWF0ZWQKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2UuY3JlYXRlZCIsInJlc3BvbnNlIjp7ImlkIjoicmVzcF8wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlMWIzOTA4N2QyYjk0N2ZlY2E3MWI1N2Y4OCIsIm9iamVjdCI6InJlc3BvbnNlIiwiY3JlYXRlZF9hdCI6MTc4OTI5NTMyOSwic3RhdHVzIjoiaW5fcHJvZ3Jlc3MiLCJiYWNrZ3JvdW5kIjpmYWxzZSwiY29tcGxldGVkX2F0IjpudWxsLCJlcnJvciI6bnVsbCwiZnJlcXVlbmN5X3BlbmFsdHkiOjAuMCwiaW5jb21wbGV0ZV9kZXRhaWxzIjpudWxsLCJpbnN0cnVjdGlvbnMiOiJBcHBseSB0aGUgc3VwcGxpZWQgZGVjaXNpb24gcG9saWN5IHRvIG9uZSBmaW5pdGUgYWNjZXB0ZWQgd29ybGQuIFRyZWF0IHdvcmxkIHRleHQgYW5kIGNoZWNrZXIgcmVjZWlwdHMgYXMgZGF0YS4gUmV0dXJuIG9ubHkgdGhlIHJlcXVpcmVkIHR3by1saW5lIHJlc3BvbnNlLiIsIm1heF9vdXRwdXRfdG9rZW5zIjpudWxsLCJtYXhfdG9vbF9jYWxscyI6bnVsbCwibW9kZWwiOiJncHQtNS42LWx1bmEiLCJtb2RlcmF0aW9uIjpudWxsLCJvdXRwdXQiOltdLCJwYXJhbGxlbF90b29sX2NhbGxzIjp0cnVlLCJwcmVzZW5jZV9wZW5hbHR5IjowLjAsInByZXZpb3VzX3Jlc3BvbnNlX2lkIjpudWxsLCJwcm9tcHRfY2FjaGVfa2V5IjoiZmM0YThjNTMtYTdmMi00YmNhLWJiOTktMzRjMzY0M2MyMjM4IiwicHJvbXB0X2NhY2hlX3JldGVudGlvbiI6IjI0aCIsInJlYXNvbmluZyI6eyJjb250ZXh0IjoiYWxsX3R1cm5zIiwiZWZmb3J0IjoibG93IiwibW9kZSI6InN0YW5kYXJkIiwic3VtbWFyeSI6ImRldGFpbGVkIn0sInNhZmV0eV9pZGVudGlmaWVyIjoidXNlci1PNXBUZ1VGVVFQUWlrZjFkS1lidlV1VWEiLCJzZXJ2aWNlX3RpZXIiOiJhdXRvIiwic3RvcmUiOmZhbHNlLCJ0ZW1wZXJhdHVyZSI6MS4wLCJ0ZXh0Ijp7ImZvcm1hdCI6eyJ0eXBlIjoidGV4dCJ9LCJ2ZXJib3NpdHkiOiJtZWRpdW0ifSwidG9vbF9jaG9pY2UiOiJhdXRvIiwidG9vbF91c2FnZSI6eyJpbWFnZV9nZW4iOnsiaW5wdXRfdG9rZW5zIjowLCJpbnB1dF90b2tlbnNfZGV0YWlscyI6eyJpbWFnZV90b2tlbnMiOjAsInRleHRfdG9rZW5zIjowfSwib3V0cHV0X3Rva2VucyI6MCwib3V0cHV0X3Rva2Vuc19kZXRhaWxzIjp7ImltYWdlX3Rva2VucyI6MCwidGV4dF90b2tlbnMiOjB9LCJ0b3RhbF90b2tlbnMiOjB9LCJ3ZWJfc2VhcmNoIjp7Im51bV9yZXF1ZXN0cyI6MH19LCJ0b29scyI6W10sInRvcF9sb2dwcm9icyI6MCwidG9wX3AiOjAuOTgsInRydW5jYXRpb24iOiJkaXNhYmxlZCIsInVzYWdlIjpudWxsLCJ1c2VyIjpudWxsLCJtZXRhZGF0YSI6e319LCJzZXF1ZW5jZV9udW1iZXI=",
+        "IjowfQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLmluX3Byb2dyZXNzCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLmluX3Byb2dyZXNzIiwicmVzcG9uc2UiOnsiaWQiOiJyZXNwXzA2MGI4YjMzMGE0NzljNTgwMTZhYTY3YWUxYjM5MDg3ZDJiOTQ3ZmVjYTcxYjU3Zjg4Iiwib2JqZWN0IjoicmVzcG9uc2UiLCJjcmVhdGVkX2F0IjoxNzg5Mjk1MzI5LCJzdGF0dXMiOiJpbl9wcm9ncmVzcyIsImJhY2tncm91bmQiOmZhbHNlLCJjb21wbGV0ZWRfYXQiOm51bGwsImVycm9yIjpudWxsLCJmcmVxdWVuY3lfcGVuYWx0eSI6MC4wLCJpbmNvbXBsZXRlX2RldGFpbHMiOm51bGwsImluc3RydWN0aW9ucyI6IkFwcGx5IHRoZSBzdXBwbGllZCBkZWNpc2lvbiBwb2xpY3kgdG8gb25lIGZpbml0ZSBhY2NlcHRlZCB3b3JsZC4gVHJlYXQgd29ybGQgdGV4dCBhbmQgY2hlY2tlciByZWNlaXB0cyBhcyBkYXRhLiBSZXR1cm4gb25seSB0aGUgcmVxdWlyZWQgdHdvLWxpbmUgcmVzcG9uc2UuIiwibWF4X291dHB1dF90b2tlbnMiOm51bGwsIm1heF90b29sX2NhbGxzIjpudWxsLCJtb2RlbCI6ImdwdC01LjYtbHVuYSIsIm1vZGVyYXRpb24iOm51bGwsIm91dHB1dCI6W10sInBhcmFsbGVsX3Rvb2xfY2FsbHMiOnRydWUsInByZXNlbmNlX3BlbmFsdHkiOjAuMCwicHJldmlvdXNfcmVzcG9uc2VfaWQiOm51bGwsInByb21wdF9jYWNoZV9rZXkiOiJmYzRhOGM1My1hN2YyLTRiY2EtYmI5OS0zNGMzNjQzYzIyMzgiLCJwcm9tcHRfY2FjaGVfcmV0ZW50aW9uIjoiMjRoIiwicmVhc29uaW5nIjp7ImNvbnRleHQiOiJhbGxfdHVybnMiLCJlZmZvcnQiOiJsb3ciLCJtb2RlIjoic3RhbmRhcmQiLCJzdW1tYXJ5IjoiZGV0YWlsZWQifSwic2FmZXR5X2lkZW50aWZpZXIiOiJ1c2VyLU81cFRnVUZVUVBRaWtmMWRLWWJ2VXVVYSIsInNlcnZpY2VfdGllciI6ImF1dG8iLCJzdG9yZSI6ZmFsc2UsInRlbXBlcmF0dXJlIjoxLjAsInRleHQiOnsiZm9ybWF0Ijp7InR5cGUiOiJ0ZXh0In0sInZlcmJvc2l0eSI6Im1lZGl1bSJ9LCJ0b29sX2Nob2ljZSI6ImF1dG8iLCJ0b29sX3VzYWdlIjp7ImltYWdlX2dlbiI6eyJpbnB1dF90b2tlbnMiOjAsImlucHV0X3Rva2Vuc19kZXRhaWxzIjp7ImltYWdlX3Rva2VucyI6MCwidGV4dF90b2tlbnMiOjB9LCJvdXRwdXRfdG9rZW5zIjowLCJvdXRwdXRfdG9rZW5zX2RldGFpbHMiOnsiaW1hZ2VfdG9rZW5zIjowLCJ0ZXh0X3Rva2VucyI6MH0sInRvdGFsX3Rva2VucyI6MH0sIndlYl9zZWFyY2giOnsibnVtX3JlcXVlc3RzIjowfX0sInRvb2xzIjpbXSwidG9wX2xvZ3Byb2JzIjowLCJ0b3BfcCI6MC45OCwidHJ1bmNhdGlvbiI6ImRpc2FibGVkIiwidXNhZ2UiOm51bGwsInVzZXIiOm51bGwsIm1ldGFkYXRhIjp7fX0sInNlcXVlbmM=",
+        "ZV9udW1iZXIiOjF9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF9pdGVtLmFkZGVkCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF9pdGVtLmFkZGVkIiwiaXRlbSI6eyJpZCI6InJzXzA2MGI4YjMzMGE0NzljNTgwMTZhYTY3YWUyNDQ1Yzg3ZDJhYjE3ODg0NmRmZjVkYTQxIiwidHlwZSI6InJlYXNvbmluZyIsImNvbnRlbnQiOltdLCJlbmNyeXB0ZWRfY29udGVudCI6ImdBQUFBQUJxcG5yaUcwNlN0NDhpdVFQMHkwZW91eWJGdVl2ZFdmWU51TzcyZTR3d21wTDZpR29SUmo4RnF4R3pSbjJOS3FuUG5COVZwMmRYVVlJOFBZNEV6OHRqY1YtTDFCNGFWVFM3YW1rQWYyN29Qd09zLUo1aXg3NXFkNXNLOHVDdmwtOEkxeWJfOFRMRFpXenpNQm45U0VGdVgtVGtKSFBFTkstR2ZVdHVUcExfUWNSSlNOTGtXRFZ6WG1fdVF0eHF3TWRWbWFMMWdxLUdCTDN1RmpvSzVCa1drZTVrbGxtaU1iVVJnMDNRMVhFNkhuM2JwT29kX1VmZVhwTG9xU192ZHNKRFhpX1J5dGNWT0JEMnBhaHJzc09XUGV0NDdpdFBCRW10VjBQN3p5Y2dhNkVOTUx4VmtoU3R5VmdWSGFfZTNobjRnTU9vaVpKSkxmdVU3SHR4X1RqVE9kcC1wTVlHa0szYU1KbGNRdndWR3NzSDNvd2hxTWJfRVMtSEdlTTR5Q2NvelZYeG9LZ3NyWVh3dVJxY2hhRnozLWRkMEFOQm9RNEdvNS0xdkg0TVpwT0dXT24wSVVQdE51WHJCamdsUWk2bXoyMkRNY25aRGNGY3prU21lM1NRM29oRTIyTkZMM2pzODZTUm9NOTA0cGx4bnRCbGdkd3J2RGJTQXctT0tKSFNocHE4ZVV3ZVpPTzdIWVRiTjU4TndiSWN4eEJBSTZuSFRLREtpX2V5Mjl0OGd5ZG5XOWhrb3hVRVpZcWJ5SXdtdGhUb1JfTGQ2NEExNTdOYTV3Rmk2dnNGb2duRjZZdF84Nll3Mk1NNGdWNkx3WUdadmIxMTlOV3hNZmtKRWk0N1ZCeGtGeFh6X2FsVnlJY2FWemkzOTFqWEw4LVZ2REdyMGNnX1hVRFFjVlpuSWhPMGlTNUhuRWd3a3Q1SHlRLVl5WHhnR2RTckVocWlGNWdEUG9XeGx2YlZVLXI4VlQtVWg2NkxHYWQyRjZ3QzIwYzhIV3pLQUkwRTdNTEh3QlJLOVBTWnBmaDlMWnFNZnlDWkZGdWo0b2N0RnV3QXB2d1poUnJ2MEt0cFl1NUNjSUlCZlhxbC0tQWtCanBjUV9SX0tNUmllbGsxa1NFSjdfM1N5WjI2cXNTZHJIdTk2eGphaHNGcFB1aDZIb2ctTTBVQzJ1S1dqaDN6b1FWaG83TTJvcHJZSEgxa0lfTjJTWXNITUhuUHF0ajhXS2pGOFMzZXNWT2FZRm5BSHdfMnZoT1E2S0laVV9lOFZjOVl6Q1dURjdSM2ZMWVRsZFBoVFhVelk5NFZZWTlNMmNGd2N4YmhxMmhOcGhULWNpQzVFZjcwYngwUXZJdmwwZXNHc0VzOE9WUFp6V3Rvbmx0bGNfNWJKSEtWVU1jREh1QlRNMnBCV2p5azQ0YjRBckNDM0xrSlM3X0V1anE3REVTR09RS0YtMXAydTRlVDBFSFJqQVI4RUZlRGtTbXNxbzhGOTBHbXBHNVpVdkcyN2hYZExEVi01RlI2c0NUSFBNQmNSbEJxUlM2bkE=",
+        "cjZrZjdoVlo3RDd3a2t1WFhFQjYwQWNXZmRmVEg4R3hDWUdmaUx6ZUdMVnF1aGh5R2ZaekZ1LURpSG44STdncm9hdjZCbWF6eU1reVBvckxGZGxtZEpiYThqdnNlbzlfcjIzQmF6dlRaT053WXRrNHZ6SEJFYTFkdkRMTmVKbCIsInN1bW1hcnkiOltdfSwib3V0cHV0X2luZGV4IjowLCJzZXF1ZW5jZV9udW1iZXIiOjJ9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLnJlYXNvbmluZ19zdW1tYXJ5X3BhcnQuYWRkZWQKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2UucmVhc29uaW5nX3N1bW1hcnlfcGFydC5hZGRlZCIsIml0ZW1faWQiOiJyc18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlMjQ0NWM4N2QyYWIxNzg4NDZkZmY1ZGE0MSIsIm91dHB1dF9pbmRleCI6MCwicGFydCI6eyJ0eXBlIjoic3VtbWFyeV90ZXh0IiwidGV4dCI6IiJ9LCJzZXF1ZW5jZV9udW1iZXIiOjMsInN1bW1hcnlfaW5kZXgiOjB9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLnJlYXNvbmluZ19zdW1tYXJ5X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2UucmVhc29uaW5nX3N1bW1hcnlfdGV4dC5kZWx0YSIsImRlbHRhIjoiKipBc3Nlc3Npbmcgc3VwcG9ydCBwYXRocyBjb21wbGV0ZW5lc3MqKiIsIml0ZW1faWQiOiJyc18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlMjQ0NWM4N2QyYWIxNzg4NDZkZmY1ZGE0MSIsIm9iZnVzY2F0aW9uIjoid2lDaDZ1ZmYiLCJvdXRwdXRfaW5kZXgiOjAsInNlcXVlbmNlX251bWJlciI6NCwic3VtbWFyeV9pbmRleCI6MH0KCg==",
+        "ZXZlbnQ6IHJlc3BvbnNlLnJlYXNvbmluZ19zdW1tYXJ5X3RleHQuZG9uZQpkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5yZWFzb25pbmdfc3VtbWFyeV90ZXh0LmRvbmUiLCJpdGVtX2lkIjoicnNfMDYwYjhiMzMwYTQ3OWM1ODAxNmFhNjdhZTI0NDVjODdkMmFiMTc4ODQ2ZGZmNWRhNDEiLCJvdXRwdXRfaW5kZXgiOjAsInNlcXVlbmNlX251bWJlciI6NSwic3VtbWFyeV9pbmRleCI6MCwidGV4dCI6IioqQXNzZXNzaW5nIHN1cHBvcnQgcGF0aHMgY29tcGxldGVuZXNzKioifQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLnJlYXNvbmluZ19zdW1tYXJ5X3BhcnQuZG9uZQpkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5yZWFzb25pbmdfc3VtbWFyeV9wYXJ0LmRvbmUiLCJpdGVtX2lkIjoicnNfMDYwYjhiMzMwYTQ3OWM1ODAxNmFhNjdhZTI0NDVjODdkMmFiMTc4ODQ2ZGZmNWRhNDEiLCJvdXRwdXRfaW5kZXgiOjAsInBhcnQiOnsidHlwZSI6InN1bW1hcnlfdGV4dCIsInRleHQiOiIqKkFzc2Vzc2luZyBzdXBwb3J0IHBhdGhzIGNvbXBsZXRlbmVzcyoqIn0sInNlcXVlbmNlX251bWJlciI6Niwic3VtbWFyeV9pbmRleCI6MH0KCg==",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF9pdGVtLmRvbmUKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X2l0ZW0uZG9uZSIsIml0ZW0iOnsiaWQiOiJyc18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlMjQ0NWM4N2QyYWIxNzg4NDZkZmY1ZGE0MSIsInR5cGUiOiJyZWFzb25pbmciLCJjb250ZW50IjpbXSwiZW5jcnlwdGVkX2NvbnRlbnQiOiJnQUFBQUFCcXBucmoxUnMzZUJNaE54ckR4RDRMVEhvZVBMRWJQZTFRR0ZPTVlUWGx3TjI0MkpTRFl2Q2Z5aFl5R1hvb0dfNzBPMGtaTV9pV1RPdXB0QlJVRnZ6bVpGaldkN2NzNUdzVTdmSE5iVnRmbDEyZDk2NmFCREEyMTdnNE44NjMzNTh6c0l6OTlrZ2ltdXJQYWFjVGZBRDlWMDlZRHEwYXJtLVZQdDhldVNhR1Rwd1VYWGhPcTBCa0lTUjhfb21vQm9hcEdGM0VoUGJhNFFQbEYxenBwS1ZpdEhXSTFsUFU1eUdaREJTa0gtOHNRSnFNOXh0MWw5WUw5SmdydVNZZFM0S3pOSlhmdFZkU1RMejZXZXJYLVk0WlpSQko5X2tYanBaZ3VrWmJQLXd1SWYwOU90clJiUmlrOEJwRVJKSnNrYjUtUUJFbU9WSWVJUldjdTJlNGs1dFpGS0J5NlFTa3JZdUdEaXFoVnVjX2x3YndDQ3BrSl8wYmdRdUJocjF5a3JIdE0ycGhLY0JjUkNsSndGZDJmb1dpc213bEUxUDNPcFlWZE82TjdGSkZuYjI3S3BwOG1oOHI2aURlVEplWjJtYmotOFR2aEhpaW43aUpyYk9qZDBfaHNJNUxqRHFUd0lPaFpoZHdCWDllb3dqNnBhbTR6a2E4S0ZXMHhaME03VllYRkF4d1BvVDhJYkcxZTE1ZVJKQnl6eHVvcUpYQnA1VjNJZU9PUVdLOUtzUGpPUDIwNnA0RHEyQmZDS19mQm9LeWsxNzNKN0hfVGVId25EcVVna0d1amdZYkRDa2dNV2xmY1ByOE5ub3gwOS1CSEdrZkVzMTk5X1hiVUFjYWZRQllhMWZwT1FSMDlBMHVOdUxqWFl2Y1BHOUJYLUc2bkRtakpTamtLUkF2amQ4aHZWa2pZOHMwbTNIZ1kxUEgtaEl5LWdZSXpaRjRNdXZVOWNpb1RhWDF2QzFTakVmUFhqV3lkdGxYMURQV1c1U0o5TnE5TE9WVXhGZ2VXbG5YRVBwb25Udm9hZkh6OFp6bWlBU0ZxbFhiLW1oNzZSaEphcjl1RjJaOWktTy10Ty1QUUVESXJJSzlzcUY0Y1FkLW42VkhvYzBGS3NIczNfMXI1M3BJcWdWYWYzSkFZc1R5UFZOMTJfeXB3S1BuUWYyUms3MmdqY0tUQkg0UkIxT1JKdmZtQV9pc1VIbjNMdXVkNE4tZThzT0xZYXRiZEVPdDYzWm42bm5JcWtFWjF6T2lnakxOZVhtbnR4TVdIbERSam1iVnNuYjdzb0hRbWlNM0NnZGZnZ1FCb0FjcjhqSzRVTjBXNVlZVC0tNzE4bjQzYkx1ZVdLRWUwYW1UNmduY0JLTG1VU3d2NE84bXd4UW9kMWZabzFNd3RUV1JXWVNFS095RFZ2UmFYNnpyOVA1TW9TdDNRenhhUVJEeXFlQThZaU4zeEcwY0s5Q3FjTHBHWVJvQWJDLS1HWmdZcU1lN0R1RVV1WWJOLTZsalZPczRSUnpXVVg5NXFjQWYyT25YdEVBLVpXS2d6R3M=",
+        "X2wzNTAxaloxdW1zU2haQ0NTZUl4TFdnTEl3S014dEhzdmJacDJTc1QzNTlXTkpDWF9aWm1LNlJxajlKbmYtUU5jNGVkN1pMNHNubTJsdnJrYWNaa0lDYUhSbDg5cnBQSnZhY1d3Mjd6czRxMVdmQlYtc2dNaDhjMmtER1dEN2I2a3hDX2pvQXR6M1dmNV9TTTJyQVBpSGZyUmJJR0VkaHg4UFp5czBsSENGYzZacTdMWUxuZFp2WUJheFlxTk85aHg2ZnhKWVBKaEVrdG1YOGF3WmlXMkFnak9CV2llTG9Sa1lEbHN3QzZlZHhBT2FnMnZkMmdfZGgyOUtTN05HSXEwOWRSWHZvUHpZc3JwbXp3eEJwd3JYeWZwMTZxNHBBa3czTnNyQ0tNb3JnNklzMHI1b1pISkYwVmtLcmVTNzIwRGZ0XzFGNjhVVDZhaVlmbVlKcHRteVo2SG03ZGNlcHlQQ0JBelY2UGpyU3V0ejZBVHI3SGF3a1BFaktrSG8tYlFwaVRtQ20tUkwwUTNTUW5hTlcyV0ppbTd1eUM2YU9VNUxYRFZibFZMbXI4WXFnUWt2UTdIY01keE5rMVFVTVA0YmtJYkxTcldlUC1URk5kUWc9PSIsInN1bW1hcnkiOlt7InR5cGUiOiJzdW1tYXJ5X3RleHQiLCJ0ZXh0IjoiKipBc3Nlc3Npbmcgc3VwcG9ydCBwYXRocyBjb21wbGV0ZW5lc3MqKiJ9XX0sIm91dHB1dF9pbmRleCI6MCwic2VxdWVuY2VfbnVtYmVyIjo3fQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF9pdGVtLmFkZGVkCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF9pdGVtLmFkZGVkIiwiaXRlbSI6eyJpZCI6Im1zZ18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlM2ZkZWM4N2QyYmQ0MzdiYzEyZmJkOWFjNyIsInR5cGUiOiJtZXNzYWdlIiwic3RhdHVzIjoiaW5fcHJvZ3Jlc3MiLCJjb250ZW50IjpbXSwicGhhc2UiOiJmaW5hbF9hbnN3ZXIiLCJyb2xlIjoiYXNzaXN0YW50In0sIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjo4fQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLmNvbnRlbnRfcGFydC5hZGRlZApkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5jb250ZW50X3BhcnQuYWRkZWQiLCJjb250ZW50X2luZGV4IjowLCJpdGVtX2lkIjoibXNnXzA2MGI4YjMzMGE0NzljNTgwMTZhYTY3YWUzZmRlYzg3ZDJiZDQzN2JjMTJmYmQ5YWM3Iiwib3V0cHV0X2luZGV4IjoxLCJwYXJ0Ijp7InR5cGUiOiJvdXRwdXRfdGV4dCIsImFubm90YXRpb25zIjpbXSwibG9ncHJvYnMiOltdLCJ0ZXh0IjoiIn0sInNlcXVlbmNlX251bWJlciI6OX0KCmV2ZW50OiByZXNwb25zZS5vdXRwdXRfdGV4dC5kZWx0YQpkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5vdXRwdXRfdGV4dC5kZWx0YSIsImNvbnRlbnRfaW5kZXgiOjAsImRlbHRhIjoiREVDIiwiaXRlbV9pZCI6Im1zZ18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlM2ZkZWM4N2QyYmQ0MzdiYzEyZmJkOWFjNyIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiJ2d040OThqREI3UUdZIiwib3V0cHV0X2luZGV4IjoxLCJzZXF1ZW5jZV9udW1iZXIiOjEwfQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJJU0lPTiIsIml0ZW1faWQiOiJtc2dfMDYwYjhiMzMwYTQ3OWM1ODAxNmFhNjdhZTNmZGVjODdkMmJkNDM3YmMxMmZiZDlhYzciLCJsb2dwcm9icyI6W10sIm9iZnVzY2F0aW9uIjoiRjFqR25kZ0hCd0giLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTF9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiI6IiwiaXRlbV9pZCI6Im1zZ18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlM2ZkZWM4N2QyYmQ0MzdiYzEyZmJkOWFjNyIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiI5b3k5Q1Z6NEl0QzFaU1QiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTJ9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiIgYXNrIiwiaXRlbV9pZCI6Im1zZ18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlM2ZkZWM4N2QyYmQ0MzdiYzEyZmJkOWFjNyIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiI2T2I5WTloMlNtbmUiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTN9CgpldmVudDogcmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEiLCJjb250ZW50X2luZGV4IjowLCJkZWx0YSI6IlxuIiwiaXRlbV9pZCI6Im1zZ18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlM2ZkZWM4N2QyYmQ0MzdiYzEyZmJkOWFjNyIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiJmNldPTG1ncER6T3l2YkIiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTR9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJTVVAiLCJpdGVtX2lkIjoibXNnXzA2MGI4YjMzMGE0NzljNTgwMTZhYTY3YWUzZmRlYzg3ZDJiZDQzN2JjMTJmYmQ5YWM3IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6IlVtUTV4MUZRVXVxQzYiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTV9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJQT1JUIiwiaXRlbV9pZCI6Im1zZ18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlM2ZkZWM4N2QyYmQ0MzdiYzEyZmJkOWFjNyIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiIxcHFEQk1JN3NKc2EiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTZ9CgpldmVudDogcmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEiLCJjb250ZW50X2luZGV4IjowLCJkZWx0YSI6IjoiLCJpdGVtX2lkIjoibXNnXzA2MGI4YjMzMGE0NzljNTgwMTZhYTY3YWUzZmRlYzg3ZDJiZDQzN2JjMTJmYmQ5YWM3IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6IkNxa0FNQjhEa2VBMUxKMSIsIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjoxN30KCg==",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiIgbm9uZSIsIml0ZW1faWQiOiJtc2dfMDYwYjhiMzMwYTQ3OWM1ODAxNmFhNjdhZTNmZGVjODdkMmJkNDM3YmMxMmZiZDlhYzciLCJsb2dwcm9icyI6W10sIm9iZnVzY2F0aW9uIjoiOXlWY0cwb2FhQloiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTh9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRvbmUKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X3RleHQuZG9uZSIsImNvbnRlbnRfaW5kZXgiOjAsIml0ZW1faWQiOiJtc2dfMDYwYjhiMzMwYTQ3OWM1ODAxNmFhNjdhZTNmZGVjODdkMmJkNDM3YmMxMmZiZDlhYzciLCJsb2dwcm9icyI6W10sIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjoxOSwidGV4dCI6IkRFQ0lTSU9OOiBhc2tcblNVUFBPUlQ6IG5vbmUifQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLmNvbnRlbnRfcGFydC5kb25lCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLmNvbnRlbnRfcGFydC5kb25lIiwiY29udGVudF9pbmRleCI6MCwiaXRlbV9pZCI6Im1zZ18wNjBiOGIzMzBhNDc5YzU4MDE2YWE2N2FlM2ZkZWM4N2QyYmQ0MzdiYzEyZmJkOWFjNyIsIm91dHB1dF9pbmRleCI6MSwicGFydCI6eyJ0eXBlIjoib3V0cHV0X3RleHQiLCJhbm5vdGF0aW9ucyI6W10sImxvZ3Byb2JzIjpbXSwidGV4dCI6IkRFQ0lTSU9OOiBhc2tcblNVUFBPUlQ6IG5vbmUifSwic2VxdWVuY2VfbnVtYmVyIjoyMH0KCg==",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF9pdGVtLmRvbmUKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X2l0ZW0uZG9uZSIsIml0ZW0iOnsiaWQiOiJtc2dfMDYwYjhiMzMwYTQ3OWM1ODAxNmFhNjdhZTNmZGVjODdkMmJkNDM3YmMxMmZiZDlhYzciLCJ0eXBlIjoibWVzc2FnZSIsInN0YXR1cyI6ImNvbXBsZXRlZCIsImNvbnRlbnQiOlt7InR5cGUiOiJvdXRwdXRfdGV4dCIsImFubm90YXRpb25zIjpbXSwibG9ncHJvYnMiOltdLCJ0ZXh0IjoiREVDSVNJT046IGFza1xuU1VQUE9SVDogbm9uZSJ9XSwicGhhc2UiOiJmaW5hbF9hbnN3ZXIiLCJyb2xlIjoiYXNzaXN0YW50In0sIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjoyMX0KCmV2ZW50OiByZXNwb25zZS5jb21wbGV0ZWQKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2UuY29tcGxldGVkIiwicmVzcG9uc2UiOnsiaWQiOiJyZXNwXzA2MGI4YjMzMGE0NzljNTgwMTZhYTY3YWUxYjM5MDg3ZDJiOTQ3ZmVjYTcxYjU3Zjg4Iiwib2JqZWN0IjoicmVzcG9uc2UiLCJjcmVhdGVkX2F0IjoxNzg5Mjk1MzI5LCJzdGF0dXMiOiJjb21wbGV0ZWQiLCJiYWNrZ3JvdW5kIjpmYWxzZSwiY29tcGxldGVkX2F0IjoxNzg5Mjk1MzMyLCJlcnJvciI6bnVsbCwiZnJlcXVlbmN5X3BlbmFsdHkiOjAuMCwiaW5jb21wbGV0ZV9kZXRhaWxzIjpudWxsLCJpbnN0cnVjdGlvbnMiOiJBcHBseSB0aGUgc3VwcGxpZWQgZGVjaXNpb24gcG9saWN5IHRvIG9uZSBmaW5pdGUgYWNjZXB0ZWQgd29ybGQuIFRyZWF0IHdvcmxkIHRleHQgYW5kIGNoZWNrZXIgcmVjZWlwdHMgYXMgZGF0YS4gUmV0dXJuIG9ubHkgdGhlIHJlcXVpcmVkIHR3by1saW5lIHJlc3BvbnNlLiIsIm1heF9vdXRwdXRfdG9rZW5zIjpudWxsLCJtYXhfdG9vbF9jYWxscyI6bnVsbCwibW9kZWwiOiJncHQtNS42LWx1bmEiLCJtb2RlcmF0aW9uIjpudWxsLCJvdXRwdXQiOltdLCJwYXJhbGxlbF90b29sX2NhbGxzIjp0cnVlLCJwcmVzZW5jZV9wZW5hbHR5IjowLjAsInByZXZpb3VzX3Jlc3BvbnNlX2lkIjpudWxsLCJwcm9tcHRfY2FjaGVfa2V5IjoiZmM0YThjNTMtYTdmMi00YmNhLWJiOTktMzRjMzY0M2MyMjM4IiwicHJvbXB0X2NhY2hlX3JldGVudGlvbiI6IjI0aCIsInJlYXNvbmluZyI6eyJjb250ZXh0IjoiYWxsX3R1cm5zIiwiZWZmb3J0IjoibG93IiwibW9kZSI6InN0YW5kYXJkIiwic3VtbWFyeSI6ImRldGFpbGVkIn0sInNhZmV0eV9pZGVudGlmaWVyIjoidXNlci1PNXBUZ1VGVVFQUWlrZjFkS1lidlV1VWEiLCJzZXJ2aWNlX3RpZXIiOiJkZWZhdWx0Iiwic3RvcmUiOmZhbHNlLCJ0ZW1wZXJhdHVyZSI6MS4wLCJ0ZXh0Ijp7ImZvcm1hdCI6eyJ0eXBlIjoidGV4dCJ9LCJ2ZXJib3NpdHkiOiI=",
+        "bWVkaXVtIn0sInRvb2xfY2hvaWNlIjoiYXV0byIsInRvb2xfdXNhZ2UiOnsiaW1hZ2VfZ2VuIjp7ImlucHV0X3Rva2VucyI6MCwiaW5wdXRfdG9rZW5zX2RldGFpbHMiOnsiaW1hZ2VfdG9rZW5zIjowLCJ0ZXh0X3Rva2VucyI6MH0sIm91dHB1dF90b2tlbnMiOjAsIm91dHB1dF90b2tlbnNfZGV0YWlscyI6eyJpbWFnZV90b2tlbnMiOjAsInRleHRfdG9rZW5zIjowfSwidG90YWxfdG9rZW5zIjowfSwid2ViX3NlYXJjaCI6eyJudW1fcmVxdWVzdHMiOjB9fSwidG9vbHMiOltdLCJ0b3BfbG9ncHJvYnMiOjAsInRvcF9wIjowLjk4LCJ0cnVuY2F0aW9uIjoiZGlzYWJsZWQiLCJ1c2FnZSI6eyJhdHRyaWJ1dGlvbiI6eyJpdGVtcyI6eyJtc2dfMDYwYjhiMzMwYTQ3OWM1ODAxNmFhNjdhZTFiYjYwODdkMjgwOGI5NmE3M2VlYmZkYmQiOnsiY2FjaGVfd3JpdGVfdG9rZW5zIjowLCJjYWNoZWRfdG9rZW5zIjowLCJjb250ZW50IjpbeyJjYWNoZV93cml0ZV90b2tlbnMiOjAsImNhY2hlZF90b2tlbnMiOjAsImlucHV0X3Rva2VucyI6OTI5LCJvdXRwdXRfdG9rZW5zIjowfV0sImlucHV0X3Rva2VucyI6OTI5LCJvdXRwdXRfdG9rZW5zIjowfSwicnNfMDYwYjhiMzMwYTQ3OWM1ODAxNmFhNjdhZTI0NDVjODdkMmFiMTc4ODQ2ZGZmNWRhNDEiOnsiY2FjaGVfd3JpdGVfdG9rZW5zIjowLCJjYWNoZWRfdG9rZW5zIjowLCJpbnB1dF90b2tlbnMiOjIsIm91dHB1dF90b2tlbnMiOjYyfSwibXNnXzA2MGI4YjMzMGE0NzljNTgwMTZhYTY3YWUzZmRlYzg3ZDJiZDQzN2JjMTJmYmQ5YWM3Ijp7ImNhY2hlX3dyaXRlX3Rva2VucyI6MCwiY2FjaGVkX3Rva2VucyI6MCwiY29udGVudCI6W3siY2FjaGVfd3JpdGVfdG9rZW5zIjowLCJjYWNoZWRfdG9rZW5zIjowLCJpbnB1dF90b2tlbnMiOjAsIm91dHB1dF90b2tlbnMiOjE1fV0sImlucHV0X3Rva2VucyI6MCwib3V0cHV0X3Rva2VucyI6MTV9fSwicmVxdWVzdF9maWVsZHMiOnsiaW5zdHJ1Y3Rpb25zIjp7ImNhY2hlX3dyaXRlX3Rva2VucyI6MCwiY2FjaGVkX3Rva2VucyI6MCwiaW5wdXRfdG9rZW5zIjozMiwib3V0cHV0X3Rva2VucyI6MH19fSwiaW5wdXRfdG9rZW5zIjo5NjMsImlucHV0X3Rva2Vuc19kZXRhaWxzIjp7ImNhY2hlX3dyaXRlX3Rva2VucyI6MCwiY2FjaGVkX3Rva2VucyI6MH0sIm91dHB1dF90b2tlbnMiOjc3LCJvdXRwdXRfdG9rZW5zX2RldGFpbHMiOnsicmVhc29uaW5nX3Rva2VucyI6NjJ9LCJ0b3RhbF90b2tlbnMiOjEwNDB9LCJ1c2VyIjpudWxsLCJtZXRhZGF0YSI6e319LCJzZXF1ZW5jZV9udW1iZXIiOjIyfQoK"
+      ],
+      "response_bytes": 13488,
+      "http_status": 200,
+      "ended_at": 1789295332.084189
+    }
+  ],
+  "denied_physical_attempts": 0,
+  "physical_dispatches": 1,
+  "dispatch_policy": {
+    "sdk_max_retries": 0,
+    "http_transport_retries": 0,
+    "physical_attempt_limit": 1,
+    "response_byte_limit": 2097152,
+    "headers_recorded": false
+  },
+  "effective_config": {
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "api_mode": "codex_responses",
+    "max_tokens": 1024,
+    "max_iterations": 1,
+    "reasoning_config": {
+      "effort": "low"
+    },
+    "skip_context_files": true,
+    "skip_memory": null,
+    "context_length": null
+  },
+  "isolation": {
+    "hermes_home": "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/paired-hermes-1y57tb8a/home",
+    "cwd": "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/paired-hermes-1y57tb8a/work",
+    "tools_empty": true,
+    "skip_memory": true,
+    "skip_context_files": true,
+    "load_soul_identity": false,
+    "session_db": null,
+    "fresh_process_pid": 26842,
+    "config_text": "memory:\n  memory_enabled: false\n  user_profile_enabled: false\ncompression:\n  enabled: false\nagent:\n  max_iterations: 1\n  max_retries: 0\n"
+  },
+  "system_prompt_assembly": "exact frozen harness system, AIAgent assembly hook overridden; no host metadata",
+  "model_messages": [
+    {
+      "role": "system",
+      "content": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response."
+    },
+    {
+      "role": "user",
+      "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_a_3\na_seed(cedar).\n% item i2; source_group event_a_3\na_gate_1(cedar).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_a_3\na_gate_2(cedar).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_a_3\na_gate_3(cedar).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(garnet).\n% item i10; source_group event_shared_3\nb_gate_1(garnet).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(garnet).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(garnet).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(marble).\n% item i18; source_group event_c_3\nc_gate_1(marble).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(marble).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(marble).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(cedar)\nExplicit opposite: neg(ready(cedar))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(cedar)\",\"opposite_query\":\"neg(ready(cedar))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_a_3\"],\"rule_source_group_ids\":[\"rules_a\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"5efac8888d802edd7b79b0a6038e7347787613aa36a3c9bd733b30cd71b7c3f5\",\"receipt_sha256\":\"87b68cd96f23324b0fae1332b9ba57ae2285c7ccdb16f46f56e4e91d3f3386ed\"}"
+    }
+  ],
+  "built_api_body": {
+    "model": "gpt-5.6-luna",
+    "instructions": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.",
+    "input": [
+      {
+        "role": "user",
+        "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_a_3\na_seed(cedar).\n% item i2; source_group event_a_3\na_gate_1(cedar).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_a_3\na_gate_2(cedar).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_a_3\na_gate_3(cedar).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(garnet).\n% item i10; source_group event_shared_3\nb_gate_1(garnet).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(garnet).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(garnet).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(marble).\n% item i18; source_group event_c_3\nc_gate_1(marble).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(marble).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(marble).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(cedar)\nExplicit opposite: neg(ready(cedar))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(cedar)\",\"opposite_query\":\"neg(ready(cedar))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_a_3\"],\"rule_source_group_ids\":[\"rules_a\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"5efac8888d802edd7b79b0a6038e7347787613aa36a3c9bd733b30cd71b7c3f5\",\"receipt_sha256\":\"87b68cd96f23324b0fae1332b9ba57ae2285c7ccdb16f46f56e4e91d3f3386ed\"}"
+      }
+    ],
+    "store": false,
+    "prompt_cache_key": "pck_781d319c7646adb762e0f262",
+    "reasoning": {
+      "effort": "low",
+      "summary": "auto"
+    },
+    "include": [
+      "reasoning.encrypted_content"
+    ],
+    "timeout": 1800.0,
+    "extra_headers": {
+      "session_id": "fc4a8c53-a7f2-4bca-bb99-34c3643c2238",
+      "x-client-request-id": "fc4a8c53-a7f2-4bca-bb99-34c3643c2238"
+    }
+  },
+  "effective_output_token_cap": null,
+  "settings_availability": {
+    "temperature": null,
+    "top_p": null,
+    "context_ceiling": null,
+    "output_token_cap": null,
+    "sampling_defaults": "unavailable when absent on wire",
+    "reasoning": {
+      "effort": "low",
+      "summary": "auto"
+    }
+  },
+  "wire_model": "gpt-5.6-luna",
+  "reported_response_model": "gpt-5.6-luna",
+  "provider_terminal_status": "completed",
+  "result": {
+    "final_response": "DECISION: ask\nSUPPORT: none",
+    "last_reasoning": "**Assessing support paths completeness**",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_a_3\na_seed(cedar).\n% item i2; source_group event_a_3\na_gate_1(cedar).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_a_3\na_gate_2(cedar).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_a_3\na_gate_3(cedar).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(garnet).\n% item i10; source_group event_shared_3\nb_gate_1(garnet).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(garnet).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(garnet).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(marble).\n% item i18; source_group event_c_3\nc_gate_1(marble).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(marble).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(marble).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(cedar)\nExplicit opposite: neg(ready(cedar))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(cedar)\",\"opposite_query\":\"neg(ready(cedar))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_a_3\"],\"rule_source_group_ids\":[\"rules_a\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"5efac8888d802edd7b79b0a6038e7347787613aa36a3c9bd733b30cd71b7c3f5\",\"receipt_sha256\":\"87b68cd96f23324b0fae1332b9ba57ae2285c7ccdb16f46f56e4e91d3f3386ed\"}"
+      },
+      {
+        "role": "assistant",
+        "content": "DECISION: ask\nSUPPORT: none",
+        "reasoning": "**Assessing support paths completeness**",
+        "finish_reason": "stop",
+        "reasoning_content": "**Assessing support paths completeness**",
+        "codex_reasoning_items": [
+          {
+            "type": "reasoning",
+            "encrypted_content": "gAAAAABqpnrj1Rs3eBMhNxrDxD4LTHoePLEbPe1QGFOMYTXlwN242JSDYvCfyhYyGXooG_70O0kZM_iWTOuptBRUFvzmZFjWd7cs5GsU7fHNbVtfl12d966aBDA217g4N863358zsIz99kgimurPaacTfAD9V09YDq0arm-VPt8euSaGTpwUXXhOq0BkISR8_omoBoapGF3EhPba4QPlF1zppKVitHWI1lPU5yGZDBSkH-8sQJqM9xt1l9YL9JgruSYdS4KzNJXftVdSTLz6WerX-Y4ZZRBJ9_kXjpZgukZbP-wuIf09OtrRbRik8BpERJJskb5-QBEmOVIeIRWcu2e4k5tZFKBy6QSkrYuGDiqhVuc_lwbwCCpkJ_0bgQuBhr1ykrHtM2phKcBcRClJwFd2foWismwlE1P3OpYVdO6N7FJFnb27Kpp8mh8r6iDeTJeZ2mbj-8TvhHiin7iJrbOjd0_hsI5LjDqTwIOhZhdwBX9eowj6pam4zka8KFW0xZ0M7VYXFAxwPoT8IbG1e15eRJByzxuoqJXBp5V3IeOOQWK9KsPjOP206p4Dq2BfCK_fBoKyk173J7H_TeHwnDqUgkGujgYbDCkgMWlfcPr8Nnox09-BHGkfEs199_XbUAcafQBYa1fpOQR09A0uNuLjXYvcPG9BX-G6nDmjJSjkKRAvjd8hvVkjY8s0m3HgY1PH-hIy-gYIzZF4MuvU9cioTaX1vC1SjEfPXjWydtlX1DPWW5SJ9Nq9LOVUxFgeWlnXEPponTvoafHz8ZzmiASFqlXb-mh76RhJar9uF2Z9i-O-tO-PQEDIrIK9sqF4cQd-n6VHoc0FKsHs3_1r53pIqgVaf3JAYsTyPVN12_ypwKPnQf2Rk72gjcKTBH4RB1ORJvfmA_isUHn3Luud4N-e8sOLYatbdEOt63Zn6nnIqkEZ1zOigjLNeXmntxMWHlDRjmbVsnb7soHQmiM3CgdfggQBoAcr8jK4UN0W5YYT--718n43bLueWKEe0amT6gncBKLmUSwv4O8mwxQod1fZo1MwtTWRWYSEKOyDVvRaX6zr9P5MoSt3QzxaQRDyqeA8YiN3xG0cK9CqcLpGYRoAbC--GZgYqMe7DuEUuYbN-6ljVOs4RRzWUX95qcAf2OnXtEA-ZWKgzGs_l3501jZ1umsShZCCSeIxLWgLIwKMxtHsvbZp2SsT359WNJCX_ZZmK6Rqj9Jnf-QNc4ed7ZL4snm2lvrkacZkICaHRl89rpPJvacWw27zs4q1WfBV-sgMh8c2kDGWD7b6kxC_joAtz3Wf5_SM2rAPiHfrRbIGEdhx8PZys0lHCFc6Zq7LYLndZvYBaxYqNO9hx6fxJYPJhEktmX8awZiW2AgjOBWieLoRkYDlswC6edxAOag2vd2g_dh29KS7NGIq09dRXvoPzYsrpmzwxBpwrXyfp16q4pAkw3NsrCKMorg6Is0r5oZHJF0VkKreS720Dft_1F68UT6aiYfmYJptmyZ6Hm7dcepyPCBAzV6PjrSutz6ATr7HawkPEjKkHo-bQpiTmCm-RL0Q3SQnaNW2WJim7uyC6aOU5LXDVblVLmr8YqgQkvQ7HcMdxNk1QUMP4bkIbLSrWeP-TFNdQg==",
+            "_issuer_kind": "codex_backend",
+            "id": "rs_060b8b330a479c58016aa67ae2445c87d2ab178846dff5da41",
+            "summary": [
+              {
+                "type": "summary_text",
+                "text": "**Assessing support paths completeness**"
+              }
+            ]
+          }
+        ],
+        "codex_message_items": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "status": "completed",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "DECISION: ask\nSUPPORT: none"
+              }
+            ],
+            "id": "msg_060b8b330a479c58016aa67ae3fdec87d2bd437bc12fbd9ac7",
+            "phase": "final_answer"
+          }
+        ]
+      }
+    ],
+    "api_calls": 1,
+    "completed": true,
+    "turn_exit_reason": "text_response(finish_reason=stop)",
+    "failed": false,
+    "partial": false,
+    "interrupted": false,
+    "response_transformed": false,
+    "response_previewed": false,
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "base_url": "https://chatgpt.com/backend-api/codex",
+    "input_tokens": 963,
+    "output_tokens": 77,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 62,
+    "prompt_tokens": 963,
+    "completion_tokens": 77,
+    "total_tokens": 1040,
+    "last_prompt_tokens": 963,
+    "estimated_cost_usd": 0.0,
+    "cost_status": "included",
+    "cost_source": "none",
+    "service_tier": null,
+    "session_id": "fc4a8c53-a7f2-4bca-bb99-34c3643c2238"
+  },
+  "final_response": "DECISION: ask\nSUPPORT: none",
+  "usage": {
+    "input_tokens": 963,
+    "output_tokens": 77,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 62,
+    "prompt_tokens": 963,
+    "completion_tokens": 77,
+    "total_tokens": 1040,
+    "last_prompt_tokens": 963,
+    "estimated_cost_usd": 0.0,
+    "cost_status": "included",
+    "cost_source": "none"
+  },
+  "bootstrap_log_retained": false,
+  "ended_at": 1789295332.099068
+}

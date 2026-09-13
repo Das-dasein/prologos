@@ -1,0 +1,20 @@
+# Memory grounding review v2 smoke v1
+
+All inputs, policy, schemas, prompt source, provider adapter, and ontology dependencies were frozen before the one live review. The review has no admission authority.
+
+fixture.json: 8daf3b4f4b83605995a766e5b7b602f26e0c86df707c814a20b16d5b99180f1f
+collector-v1.source.cjs: 8d09398f3652dbb0329735e766bc14bf4f7beb2bb02f45ca3e1e7696b3860ffe
+grounding-review-v2.source.js: 8a1b4f2d65ed79f29a769d6c25840d58ed5b4b62629a5d1da9857707006997e4
+predicate-grounding-policy.source.js: 5f62c02cddd5c50d15781aea5b0145c12e908662e016ae29d75bf523c18c1040
+predicate-grounding-policy-v1.json: 2279cae6865da3a406c85c9d8a7d4545db06775c145600fc6062ba49429b05a6
+llm-schema.source.js: 0e136b1af73a74ff2fed62da652324396cfb292c5925bdd577417b8520a03fb0
+provider-codex.source.js: c9c2fc6d7a6c22b04ddefcb17e98c1ad4bcf556e2ad76f568518faae754e2c8e
+ontology-registry.source.js: 465acb06454dd6d6625cd3e296da1aad4a21411fdfdfb39d7232bb00555a6937
+memory-grounding-review-v2.schema.json: bfe265316ed18cb23b1cc6848a08f6c6e86e30a168d790b7772f4ef0dd4565f6
+active-profile-v1.json: 5945d526a641b487b7ada667a54bd95476408d87b9f3d670c4f18eaa83d40fbb
+universal-core-v1.json: 2fd5bbc833d84e3b4dafe92f19e1b4b8611a6c29e92e1961f5e13db222c6d881
+conversation-profile-v1.json: e6255a2329b457d905f5f6790da1b4818d8ab8b690def04449d44fcddc393801
+
+Planned model argument: gpt-5.6-luna
+Planned provider calls: 1
+Planned memory writes: 0

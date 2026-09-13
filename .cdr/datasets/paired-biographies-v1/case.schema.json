@@ -1,0 +1,764 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:paired-biographies:v1:case",
+  "title": "Paired biographies v1 case record",
+  "$comment": "Cross-record identity, pair equality, provenance, timing, admission, active/proof references and manifest checks are additional fail-closed validator obligations; see WIRE.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "paired-biographies-v1.0.0"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^p(0[1-9]|1[0-2])_[ab]$"
+    },
+    "pair_id": {
+      "type": "string",
+      "pattern": "^p(0[1-9]|1[0-2])$"
+    },
+    "variant": {
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "category": {
+      "enum": [
+        "missing_premise_vs_independent_path",
+        "fact_vs_explicit_negation",
+        "direct_conflict",
+        "dependent_conflict_with_independent_clean_proof",
+        "superseded_rule",
+        "expired_interval",
+        "user_assertion_vs_hypothetical",
+        "assistant_assertion_without_user_source",
+        "long_history_distractors",
+        "paraphrase_invariance",
+        "memory_already_answers_question",
+        "stop_for_insufficient_data"
+      ]
+    },
+    "pair_relation": {
+      "enum": [
+        "contrast",
+        "invariance"
+      ]
+    },
+    "intervention": {
+      "type": "string",
+      "minLength": 1
+    },
+    "old_dialogue": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/message"
+      },
+      "minItems": 1,
+      "maxItems": 128
+    },
+    "current_dialogue": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/message"
+      },
+      "minItems": 1,
+      "maxItems": 8
+    },
+    "current_time": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "domain_projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "predicates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "arity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name",
+              "arity",
+              "description"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "version",
+        "predicates"
+      ]
+    },
+    "decision_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "signed-horn-next-move-v1"
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/question"
+          },
+          "minItems": 0,
+          "maxItems": 4
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "queries": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "branches": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "questions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maxQuestionCost": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "queries",
+            "branches",
+            "questions",
+            "maxQuestionCost"
+          ]
+        },
+        "strategy": {
+          "const": "missing"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "version",
+        "action",
+        "questions",
+        "budget",
+        "strategy",
+        "text"
+      ]
+    },
+    "admission_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "explicit-user-only-v1"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "version",
+        "text"
+      ]
+    },
+    "accepted_memory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/accepted"
+      },
+      "minItems": 0,
+      "maxItems": 512
+    },
+    "candidate_memory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      },
+      "minItems": 0,
+      "maxItems": 512
+    },
+    "expected_extraction_candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/extracted"
+      },
+      "minItems": 0,
+      "maxItems": 512
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_epistemic_status": {
+      "enum": [
+        "entailed",
+        "contradicted",
+        "conflict",
+        "unknown"
+      ]
+    },
+    "expected_raw_status": {
+      "enum": [
+        "entailed",
+        "contradicted",
+        "conflict",
+        "unknown"
+      ]
+    },
+    "expected_active_item_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "minItems": 0,
+      "maxItems": 512,
+      "uniqueItems": true
+    },
+    "expected_next_move": {
+      "$ref": "#/$defs/move"
+    },
+    "acceptable_questions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "minItems": 0,
+      "maxItems": 4,
+      "uniqueItems": true
+    },
+    "required_proof_items": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "minItems": 0,
+      "maxItems": 512,
+      "uniqueItems": true
+    },
+    "forbidden_behaviors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 2,
+      "maxItems": 32,
+      "uniqueItems": true
+    },
+    "dream_eligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "eligible",
+        "reason"
+      ]
+    },
+    "oracle_rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "review_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "authorship": {
+          "const": "ai_authored_hand_curated"
+        },
+        "independent_review": {
+          "enum": [
+            "pending",
+            "approved",
+            "revise"
+          ]
+        },
+        "human_review": {
+          "const": "pending"
+        },
+        "human_reviewer": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "authorship",
+        "independent_review",
+        "human_review",
+        "human_reviewer"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "case_id",
+    "pair_id",
+    "variant",
+    "category",
+    "pair_relation",
+    "intervention",
+    "old_dialogue",
+    "current_dialogue",
+    "current_time",
+    "domain_projection",
+    "decision_policy",
+    "admission_policy",
+    "accepted_memory",
+    "candidate_memory",
+    "expected_extraction_candidates",
+    "query",
+    "expected_epistemic_status",
+    "expected_raw_status",
+    "expected_active_item_ids",
+    "expected_next_move",
+    "acceptable_questions",
+    "required_proof_items",
+    "forbidden_behaviors",
+    "dream_eligibility",
+    "oracle_rationale",
+    "review_status"
+  ],
+  "$defs": {
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "role": {
+          "enum": [
+            "user",
+            "assistant"
+          ]
+        },
+        "at": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "at",
+        "text"
+      ]
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "literal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "literal",
+        "text",
+        "cost"
+      ]
+    },
+    "accepted": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "program": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32768
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "observedAt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validFrom": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validTo": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replaces": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modality": {
+          "enum": [
+            "asserted",
+            "reported",
+            "uncertain"
+          ]
+        },
+        "natural_language": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "const": "accepted"
+        },
+        "admittedAt": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "program",
+        "source",
+        "observedAt",
+        "validFrom",
+        "validTo",
+        "replaces",
+        "modality",
+        "natural_language",
+        "status",
+        "admittedAt"
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "program": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32768
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "observedAt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validFrom": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validTo": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replaces": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modality": {
+          "enum": [
+            "asserted",
+            "reported",
+            "uncertain"
+          ]
+        },
+        "natural_language": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "const": "candidate"
+        }
+      },
+      "required": [
+        "id",
+        "program",
+        "source",
+        "observedAt",
+        "validFrom",
+        "validTo",
+        "replaces",
+        "modality",
+        "natural_language",
+        "status"
+      ]
+    },
+    "extracted": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "program": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32768
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "observedAt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validFrom": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validTo": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "replaces": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modality": {
+          "enum": [
+            "asserted",
+            "reported",
+            "uncertain"
+          ]
+        },
+        "natural_language": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "const": "candidate"
+        },
+        "expected_admission": {
+          "enum": [
+            "accept",
+            "retain_candidate"
+          ]
+        },
+        "admission_reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "program",
+        "source",
+        "observedAt",
+        "validFrom",
+        "validTo",
+        "replaces",
+        "modality",
+        "natural_language",
+        "status",
+        "expected_admission",
+        "admission_reason"
+      ]
+    },
+    "move": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "act",
+            "ask",
+            "pause"
+          ]
+        },
+        "semantic_target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "reason": {
+          "enum": [
+            "safe_proof",
+            "missing_premise",
+            "goal_conflicted",
+            "goal_contradicted",
+            "no_supported_next_action"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "semantic_target",
+        "reason"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "ask"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "question_id"
+            ],
+            "properties": {
+              "reason": {
+                "const": "missing_premise"
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "question_id"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "act"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "const": "safe_proof"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "pause"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "enum": [
+                  "goal_conflicted",
+                  "goal_contradicted",
+                  "no_supported_next_action"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,296 @@
+{
+  "status": "ok",
+  "inference_calls": 1,
+  "tools": [],
+  "api_requests": [
+    {
+      "model": "gpt-5.6-luna",
+      "instructions": "Extract in-domain assertions and signed Horn rules from the supplied dialogue. Return only {\"candidates\":[...]}. Each candidate must have exactly id, program, source, observedAt, validFrom, validTo, replaces, modality, natural_language, status. Use fresh unique lowercase item IDs of your choice. program is one safe signed-Horn fact/rule ending with a period; explicit negation is neg(literal), never negation from absence. source is the message ID; observedAt equals its at tick. Default validFrom is the source time and validTo is null unless explicitly specified. replaces is null or the ID of a replaced candidate in this same output, only for explicit replacements. modality is asserted for actual user assertions, reported for assistant-only claims, uncertain for hypothetical examples. status is always candidate. natural_language is a nonempty plain-language rendering. Include no admission decisions. Do not extract questions or editorial mentions. Do not execute a solver or actions.",
+      "input": [
+        {
+          "role": "user",
+          "content": "{\"dialogue\":[{\"id\":\"m_rule\",\"role\":\"user\",\"at\":1,\"text\":\"Для любого документа полученное согласие достаточно для разрешения публикации. Других правил сейчас не устанавливаю.\"},{\"id\":\"current\",\"role\":\"user\",\"at\":50,\"text\":\"Определи следующий шаг для публикации lyra. Если нет безопасного доказательства, используй только разрешённые вопросы.\"}],\"current_time\":50,\"domain_projection\":{\"version\":\"controlled-domain-v1\",\"predicates\":[{\"name\":\"publish\",\"arity\":1,\"description\":\"Публикация документа разрешена.\"},{\"name\":\"consent\",\"arity\":1,\"description\":\"Согласие на документ получено.\"},{\"name\":\"archived\",\"arity\":1,\"description\":\"Документ находится в утверждённом архиве.\"}]},\"admission_policy\":{\"version\":\"explicit-user-only-v1\",\"text\":\"Extract in-domain assertions and rules as candidates with source and time. Explicit actual user statements may be accepted. Assistant-only assertions stay reported candidates; hypothetical examples stay uncertain candidates. Questions and editorial mentions are not assertions. Do not invent negative facts. Explicit replaces links retire the old accepted item when the replacement becomes valid. Validity endpoints are inclusive.\"}}"
+        }
+      ],
+      "store": false,
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "timeout": 1800.0,
+      "prompt_cache_key": "pck_b05ba26762a3407f1d229876",
+      "extra_headers": {
+        "session_id": "ef3f2565-926a-43c4-b970-9e0f04489795",
+        "x-client-request-id": "ef3f2565-926a-43c4-b970-9e0f04489795"
+      }
+    }
+  ],
+  "api_responses": [
+    {
+      "output": [
+        {
+          "id": "rs_078ec928130d032c016aa2709534b487d2a1c063836720733c",
+          "summary": [
+            {
+              "text": "**Extracting consent publication rule**",
+              "type": "summary_text"
+            }
+          ],
+          "type": "reasoning",
+          "content": [],
+          "encrypted_content": "gAAAAABqonCYR86TLS4vvT7XLk8s8olplWrK122X8LoThJ-cY_i5QOECoPhw4HvA6Z0qasPJR74fKG8apjSSqZP2BPPhJOVxqCUzBvfk0XXYbfTCe0EtT2kxF73DQVmsJ8kGUI61gCS4KekhE8QKMRIFPpudWzOgPFCDBZhIp8fZumQV_W0JYiTzPCXlcXkQoXAgMv1TQusifJn-AyJ3IJmynuwDPdpP6fpN6QXlAbFqj-W1AQa3032kbzZj2-axFkIivCzmJfK2esRFm9_OjFGTZMB0HuFJlh4d_Mef4u_uOOiBdza3PXXYA0BDeKr4y9lj8C8HO6GNO7HFTFltTkN77NtimvmfsORjG7s8CVBZrlJ-qelf3-CqLBMzeDoH1sBTqXdpN1blB75cRBvgceUnp-AjtPkzJNzGHZUg_wH9MeREtwL_0wsQWv2kgbY9QT4CD8gQLkk8xsSegnLXKN33EVm0xJVQDtmFOt75Lccvg41JbaUJTmOrxaziha3Eg1biNMwBadHo1Dr3mczTFcOzHMmDWaaNd-4gY_O56qzEbehUyHl9m4f8VLC856IQKqKqy9ug8w6NSv8RJ03Wt7lt4mO_SYO-v_2_rzJHidRQl3rRg_YXy9wr1DefYlgJZrjoPpgbncnJ3T9SQoyd_Sq4OhuWXelXh1b4drXLlMYZQrytTnWmtGqMRzxyZ_8SVlCSsBWfBzKjkpuIzW5iMrINezQp6GMsBpPKmaUd20IwPsSbYQzv3CKRVTExOK1LK8KcH8PSUZWGE0th8wrJaiH7foq-pl_cy9K0S_f2gxIoWTVKJbWBhcZP3RL5CO_XO7V4a4rrZkQ9_3VGO-haKnnmRi1nbdbfs4WsrhV5G3Z5rglYgWmlq1x2RDOAXusr0V16OnboONb9N3ZYGJ-bVHu3UDCvUZudo1X9kKtgn2PYSYC6BEtapcobhvhVl_SkuM_wgRFIMAyLS8Cjt9kaSQjpn8sY6rvw5xeHuIt-UlYhpW-OWu9jFToa7miZZ8RmH0tXhSwjiTm3RE0lMAjHcELwzdXb_j0GbXnY9QHrFlgYA1pzK0dznBK25u_SfmwkgR4_wOEBU7RJXqhnbDUainM_TAX6cYYAmKvi-G_sS1FqdrsJclFfGNyEfpJaxe5xa9iiRsz8dZce1m9NxuDYN9sB0YvREJ_so-xDrntgsEOFlupApQkz1rWJOVHtz44ViABnQakGy1BchPNLYi03CRhmFD-wCj0iV-QBQbAO5Viq4ezmGghs5fKwh_K_ztWmxo0FZXVidnh8La7rLqpt_t6r2R7_1zMy_Tx6oomyiUiLLsbzD3Wr00fynrOa2gXbJXhaD17CgjMxUJbuJrvxIDWuXL4ejmWwufoXTY-rhHYwBff6cXCjlnbCPd0-1Ro54MSloORD67mIGNCEkpzHotStb3cmwVRTIFzuPhM1vV4vk4mkPEgrzEWZ60TV3Ds1lyeFo56V1m4Kan_b9yaTO6N7AOyfOWpjUWO20Qqi38gxcSI6S2t1Kd3kEU9VRV996ch-2H4bgQPp7Ba1YcbIqWmBx8rYdY5Rzccp_7e_UkLIR8x37wjri_WEcJhvv87fv1XTDXxOK4i3QDwp3DsMGisTVipkTITJsJXE0wDaYBWMF8gp_kNbXRCGxmQjpkiTtvLZ6nmJG21achpzCiAYT-u8S_ltjTRHr7fdpTw5Uf8yRjfYOcouCL33eJM9vk69HJQANAxvpZ9fI7PGSWegRRVn_WBbmxURXfoM7dYzydj9mFiHWo4H4gtR2yohkDlOA602dta-wIu7kmsmR1rLa11M98a0gK8PmuBqkT-oV6JPkv4Upo3dBabssCF4B119zCKV25yjB3Ehk_GV4rICdh_SxMRM085j4q6Zd2vDz1mdIRZM6MAGE8v_VW4cxAeeiOdc2TBUtSvSYMbiC2fWY_KEvJXr55S-jcY_VUY-FP-kE0v5NhUA6BnbuyLPFFuvJzXifmAvZJDtl6QN4FAbaGSJSkAbXVAORU5WL4isBNOmSaRES85UkdpwHCYm3zhQ8rO9XCQKE2i0MoJlwIryfdo0vVKRGABtJw==",
+          "status": null
+        },
+        {
+          "id": "msg_078ec928130d032c016aa27098140c87d288604d3e97c215f9",
+          "content": [
+            {
+              "annotations": [],
+              "text": "{\"candidates\":[{\"id\":\"rule_consent_publish\",\"program\":\"consent(X) -> publish(X).\",\"source\":\"m_rule\",\"observedAt\":1,\"validFrom\":1,\"validTo\":null,\"replaces\":null,\"modality\":\"asserted\",\"natural_language\":\"Для любого документа полученное согласие достаточно для разрешения публикации.\",\"status\":\"candidate\"}]}",
+              "type": "output_text",
+              "logprobs": []
+            }
+          ],
+          "role": "assistant",
+          "status": "completed",
+          "type": "message",
+          "phase": "final_answer"
+        }
+      ],
+      "output_text": "{\"candidates\":[{\"id\":\"rule_consent_publish\",\"program\":\"consent(X) -> publish(X).\",\"source\":\"m_rule\",\"observedAt\":1,\"validFrom\":1,\"validTo\":null,\"replaces\":null,\"modality\":\"asserted\",\"natural_language\":\"Для любого документа полученное согласие достаточно для разрешения публикации.\",\"status\":\"candidate\"}]}",
+      "usage": {
+        "input_tokens": 454,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 205,
+        "output_tokens_details": {
+          "reasoning_tokens": 122
+        },
+        "total_tokens": 659,
+        "attribution": {
+          "items": {
+            "msg_078ec928130d032c016aa270946b2487d2af5d37f0e78b9b47": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "content": [
+                {
+                  "cache_write_tokens": 0,
+                  "cached_tokens": 0,
+                  "input_tokens": 255,
+                  "output_tokens": 0
+                }
+              ],
+              "input_tokens": 255,
+              "output_tokens": 0
+            },
+            "rs_078ec928130d032c016aa2709534b487d2a1c063836720733c": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "input_tokens": 2,
+              "output_tokens": 122
+            },
+            "msg_078ec928130d032c016aa27098140c87d288604d3e97c215f9": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "content": [
+                {
+                  "cache_write_tokens": 0,
+                  "cached_tokens": 0,
+                  "input_tokens": 0,
+                  "output_tokens": 83
+                }
+              ],
+              "input_tokens": 0,
+              "output_tokens": 83
+            }
+          },
+          "request_fields": {
+            "instructions": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "input_tokens": 197,
+              "output_tokens": 0
+            }
+          }
+        }
+      },
+      "status": "completed",
+      "id": "resp_078ec928130d032c016aa27094620887d2b4b0ae621d3512db",
+      "model": "gpt-5.6-luna",
+      "incomplete_details": null,
+      "error": null
+    }
+  ],
+  "session_id": "ef3f2565-926a-43c4-b970-9e0f04489795",
+  "started_at": 1789030545.890615,
+  "requested_config": {
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "reasoning_effort": "low",
+    "max_tokens": 4096,
+    "max_iterations": 1,
+    "timeout_ms": 120000,
+    "retries": 0,
+    "fallback": null,
+    "tools": []
+  },
+  "prompt": {
+    "system": "Extract in-domain assertions and signed Horn rules from the supplied dialogue. Return only {\"candidates\":[...]}. Each candidate must have exactly id, program, source, observedAt, validFrom, validTo, replaces, modality, natural_language, status. Use fresh unique lowercase item IDs of your choice. program is one safe signed-Horn fact/rule ending with a period; explicit negation is neg(literal), never negation from absence. source is the message ID; observedAt equals its at tick. Default validFrom is the source time and validTo is null unless explicitly specified. replaces is null or the ID of a replaced candidate in this same output, only for explicit replacements. modality is asserted for actual user assertions, reported for assistant-only claims, uncertain for hypothetical examples. status is always candidate. natural_language is a nonempty plain-language rendering. Include no admission decisions. Do not extract questions or editorial mentions. Do not execute a solver or actions.",
+    "user": "{\"dialogue\":[{\"id\":\"m_rule\",\"role\":\"user\",\"at\":1,\"text\":\"Для любого документа полученное согласие достаточно для разрешения публикации. Других правил сейчас не устанавливаю.\"},{\"id\":\"current\",\"role\":\"user\",\"at\":50,\"text\":\"Определи следующий шаг для публикации lyra. Если нет безопасного доказательства, используй только разрешённые вопросы.\"}],\"current_time\":50,\"domain_projection\":{\"version\":\"controlled-domain-v1\",\"predicates\":[{\"name\":\"publish\",\"arity\":1,\"description\":\"Публикация документа разрешена.\"},{\"name\":\"consent\",\"arity\":1,\"description\":\"Согласие на документ получено.\"},{\"name\":\"archived\",\"arity\":1,\"description\":\"Документ находится в утверждённом архиве.\"}]},\"admission_policy\":{\"version\":\"explicit-user-only-v1\",\"text\":\"Extract in-domain assertions and rules as candidates with source and time. Explicit actual user statements may be accepted. Assistant-only assertions stay reported candidates; hypothetical examples stay uncertain candidates. Questions and editorial mentions are not assertions. Do not invent negative facts. Explicit replaces links retire the old accepted item when the replacement becomes valid. Validity endpoints are inclusive.\"}}"
+  },
+  "effective_config": {
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "api_mode": "codex_responses",
+    "max_tokens": 4096,
+    "max_iterations": 1,
+    "reasoning_config": {
+      "effort": "low"
+    },
+    "skip_context_files": true,
+    "skip_memory": null,
+    "context_length": null
+  },
+  "isolation": {
+    "hermes_home": "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/paired-hermes-_hkoq4ax/home",
+    "cwd": "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/paired-hermes-_hkoq4ax/work",
+    "tools_empty": true,
+    "skip_memory": true,
+    "skip_context_files": true,
+    "load_soul_identity": false,
+    "session_db": null,
+    "fresh_process_pid": 54065,
+    "config_text": "memory:\n  memory_enabled: false\n  user_profile_enabled: false\ncompression:\n  enabled: false\nagent:\n  max_iterations: 1\n  max_retries: 0\n"
+  },
+  "system_prompt_assembly": "exact frozen harness system, AIAgent assembly hook overridden; no host metadata",
+  "model_messages": [
+    {
+      "role": "system",
+      "content": "Extract in-domain assertions and signed Horn rules from the supplied dialogue. Return only {\"candidates\":[...]}. Each candidate must have exactly id, program, source, observedAt, validFrom, validTo, replaces, modality, natural_language, status. Use fresh unique lowercase item IDs of your choice. program is one safe signed-Horn fact/rule ending with a period; explicit negation is neg(literal), never negation from absence. source is the message ID; observedAt equals its at tick. Default validFrom is the source time and validTo is null unless explicitly specified. replaces is null or the ID of a replaced candidate in this same output, only for explicit replacements. modality is asserted for actual user assertions, reported for assistant-only claims, uncertain for hypothetical examples. status is always candidate. natural_language is a nonempty plain-language rendering. Include no admission decisions. Do not extract questions or editorial mentions. Do not execute a solver or actions."
+    },
+    {
+      "role": "user",
+      "content": "{\"dialogue\":[{\"id\":\"m_rule\",\"role\":\"user\",\"at\":1,\"text\":\"Для любого документа полученное согласие достаточно для разрешения публикации. Других правил сейчас не устанавливаю.\"},{\"id\":\"current\",\"role\":\"user\",\"at\":50,\"text\":\"Определи следующий шаг для публикации lyra. Если нет безопасного доказательства, используй только разрешённые вопросы.\"}],\"current_time\":50,\"domain_projection\":{\"version\":\"controlled-domain-v1\",\"predicates\":[{\"name\":\"publish\",\"arity\":1,\"description\":\"Публикация документа разрешена.\"},{\"name\":\"consent\",\"arity\":1,\"description\":\"Согласие на документ получено.\"},{\"name\":\"archived\",\"arity\":1,\"description\":\"Документ находится в утверждённом архиве.\"}]},\"admission_policy\":{\"version\":\"explicit-user-only-v1\",\"text\":\"Extract in-domain assertions and rules as candidates with source and time. Explicit actual user statements may be accepted. Assistant-only assertions stay reported candidates; hypothetical examples stay uncertain candidates. Questions and editorial mentions are not assertions. Do not invent negative facts. Explicit replaces links retire the old accepted item when the replacement becomes valid. Validity endpoints are inclusive.\"}}"
+    }
+  ],
+  "built_api_body": {
+    "model": "gpt-5.6-luna",
+    "instructions": "Extract in-domain assertions and signed Horn rules from the supplied dialogue. Return only {\"candidates\":[...]}. Each candidate must have exactly id, program, source, observedAt, validFrom, validTo, replaces, modality, natural_language, status. Use fresh unique lowercase item IDs of your choice. program is one safe signed-Horn fact/rule ending with a period; explicit negation is neg(literal), never negation from absence. source is the message ID; observedAt equals its at tick. Default validFrom is the source time and validTo is null unless explicitly specified. replaces is null or the ID of a replaced candidate in this same output, only for explicit replacements. modality is asserted for actual user assertions, reported for assistant-only claims, uncertain for hypothetical examples. status is always candidate. natural_language is a nonempty plain-language rendering. Include no admission decisions. Do not extract questions or editorial mentions. Do not execute a solver or actions.",
+    "input": [
+      {
+        "role": "user",
+        "content": "{\"dialogue\":[{\"id\":\"m_rule\",\"role\":\"user\",\"at\":1,\"text\":\"Для любого документа полученное согласие достаточно для разрешения публикации. Других правил сейчас не устанавливаю.\"},{\"id\":\"current\",\"role\":\"user\",\"at\":50,\"text\":\"Определи следующий шаг для публикации lyra. Если нет безопасного доказательства, используй только разрешённые вопросы.\"}],\"current_time\":50,\"domain_projection\":{\"version\":\"controlled-domain-v1\",\"predicates\":[{\"name\":\"publish\",\"arity\":1,\"description\":\"Публикация документа разрешена.\"},{\"name\":\"consent\",\"arity\":1,\"description\":\"Согласие на документ получено.\"},{\"name\":\"archived\",\"arity\":1,\"description\":\"Документ находится в утверждённом архиве.\"}]},\"admission_policy\":{\"version\":\"explicit-user-only-v1\",\"text\":\"Extract in-domain assertions and rules as candidates with source and time. Explicit actual user statements may be accepted. Assistant-only assertions stay reported candidates; hypothetical examples stay uncertain candidates. Questions and editorial mentions are not assertions. Do not invent negative facts. Explicit replaces links retire the old accepted item when the replacement becomes valid. Validity endpoints are inclusive.\"}}"
+      }
+    ],
+    "store": false,
+    "prompt_cache_key": "pck_b05ba26762a3407f1d229876",
+    "reasoning": {
+      "effort": "low",
+      "summary": "auto"
+    },
+    "include": [
+      "reasoning.encrypted_content"
+    ],
+    "timeout": 1800.0,
+    "extra_headers": {
+      "session_id": "ef3f2565-926a-43c4-b970-9e0f04489795",
+      "x-client-request-id": "ef3f2565-926a-43c4-b970-9e0f04489795"
+    }
+  },
+  "effective_output_token_cap": null,
+  "wire_model": "gpt-5.6-luna",
+  "reported_response_model": "gpt-5.6-luna",
+  "result": {
+    "final_response": "{\"candidates\":[{\"id\":\"rule_consent_publish\",\"program\":\"consent(X) -> publish(X).\",\"source\":\"m_rule\",\"observedAt\":1,\"validFrom\":1,\"validTo\":null,\"replaces\":null,\"modality\":\"asserted\",\"natural_language\":\"Для любого документа полученное согласие достаточно для разрешения публикации.\",\"status\":\"candidate\"}]}",
+    "last_reasoning": "**Extracting consent publication rule**",
+    "messages": [
+      {
+        "role": "user",
+        "content": "{\"dialogue\":[{\"id\":\"m_rule\",\"role\":\"user\",\"at\":1,\"text\":\"Для любого документа полученное согласие достаточно для разрешения публикации. Других правил сейчас не устанавливаю.\"},{\"id\":\"current\",\"role\":\"user\",\"at\":50,\"text\":\"Определи следующий шаг для публикации lyra. Если нет безопасного доказательства, используй только разрешённые вопросы.\"}],\"current_time\":50,\"domain_projection\":{\"version\":\"controlled-domain-v1\",\"predicates\":[{\"name\":\"publish\",\"arity\":1,\"description\":\"Публикация документа разрешена.\"},{\"name\":\"consent\",\"arity\":1,\"description\":\"Согласие на документ получено.\"},{\"name\":\"archived\",\"arity\":1,\"description\":\"Документ находится в утверждённом архиве.\"}]},\"admission_policy\":{\"version\":\"explicit-user-only-v1\",\"text\":\"Extract in-domain assertions and rules as candidates with source and time. Explicit actual user statements may be accepted. Assistant-only assertions stay reported candidates; hypothetical examples stay uncertain candidates. Questions and editorial mentions are not assertions. Do not invent negative facts. Explicit replaces links retire the old accepted item when the replacement becomes valid. Validity endpoints are inclusive.\"}}"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"candidates\":[{\"id\":\"rule_consent_publish\",\"program\":\"consent(X) -> publish(X).\",\"source\":\"m_rule\",\"observedAt\":1,\"validFrom\":1,\"validTo\":null,\"replaces\":null,\"modality\":\"asserted\",\"natural_language\":\"Для любого документа полученное согласие достаточно для разрешения публикации.\",\"status\":\"candidate\"}]}",
+        "reasoning": "**Extracting consent publication rule**",
+        "finish_reason": "stop",
+        "reasoning_content": "**Extracting consent publication rule**",
+        "codex_reasoning_items": [
+          {
+            "type": "reasoning",
+            "encrypted_content": "gAAAAABqonCYR86TLS4vvT7XLk8s8olplWrK122X8LoThJ-cY_i5QOECoPhw4HvA6Z0qasPJR74fKG8apjSSqZP2BPPhJOVxqCUzBvfk0XXYbfTCe0EtT2kxF73DQVmsJ8kGUI61gCS4KekhE8QKMRIFPpudWzOgPFCDBZhIp8fZumQV_W0JYiTzPCXlcXkQoXAgMv1TQusifJn-AyJ3IJmynuwDPdpP6fpN6QXlAbFqj-W1AQa3032kbzZj2-axFkIivCzmJfK2esRFm9_OjFGTZMB0HuFJlh4d_Mef4u_uOOiBdza3PXXYA0BDeKr4y9lj8C8HO6GNO7HFTFltTkN77NtimvmfsORjG7s8CVBZrlJ-qelf3-CqLBMzeDoH1sBTqXdpN1blB75cRBvgceUnp-AjtPkzJNzGHZUg_wH9MeREtwL_0wsQWv2kgbY9QT4CD8gQLkk8xsSegnLXKN33EVm0xJVQDtmFOt75Lccvg41JbaUJTmOrxaziha3Eg1biNMwBadHo1Dr3mczTFcOzHMmDWaaNd-4gY_O56qzEbehUyHl9m4f8VLC856IQKqKqy9ug8w6NSv8RJ03Wt7lt4mO_SYO-v_2_rzJHidRQl3rRg_YXy9wr1DefYlgJZrjoPpgbncnJ3T9SQoyd_Sq4OhuWXelXh1b4drXLlMYZQrytTnWmtGqMRzxyZ_8SVlCSsBWfBzKjkpuIzW5iMrINezQp6GMsBpPKmaUd20IwPsSbYQzv3CKRVTExOK1LK8KcH8PSUZWGE0th8wrJaiH7foq-pl_cy9K0S_f2gxIoWTVKJbWBhcZP3RL5CO_XO7V4a4rrZkQ9_3VGO-haKnnmRi1nbdbfs4WsrhV5G3Z5rglYgWmlq1x2RDOAXusr0V16OnboONb9N3ZYGJ-bVHu3UDCvUZudo1X9kKtgn2PYSYC6BEtapcobhvhVl_SkuM_wgRFIMAyLS8Cjt9kaSQjpn8sY6rvw5xeHuIt-UlYhpW-OWu9jFToa7miZZ8RmH0tXhSwjiTm3RE0lMAjHcELwzdXb_j0GbXnY9QHrFlgYA1pzK0dznBK25u_SfmwkgR4_wOEBU7RJXqhnbDUainM_TAX6cYYAmKvi-G_sS1FqdrsJclFfGNyEfpJaxe5xa9iiRsz8dZce1m9NxuDYN9sB0YvREJ_so-xDrntgsEOFlupApQkz1rWJOVHtz44ViABnQakGy1BchPNLYi03CRhmFD-wCj0iV-QBQbAO5Viq4ezmGghs5fKwh_K_ztWmxo0FZXVidnh8La7rLqpt_t6r2R7_1zMy_Tx6oomyiUiLLsbzD3Wr00fynrOa2gXbJXhaD17CgjMxUJbuJrvxIDWuXL4ejmWwufoXTY-rhHYwBff6cXCjlnbCPd0-1Ro54MSloORD67mIGNCEkpzHotStb3cmwVRTIFzuPhM1vV4vk4mkPEgrzEWZ60TV3Ds1lyeFo56V1m4Kan_b9yaTO6N7AOyfOWpjUWO20Qqi38gxcSI6S2t1Kd3kEU9VRV996ch-2H4bgQPp7Ba1YcbIqWmBx8rYdY5Rzccp_7e_UkLIR8x37wjri_WEcJhvv87fv1XTDXxOK4i3QDwp3DsMGisTVipkTITJsJXE0wDaYBWMF8gp_kNbXRCGxmQjpkiTtvLZ6nmJG21achpzCiAYT-u8S_ltjTRHr7fdpTw5Uf8yRjfYOcouCL33eJM9vk69HJQANAxvpZ9fI7PGSWegRRVn_WBbmxURXfoM7dYzydj9mFiHWo4H4gtR2yohkDlOA602dta-wIu7kmsmR1rLa11M98a0gK8PmuBqkT-oV6JPkv4Upo3dBabssCF4B119zCKV25yjB3Ehk_GV4rICdh_SxMRM085j4q6Zd2vDz1mdIRZM6MAGE8v_VW4cxAeeiOdc2TBUtSvSYMbiC2fWY_KEvJXr55S-jcY_VUY-FP-kE0v5NhUA6BnbuyLPFFuvJzXifmAvZJDtl6QN4FAbaGSJSkAbXVAORU5WL4isBNOmSaRES85UkdpwHCYm3zhQ8rO9XCQKE2i0MoJlwIryfdo0vVKRGABtJw==",
+            "_issuer_kind": "codex_backend",
+            "id": "rs_078ec928130d032c016aa2709534b487d2a1c063836720733c",
+            "summary": [
+              {
+                "type": "summary_text",
+                "text": "**Extracting consent publication rule**"
+              }
+            ]
+          }
+        ],
+        "codex_message_items": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "status": "completed",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "{\"candidates\":[{\"id\":\"rule_consent_publish\",\"program\":\"consent(X) -> publish(X).\",\"source\":\"m_rule\",\"observedAt\":1,\"validFrom\":1,\"validTo\":null,\"replaces\":null,\"modality\":\"asserted\",\"natural_language\":\"Для любого документа полученное согласие достаточно для разрешения публикации.\",\"status\":\"candidate\"}]}"
+              }
+            ],
+            "id": "msg_078ec928130d032c016aa27098140c87d288604d3e97c215f9",
+            "phase": "final_answer"
+          }
+        ]
+      }
+    ],
+    "api_calls": 1,
+    "completed": true,
+    "turn_exit_reason": "text_response(finish_reason=stop)",
+    "failed": false,
+    "partial": false,
+    "interrupted": false,
+    "response_transformed": false,
+    "response_previewed": false,
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "base_url": "https://chatgpt.com/backend-api/codex",
+    "input_tokens": 454,
+    "output_tokens": 205,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 122,
+    "prompt_tokens": 454,
+    "completion_tokens": 205,
+    "total_tokens": 659,
+    "last_prompt_tokens": 454,
+    "estimated_cost_usd": 0.0,
+    "cost_status": "included",
+    "cost_source": "none",
+    "service_tier": null,
+    "session_id": "ef3f2565-926a-43c4-b970-9e0f04489795"
+  },
+  "final_response": "{\"candidates\":[{\"id\":\"rule_consent_publish\",\"program\":\"consent(X) -> publish(X).\",\"source\":\"m_rule\",\"observedAt\":1,\"validFrom\":1,\"validTo\":null,\"replaces\":null,\"modality\":\"asserted\",\"natural_language\":\"Для любого документа полученное согласие достаточно для разрешения публикации.\",\"status\":\"candidate\"}]}",
+  "usage": {
+    "input_tokens": 454,
+    "output_tokens": 205,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 122,
+    "prompt_tokens": 454,
+    "completion_tokens": 205,
+    "total_tokens": 659,
+    "last_prompt_tokens": 454,
+    "estimated_cost_usd": 0.0,
+    "cost_status": "included",
+    "cost_source": "none"
+  },
+  "bootstrap_log_retained": false,
+  "ended_at": 1789030553.0504131
+}

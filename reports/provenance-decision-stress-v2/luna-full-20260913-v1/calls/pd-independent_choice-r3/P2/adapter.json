@@ -1,0 +1,457 @@
+{
+  "status": "ok",
+  "inference_calls": 1,
+  "tools": [],
+  "api_requests": [
+    {
+      "model": "gpt-5.6-luna",
+      "instructions": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.",
+      "input": [
+        {
+          "role": "user",
+          "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_shared_3\na_seed(lyra).\n% item i2; source_group event_shared_3\na_gate_1(lyra).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_shared_3\na_gate_2(lyra).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_shared_3\na_gate_3(lyra).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(lyra).\n% item i10; source_group event_shared_3\nb_gate_1(lyra).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(lyra).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(lyra).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(lyra).\n% item i18; source_group event_c_3\nc_gate_1(lyra).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(lyra).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(lyra).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(lyra)\nExplicit opposite: neg(ready(lyra))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(lyra)\",\"opposite_query\":\"neg(ready(lyra))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_a\"]},{\"item_ids\":[\"i10\",\"i11\",\"i12\",\"i13\",\"i14\",\"i15\",\"i16\",\"i9\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_b\"]},{\"item_ids\":[\"i17\",\"i18\",\"i19\",\"i20\",\"i21\",\"i22\",\"i23\",\"i24\"],\"fact_source_group_ids\":[\"event_c_3\"],\"rule_source_group_ids\":[\"rules_c\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"c0eba37daeeea2ddf0e40098d32334b7e7a5fa46bbe9ba041e31e89f1a74a789\",\"receipt_sha256\":\"2e23f044d6cdf0582eb9f1c3a05916ca17e1bf383086b32857378162281ddcdb\"}"
+        }
+      ],
+      "store": false,
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "timeout": 1800.0,
+      "prompt_cache_key": "pck_781d319c7646adb762e0f262",
+      "extra_headers": {
+        "session_id": "d3ff6875-abe9-485e-9f52-f799f50e33b2",
+        "x-client-request-id": "d3ff6875-abe9-485e-9f52-f799f50e33b2"
+      }
+    }
+  ],
+  "api_responses": [
+    {
+      "output": [
+        {
+          "id": "rs_0f10222f459e2c8a016aa67aa5135487d29d086434f3b5ef70",
+          "summary": [
+            {
+              "text": "**Determining disjoint source-group path pairs**",
+              "type": "summary_text"
+            }
+          ],
+          "type": "reasoning",
+          "content": [],
+          "encrypted_content": "gAAAAABqpnqnII3vbrdxaP3QRqzQzP3tnkjnuErJuz25ClNgSD2S-qRW3ztbF8cRSp8yQ3pbOWIOMYLa9CGGDTWSWC24jtiRiy81BCBlurIBNlyjxEdOvlWhADcWD_MpZ856QhUy-VknWZaFQu6MRvYR0GRRMYqsNZ0xlJza6TjIwIFlyNaku0-BjfXEiKhUH34N2F83lIvKp3j4BrxpiEaPhWfmp0zd9AZbKqybzromraPuTxOKASC_79jjmMbTKgQyNWtKe-samoHKYR1Xh3iREp0nSWoO_5iFWxL-TFjcTI9GKFbA0zeo5alasDhI4z4zeT0K7tpKPOSHgM2QNEt8NCImm75YvvsPLCtq4_6yIhmGna9ESbL6LAS81eK_TcuwlkXdkgfch5JMiARRB4VeAuttKlY3w0kIR1c8VuBc8qPVw7um2-FqFYAQ0ptGVLi0TRb5XYcBBKA6lROmeE2py0rbMUckRQgrLARnP9s_A5ck_ixbZ0ZffmOMBz_c5AlFAv6OFVUkrbnROklTGXuoPERQknsbWg68QXKB55fMrj0mJqXwtF3-s95G6A-j3sodf96GscuLRb_1G2zlD3fLqOgzLTihp8AU53MmAzTzXYjiWmlq4xKl8rgaehALi_w7BlxS-ROyGwMoDWf-PpWljOMI746lvemNhYCka57Byajl2FCOrMOPDZU57EmmkX1adp31Hv6zBN731IF-UcT6-hKMtdRWaDLzxY4I7lBe-0q0Ir98UgpeWezjUOJyBVwo-r5yHc-s1EGnk0TLPaHWmbouA3ysxAS6B8TuCROwU5p514oQjURvDoiVh2nvgp4dyKkqOBG3ac7blEV4nA5MQ84jMSicKZdyRSB4tZjLx9EYWYCFfsDXm60fCBxjBAeDonAAZMLyHD4UU2qnJYs-9B6UUFaa7NzChWMGd-pueN4STZVrzhs6iXKaZf2xtqPn512YzvQ1eLrvfhm-LRkH8x1byImaONiJzY60UaOdmchzhyWDGguMNTj2pAFsNgKuDLxlfqID14zYNSWgaLGJE5JMOuqQGvQ-baKV4HTw5GTqThB42n2KdX1WZLqyUYB07v_j77ZSDt3In4TcHRkHBDF6xSIfb6xFuaJ_3ppOaRGAq23gJuZt9fPnp8WDx2QzyOAep73EY58PvAqG7QcK1FC5awJ1sj46Y8HjcYn9E1VSFU55kBjFjd_ChqMIdPoCkp0RwHSPkWFn6UqooWm2qovKgIVaIk5953k74uu6DplAWT5WdJeb6sRPPb74NwgIoX7gUCgQ8gzvII7DcRRUJswCJX-8gmsW7giLCHNTL_ZvGXF109zSU3UbAVIB0-d2cHNEDGsjJpCN7Er3uBSCrpjm_yDHY-wNqNJL-IBuP45na9TjwHlg_CYZM8tSenproINPJ-SfnFyP7oeUubUGAmpwV2ix2uHpHtgGP6wAl1FZu5KGGL33upwtfsSCKrMuTvq0MyONGKa14xMFO4yW8IgGD5VDf9-OphNWhwaruGcHO2-X7GKW0Tak4-Knguw-NyrvheMGJUJQNwZyhsEoej_XgFtW-nrBArbubTUj9VUokEgXnx6nC448t0zkNIXRzCs8YVDcy_cgS4_yQ7K3RQK-d6LLTburIWC6JHEPOgCp8tISPEFfJZJHr3P10mj1aqR3ALJJxvt3BVhc0um5VLmZhWepx2wLEcGoWSY2Sv2l7FLQkd8ARnvJgafn6jjQpADmGOEnTeZfL5U6BAWVUjgK2VjRT4k7apdsLqIBob6YL0zOKjZz0_LWKcoF_rb5mSAh1QtapRmBSz-C2rW_xwKoUTm83Zh9FLpWbI_EqQxqN4ndSYfuS0f1SVVCh51vhclHsXcgllr4c4rURcsDoJ2w3RXgbFZdMwcW6xHUxCiGCBfvN4k=",
+          "status": null
+        },
+        {
+          "id": "msg_0f10222f459e2c8a016aa67aa7a0f887d294e958cc4bcabb74",
+          "content": [
+            {
+              "annotations": [],
+              "text": "DECISION: act\nSUPPORT: event_c_3|event_shared_3",
+              "type": "output_text",
+              "logprobs": []
+            }
+          ],
+          "role": "assistant",
+          "status": "completed",
+          "type": "message",
+          "phase": "final_answer"
+        }
+      ],
+      "output_text": "DECISION: act\nSUPPORT: event_c_3|event_shared_3",
+      "usage": {
+        "input_tokens": 1054,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 136,
+        "output_tokens_details": {
+          "reasoning_tokens": 113
+        },
+        "total_tokens": 1190,
+        "attribution": {
+          "items": {
+            "msg_0f10222f459e2c8a016aa67aa48de487d2be614d2c4f6f8d05": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "content": [
+                {
+                  "cache_write_tokens": 0,
+                  "cached_tokens": 0,
+                  "input_tokens": 1020,
+                  "output_tokens": 0
+                }
+              ],
+              "input_tokens": 1020,
+              "output_tokens": 0
+            },
+            "rs_0f10222f459e2c8a016aa67aa5135487d29d086434f3b5ef70": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "input_tokens": 2,
+              "output_tokens": 113
+            },
+            "msg_0f10222f459e2c8a016aa67aa7a0f887d294e958cc4bcabb74": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "content": [
+                {
+                  "cache_write_tokens": 0,
+                  "cached_tokens": 0,
+                  "input_tokens": 0,
+                  "output_tokens": 23
+                }
+              ],
+              "input_tokens": 0,
+              "output_tokens": 23
+            }
+          },
+          "request_fields": {
+            "instructions": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0,
+              "input_tokens": 32,
+              "output_tokens": 0
+            }
+          }
+        }
+      },
+      "status": "completed",
+      "id": "resp_0f10222f459e2c8a016aa67aa466e087d2989bdf2a7f406ee0",
+      "model": "gpt-5.6-luna",
+      "incomplete_details": null,
+      "error": null
+    }
+  ],
+  "session_id": "d3ff6875-abe9-485e-9f52-f799f50e33b2",
+  "started_at": 1789295264.238615,
+  "requested_config": {
+    "runtime_fingerprint": "a00cac42469c082fddd02c2a34814b183bee9ebade9ae536c495c742b2fe6d60",
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "reasoning_effort": "low",
+    "max_tokens": 1024,
+    "max_iterations": 1,
+    "timeout_ms": 120000,
+    "retries": 0,
+    "fallback": null,
+    "tools": []
+  },
+  "prompt": {
+    "system": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.",
+    "user": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_shared_3\na_seed(lyra).\n% item i2; source_group event_shared_3\na_gate_1(lyra).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_shared_3\na_gate_2(lyra).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_shared_3\na_gate_3(lyra).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(lyra).\n% item i10; source_group event_shared_3\nb_gate_1(lyra).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(lyra).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(lyra).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(lyra).\n% item i18; source_group event_c_3\nc_gate_1(lyra).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(lyra).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(lyra).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(lyra)\nExplicit opposite: neg(ready(lyra))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(lyra)\",\"opposite_query\":\"neg(ready(lyra))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_a\"]},{\"item_ids\":[\"i10\",\"i11\",\"i12\",\"i13\",\"i14\",\"i15\",\"i16\",\"i9\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_b\"]},{\"item_ids\":[\"i17\",\"i18\",\"i19\",\"i20\",\"i21\",\"i22\",\"i23\",\"i24\"],\"fact_source_group_ids\":[\"event_c_3\"],\"rule_source_group_ids\":[\"rules_c\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"c0eba37daeeea2ddf0e40098d32334b7e7a5fa46bbe9ba041e31e89f1a74a789\",\"receipt_sha256\":\"2e23f044d6cdf0582eb9f1c3a05916ca17e1bf383086b32857378162281ddcdb\"}"
+  },
+  "runtime_identity": {
+    "hermes_sources": [
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/run_agent.py",
+        "sha256": "dfc94193e130e977b111426b095d56cbe47b4ec4b883fdf6feab555172adc803"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/agent_init.py",
+        "sha256": "d16019506e607087a2bd5a2569c6350048515c9c0177a6748a46a66b7d5c2ecf"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/system_prompt.py",
+        "sha256": "615cc103d06461f44d6d8c13208485042d865e1c0bf5095525bc33460c850910"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/codex_runtime.py",
+        "sha256": "27a855ed55a36ac63083bdae66c995365cfdb848b562e6a898ddfdf2e28692d8"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/codex_responses_adapter.py",
+        "sha256": "362d46bdb7e3c8b567d0404a8301fdbbb16d09efb86026564b3551e48a6d05f7"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/chat_completion_helpers.py",
+        "sha256": "87c3fcee774b28cadac640244f86b6f241df35c6add64326566a388033d0841a"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/relay_llm.py",
+        "sha256": "dae5059a16e4b185b0fab68aaed1f89c557dd3b4843777d54668be904ad17e2a"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/agent/transports/codex.py",
+        "sha256": "3219613af8873320ede4d7bc1de30b3dc47868471589814294f1d6a96f5f21a4"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/hermes_cli/runtime_provider.py",
+        "sha256": "d1427c0769e909446170e3dd222ec26643b6bf014a661847ed012b913aec0141"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/hermes_cli/config.py",
+        "sha256": "0eca789d0351fa0f0f311934730629b76be6d1ff7b0182fb7bfa06fa79b2725c"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/openai/_base_client.py",
+        "sha256": "383b1acf9de56a41533ca7fd1a39836f68a396f212b938a9c75f68a71c895347"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/openai/_client.py",
+        "sha256": "d5529cc5855ae6c753abc93140c0cd7be08806c326b0f7a4708036f43d167e6a"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/httpx/_client.py",
+        "sha256": "c43f941baefe58c91e96d00039e1868fe719d91453026d7db1647194563bff8d"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/httpx/_transports/default.py",
+        "sha256": "03379a454c95c0271c4f2c8d25ec437f49f57457f3cf2769748420bf0ecf2e79"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/httpcore/_sync/connection.py",
+        "sha256": "f5ec4639bdcf07e329d93d7eb1c91278bdadfad27ff7e357a2657c8a19960a05"
+      },
+      {
+        "path": "/Users/artem/.hermes/hermes-agent/venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py",
+        "sha256": "6be4fc2d3b14c5ceebd16c356ad7c7483a163e34347c0f1497b4b7f85d0c8fbd"
+      }
+    ],
+    "node": "v24.7.0",
+    "swipl": "SWI-Prolog version 10.0.2 for arm64-darwin",
+    "python": "3.11.13",
+    "python_executable": "/Users/artem/.hermes/hermes-agent/venv/bin/python",
+    "packages": {
+      "openai": "2.24.0",
+      "httpx": "0.28.1",
+      "httpcore": "1.0.9",
+      "jsonschema": "4.26.0"
+    },
+    "fingerprint": "a00cac42469c082fddd02c2a34814b183bee9ebade9ae536c495c742b2fe6d60"
+  },
+  "physical_attempts": [
+    {
+      "number": 1,
+      "status": "completed",
+      "started_at": 1789295265.804866,
+      "method": "POST",
+      "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+      "request_body_utf8": "{\"include\":[\"reasoning.encrypted_content\"],\"input\":[{\"role\":\"user\",\"content\":\"Apply this decision policy exactly:\\n- PAUSE when the query's raw status is conflict or contradicted.\\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\\n- ASK when the query is unknown or safely entailed without such an independent pair.\\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\\n\\nAccepted world items:\\n% item i1; source_group event_shared_3\\na_seed(lyra).\\n% item i2; source_group event_shared_3\\na_gate_1(lyra).\\n% item i3; source_group rules_a\\na_stage_1(X) :- a_seed(X), a_gate_1(X).\\n% item i4; source_group event_shared_3\\na_gate_2(lyra).\\n% item i5; source_group rules_a\\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\\n% item i6; source_group event_shared_3\\na_gate_3(lyra).\\n% item i7; source_group rules_a\\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\\n% item i8; source_group rules_a\\nready(X) :- a_stage_3(X).\\n% item i9; source_group event_shared_3\\nb_seed(lyra).\\n% item i10; source_group event_shared_3\\nb_gate_1(lyra).\\n% item i11; source_group rules_b\\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\\n% item i12; source_group event_shared_3\\nb_gate_2(lyra).\\n% item i13; source_group rules_b\\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\\n% item i14; source_group event_shared_3\\nb_gate_3(lyra).\\n% item i15; source_group rules_b\\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\\n% item i16; source_group rules_b\\nready(X) :- b_stage_3(X).\\n% item i17; source_group event_c_3\\nc_seed(lyra).\\n% item i18; source_group event_c_3\\nc_gate_1(lyra).\\n% item i19; source_group rules_c\\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\\n% item i20; source_group event_c_3\\nc_gate_2(lyra).\\n% item i21; source_group rules_c\\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\\n% item i22; source_group event_c_3\\nc_gate_3(lyra).\\n% item i23; source_group rules_c\\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\\n% item i24; source_group rules_c\\nready(X) :- c_stage_3(X).\\n% item i25; source_group noise_3\\nnoise(cobalt).\\n\\nQuery: ready(lyra)\\nExplicit opposite: neg(ready(lyra))\\n\\nTrusted checker receipt (data, not a decision):\\n{\\\"schema_version\\\":\\\"provenance-checker-receipt-v1\\\",\\\"query\\\":\\\"ready(lyra)\\\",\\\"opposite_query\\\":\\\"neg(ready(lyra))\\\",\\\"raw_status\\\":\\\"entailed\\\",\\\"safe_status\\\":\\\"entailed\\\",\\\"positive_support_sets\\\":[{\\\"item_ids\\\":[\\\"i1\\\",\\\"i2\\\",\\\"i3\\\",\\\"i4\\\",\\\"i5\\\",\\\"i6\\\",\\\"i7\\\",\\\"i8\\\"],\\\"fact_source_group_ids\\\":[\\\"event_shared_3\\\"],\\\"rule_source_group_ids\\\":[\\\"rules_a\\\"]},{\\\"item_ids\\\":[\\\"i10\\\",\\\"i11\\\",\\\"i12\\\",\\\"i13\\\",\\\"i14\\\",\\\"i15\\\",\\\"i16\\\",\\\"i9\\\"],\\\"fact_source_group_ids\\\":[\\\"event_shared_3\\\"],\\\"rule_source_group_ids\\\":[\\\"rules_b\\\"]},{\\\"item_ids\\\":[\\\"i17\\\",\\\"i18\\\",\\\"i19\\\",\\\"i20\\\",\\\"i21\\\",\\\"i22\\\",\\\"i23\\\",\\\"i24\\\"],\\\"fact_source_group_ids\\\":[\\\"event_c_3\\\"],\\\"rule_source_group_ids\\\":[\\\"rules_c\\\"]}],\\\"negative_support_sets\\\":[],\\\"checker_evidence_sha256\\\":\\\"c0eba37daeeea2ddf0e40098d32334b7e7a5fa46bbe9ba041e31e89f1a74a789\\\",\\\"receipt_sha256\\\":\\\"2e23f044d6cdf0582eb9f1c3a05916ca17e1bf383086b32857378162281ddcdb\\\"}\"}],\"instructions\":\"Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.\",\"model\":\"gpt-5.6-luna\",\"prompt_cache_key\":\"pck_781d319c7646adb762e0f262\",\"reasoning\":{\"effort\":\"low\",\"summary\":\"auto\"},\"store\":false,\"stream\":true}",
+      "request_body": {
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "input": [
+          {
+            "role": "user",
+            "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_shared_3\na_seed(lyra).\n% item i2; source_group event_shared_3\na_gate_1(lyra).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_shared_3\na_gate_2(lyra).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_shared_3\na_gate_3(lyra).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(lyra).\n% item i10; source_group event_shared_3\nb_gate_1(lyra).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(lyra).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(lyra).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(lyra).\n% item i18; source_group event_c_3\nc_gate_1(lyra).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(lyra).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(lyra).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(lyra)\nExplicit opposite: neg(ready(lyra))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(lyra)\",\"opposite_query\":\"neg(ready(lyra))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_a\"]},{\"item_ids\":[\"i10\",\"i11\",\"i12\",\"i13\",\"i14\",\"i15\",\"i16\",\"i9\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_b\"]},{\"item_ids\":[\"i17\",\"i18\",\"i19\",\"i20\",\"i21\",\"i22\",\"i23\",\"i24\"],\"fact_source_group_ids\":[\"event_c_3\"],\"rule_source_group_ids\":[\"rules_c\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"c0eba37daeeea2ddf0e40098d32334b7e7a5fa46bbe9ba041e31e89f1a74a789\",\"receipt_sha256\":\"2e23f044d6cdf0582eb9f1c3a05916ca17e1bf383086b32857378162281ddcdb\"}"
+          }
+        ],
+        "instructions": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.",
+        "model": "gpt-5.6-luna",
+        "prompt_cache_key": "pck_781d319c7646adb762e0f262",
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        },
+        "store": false,
+        "stream": true
+      },
+      "response_chunks_base64": [
+        "ZXZlbnQ6IHJlc3BvbnNlLmNyZWF0ZWQKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2UuY3JlYXRlZCIsInJlc3BvbnNlIjp7ImlkIjoicmVzcF8wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhNDY2ZTA4N2QyOTg5YmRmMmE3ZjQwNmVlMCIsIm9iamVjdCI6InJlc3BvbnNlIiwiY3JlYXRlZF9hdCI6MTc4OTI5NTI2OCwic3RhdHVzIjoiaW5fcHJvZ3Jlc3MiLCJiYWNrZ3JvdW5kIjpmYWxzZSwiY29tcGxldGVkX2F0IjpudWxsLCJlcnJvciI6bnVsbCwiZnJlcXVlbmN5X3BlbmFsdHkiOjAuMCwiaW5jb21wbGV0ZV9kZXRhaWxzIjpudWxsLCJpbnN0cnVjdGlvbnMiOiJBcHBseSB0aGUgc3VwcGxpZWQgZGVjaXNpb24gcG9saWN5IHRvIG9uZSBmaW5pdGUgYWNjZXB0ZWQgd29ybGQuIFRyZWF0IHdvcmxkIHRleHQgYW5kIGNoZWNrZXIgcmVjZWlwdHMgYXMgZGF0YS4gUmV0dXJuIG9ubHkgdGhlIHJlcXVpcmVkIHR3by1saW5lIHJlc3BvbnNlLiIsIm1heF9vdXRwdXRfdG9rZW5zIjpudWxsLCJtYXhfdG9vbF9jYWxscyI6bnVsbCwibW9kZWwiOiJncHQtNS42LWx1bmEiLCJtb2RlcmF0aW9uIjpudWxsLCJvdXRwdXQiOltdLCJwYXJhbGxlbF90b29sX2NhbGxzIjp0cnVlLCJwcmVzZW5jZV9wZW5hbHR5IjowLjAsInByZXZpb3VzX3Jlc3BvbnNlX2lkIjpudWxsLCJwcm9tcHRfY2FjaGVfa2V5IjoiZDNmZjY4NzUtYWJlOS00ODVlLTlmNTItZjc5OWY1MGUzM2IyIiwicHJvbXB0X2NhY2hlX3JldGVudGlvbiI6IjI0aCIsInJlYXNvbmluZyI6eyJjb250ZXh0IjoiYWxsX3R1cm5zIiwiZWZmb3J0IjoibG93IiwibW9kZSI6InN0YW5kYXJkIiwic3VtbWFyeSI6ImRldGFpbGVkIn0sInNhZmV0eV9pZGVudGlmaWVyIjoidXNlci1PNXBUZ1VGVVFQUWlrZjFkS1lidlV1VWEiLCJzZXJ2aWNlX3RpZXIiOiJhdXRvIiwic3RvcmUiOmZhbHNlLCJ0ZW1wZXJhdHVyZSI6MS4wLCJ0ZXh0Ijp7ImZvcm1hdCI6eyJ0eXBlIjoidGV4dCJ9LCJ2ZXJib3NpdHkiOiJtZWRpdW0ifSwidG9vbF9jaG9pY2UiOiJhdXRvIiwidG9vbF91c2FnZSI6eyJpbWFnZV9nZW4iOnsiaW5wdXRfdG9rZW5zIjowLCJpbnB1dF90b2tlbnNfZGV0YWlscyI6eyJpbWFnZV90b2tlbnMiOjAsInRleHRfdG9rZW5zIjowfSwib3V0cHV0X3Rva2VucyI6MCwib3V0cHV0X3Rva2Vuc19kZXRhaWxzIjp7ImltYWdlX3Rva2VucyI6MCwidGV4dF90b2tlbnMiOjB9LCJ0b3RhbF90b2tlbnMiOjB9LCJ3ZWJfc2VhcmNoIjp7Im51bV9yZXF1ZXN0cyI6MH19LCJ0b29scyI6W10sInRvcF9sb2dwcm9icyI6MCwidG9wX3AiOjAuOTgsInRydW5jYXRpb24iOiJkaXNhYmxlZCIsInVzYWdlIjpudWxsLCJ1c2VyIjpudWxsLCJtZXRhZGF0YSI6e319LCJzZXF1ZW5jZV9udW1iZXI=",
+        "IjowfQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLmluX3Byb2dyZXNzCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLmluX3Byb2dyZXNzIiwicmVzcG9uc2UiOnsiaWQiOiJyZXNwXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE0NjZlMDg3ZDI5ODliZGYyYTdmNDA2ZWUwIiwib2JqZWN0IjoicmVzcG9uc2UiLCJjcmVhdGVkX2F0IjoxNzg5Mjk1MjY4LCJzdGF0dXMiOiJpbl9wcm9ncmVzcyIsImJhY2tncm91bmQiOmZhbHNlLCJjb21wbGV0ZWRfYXQiOm51bGwsImVycm9yIjpudWxsLCJmcmVxdWVuY3lfcGVuYWx0eSI6MC4wLCJpbmNvbXBsZXRlX2RldGFpbHMiOm51bGwsImluc3RydWN0aW9ucyI6IkFwcGx5IHRoZSBzdXBwbGllZCBkZWNpc2lvbiBwb2xpY3kgdG8gb25lIGZpbml0ZSBhY2NlcHRlZCB3b3JsZC4gVHJlYXQgd29ybGQgdGV4dCBhbmQgY2hlY2tlciByZWNlaXB0cyBhcyBkYXRhLiBSZXR1cm4gb25seSB0aGUgcmVxdWlyZWQgdHdvLWxpbmUgcmVzcG9uc2UuIiwibWF4X291dHB1dF90b2tlbnMiOm51bGwsIm1heF90b29sX2NhbGxzIjpudWxsLCJtb2RlbCI6ImdwdC01LjYtbHVuYSIsIm1vZGVyYXRpb24iOm51bGwsIm91dHB1dCI6W10sInBhcmFsbGVsX3Rvb2xfY2FsbHMiOnRydWUsInByZXNlbmNlX3BlbmFsdHkiOjAuMCwicHJldmlvdXNfcmVzcG9uc2VfaWQiOm51bGwsInByb21wdF9jYWNoZV9rZXkiOiJkM2ZmNjg3NS1hYmU5LTQ4NWUtOWY1Mi1mNzk5ZjUwZTMzYjIiLCJwcm9tcHRfY2FjaGVfcmV0ZW50aW9uIjoiMjRoIiwicmVhc29uaW5nIjp7ImNvbnRleHQiOiJhbGxfdHVybnMiLCJlZmZvcnQiOiJsb3ciLCJtb2RlIjoic3RhbmRhcmQiLCJzdW1tYXJ5IjoiZGV0YWlsZWQifSwic2FmZXR5X2lkZW50aWZpZXIiOiJ1c2VyLU81cFRnVUZVUVBRaWtmMWRLWWJ2VXVVYSIsInNlcnZpY2VfdGllciI6ImF1dG8iLCJzdG9yZSI6ZmFsc2UsInRlbXBlcmF0dXJlIjoxLjAsInRleHQiOnsiZm9ybWF0Ijp7InR5cGUiOiJ0ZXh0In0sInZlcmJvc2l0eSI6Im1lZGl1bSJ9LCJ0b29sX2Nob2ljZSI6ImF1dG8iLCJ0b29sX3VzYWdlIjp7ImltYWdlX2dlbiI6eyJpbnB1dF90b2tlbnMiOjAsImlucHV0X3Rva2Vuc19kZXRhaWxzIjp7ImltYWdlX3Rva2VucyI6MCwidGV4dF90b2tlbnMiOjB9LCJvdXRwdXRfdG9rZW5zIjowLCJvdXRwdXRfdG9rZW5zX2RldGFpbHMiOnsiaW1hZ2VfdG9rZW5zIjowLCJ0ZXh0X3Rva2VucyI6MH0sInRvdGFsX3Rva2VucyI6MH0sIndlYl9zZWFyY2giOnsibnVtX3JlcXVlc3RzIjowfX0sInRvb2xzIjpbXSwidG9wX2xvZ3Byb2JzIjowLCJ0b3BfcCI6MC45OCwidHJ1bmNhdGlvbiI6ImRpc2FibGVkIiwidXNhZ2UiOm51bGwsInVzZXIiOm51bGwsIm1ldGFkYXRhIjp7fX0sInNlcXVlbmM=",
+        "ZV9udW1iZXIiOjF9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF9pdGVtLmFkZGVkCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF9pdGVtLmFkZGVkIiwiaXRlbSI6eyJpZCI6InJzXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE1MTM1NDg3ZDI5ZDA4NjQzNGYzYjVlZjcwIiwidHlwZSI6InJlYXNvbmluZyIsImNvbnRlbnQiOltdLCJlbmNyeXB0ZWRfY29udGVudCI6ImdBQUFBQUJxcG5xbGRmaHFBdGNaU21tVlRyUFVZRk5pc2dwQ1dTX1I5dzZOUDg3ZVBCTFAwdHFyVFMyQzYwQWxBYU10UHBWTWtOdVA3SGphREpVck9EQVRmUnhIRGpLandDRW1mRTFhdTQwb2x0UGZFaG5yanU4bVdYZHppSEpJRi04ZU9oRGRkYkY2U3hnZzlFWG53aktBQVpTTWZtYXVCOVp1OWRHS24xZHlMODlKdUdyWDgwTmQ1d19EcWEwZkNkSGRUSlQzWm5DeTJBLU53bUt6MHJ2dXVsaGRqLUU3SFBXYTJ1SzU3aVZpMVBYZlJ4Vjd4N3E2VmlPYXp2MV9iZ3JCLUNzT1lvQVhiM3dNdWRKQlFzQ28ydFhNVHhub0tDNjJFd3R4UklkQlhKOGtPbG52TGR4cHM3NVd4V0dOZkgzZ3pOX2NDWEo5ZUg1VDZ2MmFFbFIwQk4wQXEtRGN1OHVubUdNdVBPSG1nZWhpY2dXTDdCZ2V4cXZNZFZIaVVQSGdtdTUxN3FUNm1YamtORnV3WklTNkt4cFZoSTV6YldNODItNDVqaUlzTVZNTTYyUHo5bFk4MWtSRGszbE1fUnI3QlVVRWJ2VDd6SEF5WGZJZ1FIRHNMd2tMNGpEd1JwaTRsdlJIcU1BVWticmVxQTFMMno3UnhQcE01NzIyaVA0eFpQY2REbWtWNTFsaGJyVDNLZ05VTFRqcmxmMlZpRjdiMi1tTU5RckVwX1lKTTBxMnE0SEZDaDljcWxCY2xFdHd0N2txMEdXQzE3MC15NXlpQkR2U0pral96Nno2U2RKNGtEX1VpY3FEeE5PTHF3RHZNNUc3YkxidVhtM00zTlJXRGFOdThEcTBRZEk3LVphNGNQd1JGdHIxQ0xHWFdmWHlLdDAxVWd0WGprM1BnaHdvdGpnUEpIempRVFdIaUdJWW5TVFRZZE9UVGo5RUJMX0NmNEYwVVFNTE1sd19nMmZhYXRWaGsyaExGbVhRVFYtelRUMGx6dWxPdkNoem1nOWhXbDM5LU1Ua01qOWZwSlFDZUdQWXNsMlBxQ0NySnJlUkRuaDhTb296SXFKcnh1NWpJQkdfR25NNFhpREhidmZqTHY5MmdBY2JPdmxfOVp1VzBKVm02SGZpNlN5TWxvTVRSNnhLbTNHc190RXZ0aTRXR0REN2VsbnhlQjhiM19jRHNqSTBOSk53akJMVVJ2OXlLVUFoSWJneHA2RUxhMnZQTm5rN1RQRVZaQnBsX1RxOVpTSVdET01WSDgxalQ3N1ZIUTk0ckp6VlNJOGZTQVFfVHhKQ1llaUJqa0NHVTlnTVdTeFgza091QUhTR1poQzdOQTFWVnRDdEl3MU9jSWxIYW12U1dyNkFVdEZhT2FoVW9tRGdqaHRjelRoQ2ZNdzgxNjc0RHRPSXdSUTFsY1RUTUZvekFMQnVTZXdYenpvUDUxa0plMVNYV0YyOEt6SW1VRnZRVE1LZF9uNG9wcWxPNFJZTXFsa0xramhtZW9qcE1uNEVZRFM1amJOdDFjZWNKR19keDNaNzk=",
+        "OHFIRVF1LU9VeGdiV3llQjd6ZDJKdnhPc0NxZXVFR0YzbTdKU0VPQ0VHUFNjVzhYNTBpYzVxNms5bWVaMFlKQkxPdDFBV3dfMVZBanphaGpYT1RKNUtFcWJfSGxSaUQ5cWIyZEx0NG41dWVDRUN1MjJlak9ITjhqZDV4djJrUCIsInN1bW1hcnkiOltdfSwib3V0cHV0X2luZGV4IjowLCJzZXF1ZW5jZV9udW1iZXIiOjJ9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLnJlYXNvbmluZ19zdW1tYXJ5X3BhcnQuYWRkZWQKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2UucmVhc29uaW5nX3N1bW1hcnlfcGFydC5hZGRlZCIsIml0ZW1faWQiOiJyc18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhNTEzNTQ4N2QyOWQwODY0MzRmM2I1ZWY3MCIsIm91dHB1dF9pbmRleCI6MCwicGFydCI6eyJ0eXBlIjoic3VtbWFyeV90ZXh0IiwidGV4dCI6IiJ9LCJzZXF1ZW5jZV9udW1iZXIiOjMsInN1bW1hcnlfaW5kZXgiOjB9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLnJlYXNvbmluZ19zdW1tYXJ5X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2UucmVhc29uaW5nX3N1bW1hcnlfdGV4dC5kZWx0YSIsImRlbHRhIjoiKipEZXRlcm1pbmluZyBkaXNqb2ludCBzb3VyY2UtZ3JvdXAgcGF0aCBwYWlycyoqIiwiaXRlbV9pZCI6InJzXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE1MTM1NDg3ZDI5ZDA4NjQzNGYzYjVlZjcwIiwib2JmdXNjYXRpb24iOiIiLCJvdXRwdXRfaW5kZXgiOjAsInNlcXVlbmNlX251bWJlciI6NCwic3VtbWFyeV9pbmRleCI6MH0KCg==",
+        "ZXZlbnQ6IHJlc3BvbnNlLnJlYXNvbmluZ19zdW1tYXJ5X3RleHQuZG9uZQpkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5yZWFzb25pbmdfc3VtbWFyeV90ZXh0LmRvbmUiLCJpdGVtX2lkIjoicnNfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTUxMzU0ODdkMjlkMDg2NDM0ZjNiNWVmNzAiLCJvdXRwdXRfaW5kZXgiOjAsInNlcXVlbmNlX251bWJlciI6NSwic3VtbWFyeV9pbmRleCI6MCwidGV4dCI6IioqRGV0ZXJtaW5pbmcgZGlzam9pbnQgc291cmNlLWdyb3VwIHBhdGggcGFpcnMqKiJ9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLnJlYXNvbmluZ19zdW1tYXJ5X3BhcnQuZG9uZQpkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5yZWFzb25pbmdfc3VtbWFyeV9wYXJ0LmRvbmUiLCJpdGVtX2lkIjoicnNfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTUxMzU0ODdkMjlkMDg2NDM0ZjNiNWVmNzAiLCJvdXRwdXRfaW5kZXgiOjAsInBhcnQiOnsidHlwZSI6InN1bW1hcnlfdGV4dCIsInRleHQiOiIqKkRldGVybWluaW5nIGRpc2pvaW50IHNvdXJjZS1ncm91cCBwYXRoIHBhaXJzKioifSwic2VxdWVuY2VfbnVtYmVyIjo2LCJzdW1tYXJ5X2luZGV4IjowfQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF9pdGVtLmRvbmUKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X2l0ZW0uZG9uZSIsIml0ZW0iOnsiaWQiOiJyc18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhNTEzNTQ4N2QyOWQwODY0MzRmM2I1ZWY3MCIsInR5cGUiOiJyZWFzb25pbmciLCJjb250ZW50IjpbXSwiZW5jcnlwdGVkX2NvbnRlbnQiOiJnQUFBQUFCcXBucW5JSTN2YnJkeGFQM1FScXpRelAzdG5ram51RXJKdXoyNUNsTmdTRDJTLXFSVzN6dGJGOGNSU3A4eVEzcGJPV0lPTVlMYTlDR0dEVFdTV0MyNGp0aVJpeTgxQkNCbHVySUJObHlqeEVkT3ZsV2hBRGNXRF9NcFo4NTZRaFV5LVZrbldaYUZRdTZNUnZZUjBHUlJNWXFzTloweGxKemE2VGpJd0lGbHlOYWt1MC1CamZYRWlLaFVIMzROMkY4M2xJdktwM2o0QnJ4cGlFYVBoV2ZtcDB6ZDlBWmJLcXlienJvbXJhUHVUeE9LQVNDXzc5amptTWJUS2dReU5XdEtlLXNhbW9IS1lSMVhoM2lSRXAwblNXb09fNWlGV3hMLVRGamNUSTlHS0ZiQTB6ZW81YWxhc0RoSTR6NHplVDBLN3RwS1BPU0hnTTJRTkV0OE5DSW1tNzVZdnZzUExDdHE0XzZ5SWhtR25hOUVTYkw2TEFTODFlS19UY3V3bGtYZGtnZmNoNUpNaUFSUkI0VmVBdXR0S2xZM3cwa0lSMWM4VnVCYzhxUFZ3N3VtMi1GcUZZQVEwcHRHVkxpMFRSYjVYWWNCQktBNmxST21lRTJweTByYk1VY2tSUWdyTEFSblA5c19BNWNrX2l4YlowWmZmbU9NQnpfYzVBbEZBdjZPRlZVa3JiblJPa2xUR1h1b1BFUlFrbnNiV2c2OFFYS0I1NWZNcmowbUpxWHd0RjMtczk1RzZBLWozc29kZjk2R3NjdUxSYl8xRzJ6bEQzZkxxT2d6TFRpaHA4QVU1M01tQXpUelhZamlXbWxxNHhLbDhyZ2FlaEFMaV93N0JseFMtUk95R3dNb0RXZi1QcFdsak9NSTc0Nmx2ZW1OaFlDa2E1N0J5YWpsMkZDT3JNT1BEWlU1N0VtbWtYMWFkcDMxSHY2ekJONzMxSUYtVWNUNi1oS010ZFJXYURMenhZNEk3bEJlLTBxMElyOThVZ3BlV2V6alVPSnlCVndvLXI1eUhjLXMxRUduazBUTFBhSFdtYm91QTN5c3hBUzZCOFR1Q1JPd1U1cDUxNG9RalVSdkRvaVZoMm52Z3A0ZHlLa3FPQkczYWM3YmxFVjRuQTVNUTg0ak1TaWNLWmR5UlNCNHRaakx4OUVZV1lDRmZzRFhtNjBmQ0J4akJBZURvbkFBWk1MeUhENFVVMnFuSllzLTlCNlVVRmFhN056Q2hXTUdkLXB1ZU40U1RaVnJ6aHM2aVhLYVpmMnh0cVBuNTEyWXp2UTFlTHJ2ZmhtLUxSa0g4eDFieUltYU9OaUp6WTYwVWFPZG1jaHpoeVdER2d1TU5UajJwQUZzTmdLdURMeGxmcUlEMTR6WU5TV2dhTEdKRTVKTU91cVFHdlEtYmFLVjRIVHc1R1RxVGhCNDJuMktkWDFXWkxxeVVZQjA3dl9qNzdaU0R0M0luNFRjSFJrSEJERjZ4U0lmYjZ4RnVhSl8zcHBPYVJHQXEyM2dKdVp0OWZQbnA4V0R4MlF6eU9BZXA3M0VZNTg=",
+        "UHZBcUc3UWNLMUZDNWF3SjFzajQ2WThIamNZbjlFMVZTRlU1NWtCakZqZF9DaHFNSWRQb0NrcDBSd0hTUGtXRm42VXFvb1dtMnFvdktnSVZhSWs1OTUzazc0dXU2RHBsQVdUNVdkSmViNnNSUFBiNzROd2dJb1g3Z1VDZ1E4Z3p2SUk3RGNSUlVKc3dDSlgtOGdtc1c3Z2lMQ0hOVExfWnZHWEYxMDl6U1UzVWJBVklCMC1kMmNITkVER3NqSnBDTjdFcjN1QlNDcnBqbV95REhZLXdOcU5KTC1JQnVQNDVuYTlUandIbGdfQ1laTTh0U2VucHJvSU5QSi1TZm5GeVA3b2VVdWJVR0FtcHdWMml4MnVIcEh0Z0dQNndBbDFGWnU1S0dHTDMzdXB3dGZzU0NLck11VHZxME15T05HS2ExNHhNRk80eVc4SWdHRDVWRGY5LU9waE5XaHdhcnVHY0hPMi1YN0dLVzBUYWs0LUtuZ3V3LU55cnZoZU1HSlVKUU53Wnloc0VvZWpfWGdGdFctbnJCQXJidWJUVWo5VlVva0VnWG54Nm5DNDQ4dDB6a05JWFJ6Q3M4WVZEY3lfY2dTNF95UTdLM1JRSy1kNkxMVGJ1cklXQzZKSEVQT2dDcDh0SVNQRUZmSlpKSHIzUDEwbWoxYXFSM0FMSkp4dnQzQlZoYzB1bTVWTG1aaFdlcHgyd0xFY0dvV1NZMlN2Mmw3RkxRa2Q4QVJudkpnYWZuNmpqUXBBRG1HT0VuVGVaZkw1VTZCQVdWVWpnSzJWalJUNGs3YXBkc0xxSUJvYjZZTDB6T0tqWnowX0xXS2NvRl9yYjVtU0FoMVF0YXBSbUJTei1DMnJXX3h3S29VVG04M1poOUZMcFdiSV9FcVF4cU40bmRTWWZ1UzBmMVNWVkNoNTF2aGNsSHNYY2dsbHI0YzRyVVJjc0RvSjJ3M1JYZ2JGWmRNd2NXNnhIVXhDaUdDQmZ2TjRrPSIsInN1bW1hcnkiOlt7InR5cGUiOiJzdW1tYXJ5X3RleHQiLCJ0ZXh0IjoiKipEZXRlcm1pbmluZyBkaXNqb2ludCBzb3VyY2UtZ3JvdXAgcGF0aCBwYWlycyoqIn1dfSwib3V0cHV0X2luZGV4IjowLCJzZXF1ZW5jZV9udW1iZXIiOjd9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF9pdGVtLmFkZGVkCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF9pdGVtLmFkZGVkIiwiaXRlbSI6eyJpZCI6Im1zZ18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhN2EwZjg4N2QyOTRlOTU4Y2M0YmNhYmI3NCIsInR5cGUiOiJtZXNzYWdlIiwic3RhdHVzIjoiaW5fcHJvZ3Jlc3MiLCJjb250ZW50IjpbXSwicGhhc2UiOiJmaW5hbF9hbnN3ZXIiLCJyb2xlIjoiYXNzaXN0YW50In0sIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjo4fQoK",
+        "ZXZlbnQ6IHJlc3BvbnNlLmNvbnRlbnRfcGFydC5hZGRlZApkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5jb250ZW50X3BhcnQuYWRkZWQiLCJjb250ZW50X2luZGV4IjowLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0Iiwib3V0cHV0X2luZGV4IjoxLCJwYXJ0Ijp7InR5cGUiOiJvdXRwdXRfdGV4dCIsImFubm90YXRpb25zIjpbXSwibG9ncHJvYnMiOltdLCJ0ZXh0IjoiIn0sInNlcXVlbmNlX251bWJlciI6OX0KCg==",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJERUMiLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6Ims0ZmFZQjZOUW5ZSFkiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTB9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJJU0lPTiIsIml0ZW1faWQiOiJtc2dfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTdhMGY4ODdkMjk0ZTk1OGNjNGJjYWJiNzQiLCJsb2dwcm9icyI6W10sIm9iZnVzY2F0aW9uIjoiVHhNNlJPczBuRmsiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTF9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiI6IiwiaXRlbV9pZCI6Im1zZ18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhN2EwZjg4N2QyOTRlOTU4Y2M0YmNhYmI3NCIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiIwT0JjaGtZeWpqbFJGN0ciLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTJ9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiIgYWN0IiwiaXRlbV9pZCI6Im1zZ18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhN2EwZjg4N2QyOTRlOTU4Y2M0YmNhYmI3NCIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiJ1R2xIdFFPNTNHc2kiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTN9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJcbiIsIml0ZW1faWQiOiJtc2dfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTdhMGY4ODdkMjk0ZTk1OGNjNGJjYWJiNzQiLCJsb2dwcm9icyI6W10sIm9iZnVzY2F0aW9uIjoiNmFlRFRaY1FtWDZvS25UIiwib3V0cHV0X2luZGV4IjoxLCJzZXF1ZW5jZV9udW1iZXIiOjE0fQoKZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJTVVAiLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6IktrVkFTOWhGVm9IWlciLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTV9CgpldmVudDogcmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEiLCJjb250ZW50X2luZGV4IjowLCJkZWx0YSI6IlBPUlQiLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6IktUMHJiVlFSQmV6QyIsIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjoxNn0KCmV2ZW50OiByZXNwb25zZS5vdXRwdXRfdGV4dC5kZWx0YQpkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5vdXRwdXRfdGV4dC5kZWx0YSIsImNvbnRlbnRfaW5kZXgiOjAsImRlbHRhIjoiOiIsIml0ZW1faWQiOiJtc2dfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTdhMGY4ODdkMjk0ZTk1OGNjNGJjYWJiNzQiLCJsb2dwcm9icyI6W10sIm9iZnVzY2F0aW9uIjoiVHFRM2FmMVRVVkhwU3dLIiwib3V0cHV0X2luZGV4IjoxLCJzZXF1ZW5jZV9udW1iZXIiOjE3fQoKZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiIgZXZlbnQiLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6IlY1NXdWOUl5WXIiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTh9CgpldmVudDogcmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHU=",
+        "dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJfYyIsIml0ZW1faWQiOiJtc2dfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTdhMGY4ODdkMjk0ZTk1OGNjNGJjYWJiNzQiLCJsb2dwcm9icyI6W10sIm9iZnVzY2F0aW9uIjoiNHZ0YUNsOWlIZ1lHeTkiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MTl9CgpldmVudDogcmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEiLCJjb250ZW50X2luZGV4IjowLCJkZWx0YSI6Il8iLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6Ijljdk5jS2dJZ0wzaVdkYyIsIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjoyMH0KCg==",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiIzIiwiaXRlbV9pZCI6Im1zZ18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhN2EwZjg4N2QyOTRlOTU4Y2M0YmNhYmI3NCIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiJsajFGOHBtZnloeldqSlMiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MjF9CgpldmVudDogcmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEiLCJjb250ZW50X2luZGV4IjowLCJkZWx0YSI6InwiLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6IlhKeGZOS3p1RjhUS21jVCIsIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjoyMn0KCmV2ZW50OiByZXNwb25zZS5vdXRwdXRfdGV4dC5kZWx0YQpkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5vdXRwdXRfdGV4dC5kZWx0YSIsImNvbnRlbnRfaW5kZXgiOjAsImRlbHRhIjoiZXZlbnQiLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6InJLbGtoc1d2ejQ4Iiwib3V0cHV0X2luZGV4IjoxLCJzZXF1ZW5jZV9udW1iZXIiOjIzfQoKZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJfc2hhcmVkIiwiaXRlbV9pZCI6Im1zZ18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhN2EwZjg4N2QyOTRlOTU4Y2M0YmNhYmI3NCIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiI3Qjl1NHZMQk4iLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MjR9Cgo=",
+        "ZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRlbHRhIiwiY29udGVudF9pbmRleCI6MCwiZGVsdGEiOiJfIiwiaXRlbV9pZCI6Im1zZ18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhN2EwZjg4N2QyOTRlOTU4Y2M0YmNhYmI3NCIsImxvZ3Byb2JzIjpbXSwib2JmdXNjYXRpb24iOiJyMkRoc1RNT0dndTUxaGEiLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MjV9CgpldmVudDogcmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X3RleHQuZGVsdGEiLCJjb250ZW50X2luZGV4IjowLCJkZWx0YSI6IjMiLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvYmZ1c2NhdGlvbiI6ImlkWUJlZDVaTjlHTldDQyIsIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjoyNn0KCmV2ZW50OiByZXNwb25zZS5vdXRwdXRfdGV4dC5kb25lCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLm91dHB1dF90ZXh0LmRvbmUiLCJjb250ZW50X2luZGV4IjowLCJpdGVtX2lkIjoibXNnXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE3YTBmODg3ZDI5NGU5NThjYzRiY2FiYjc0IiwibG9ncHJvYnMiOltdLCJvdXRwdXRfaW5kZXgiOjEsInNlcXVlbmNlX251bWJlciI6MjcsInRleHQiOiJERUNJU0lPTjogYWN0XG5TVVBQT1JUOiBldmVudF9jXzN8ZXZlbnRfc2hhcmVkXzMifQoKZXZlbnQ6IHJlc3BvbnNlLmNvbnRlbnRfcGFydC5kb25lCmRhdGE6IHsidHlwZSI6InJlc3BvbnNlLmNvbnRlbnRfcGFydC5kb25lIiwiY29udGVudF9pbmRleCI6MCwiaXRlbV9pZCI6Im1zZ18wZjEwMjIyZjQ1OWUyYzhhMDE2YWE2N2FhN2EwZjg4N2QyOTRlOTU4Y2M0YmNhYmI3NCIsIm91dHB1dF9pbmRleCI6MSwicGFydCI6eyJ0eXBlIjoib3V0cHV0X3RleHQiLCJhbm5vdGF0aW9ucyI6W10sImxvZ3Byb2JzIjpbXSwidGV4dCI6IkRFQ0lTSU9OOiBhY3RcblNVUFBPUlQ6IGV2ZW50X2NfM3xldmVudF9zaGFyZWRfMyJ9LCJzZXF1ZW5jZV9udW1iZXIiOjI4fQoKZXZlbnQ6IHJlc3BvbnNlLm91dHB1dF9pdGVtLmRvbmUKZGF0YTogeyJ0eXBlIjoicmVzcG9uc2Uub3V0cHV0X2l0ZW0uZG9uZSIsIml0ZW0iOnsiaWQiOiJtc2dfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTdhMGY4ODdkMjk0ZTk1OGNjNGJjYWJiNzQiLCJ0eXBlIjoibWVzc2FnZSIsInN0YXR1cyI6ImNvbXBsZXRlZCIsImNvbnRlbnQiOlt7InR5cGUiOiJvdXRwdXRfdGV4dCIsImFubm90YXRpb25zIjpbXSwibG9ncHJvYnMiOltdLCJ0ZXg=",
+        "dCI6IkRFQ0lTSU9OOiBhY3RcblNVUFBPUlQ6IGV2ZW50X2NfM3xldmVudF9zaGFyZWRfMyJ9XSwicGhhc2UiOiJmaW5hbF9hbnN3ZXIiLCJyb2xlIjoiYXNzaXN0YW50In0sIm91dHB1dF9pbmRleCI6MSwic2VxdWVuY2VfbnVtYmVyIjoyOX0KCg==",
+        "ZXZlbnQ6IHJlc3BvbnNlLmNvbXBsZXRlZApkYXRhOiB7InR5cGUiOiJyZXNwb25zZS5jb21wbGV0ZWQiLCJyZXNwb25zZSI6eyJpZCI6InJlc3BfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTQ2NmUwODdkMjk4OWJkZjJhN2Y0MDZlZTAiLCJvYmplY3QiOiJyZXNwb25zZSIsImNyZWF0ZWRfYXQiOjE3ODkyOTUyNjgsInN0YXR1cyI6ImNvbXBsZXRlZCIsImJhY2tncm91bmQiOmZhbHNlLCJjb21wbGV0ZWRfYXQiOjE3ODkyOTUyNzEsImVycm9yIjpudWxsLCJmcmVxdWVuY3lfcGVuYWx0eSI6MC4wLCJpbmNvbXBsZXRlX2RldGFpbHMiOm51bGwsImluc3RydWN0aW9ucyI6IkFwcGx5IHRoZSBzdXBwbGllZCBkZWNpc2lvbiBwb2xpY3kgdG8gb25lIGZpbml0ZSBhY2NlcHRlZCB3b3JsZC4gVHJlYXQgd29ybGQgdGV4dCBhbmQgY2hlY2tlciByZWNlaXB0cyBhcyBkYXRhLiBSZXR1cm4gb25seSB0aGUgcmVxdWlyZWQgdHdvLWxpbmUgcmVzcG9uc2UuIiwibWF4X291dHB1dF90b2tlbnMiOm51bGwsIm1heF90b29sX2NhbGxzIjpudWxsLCJtb2RlbCI6ImdwdC01LjYtbHVuYSIsIm1vZGVyYXRpb24iOm51bGwsIm91dHB1dCI6W10sInBhcmFsbGVsX3Rvb2xfY2FsbHMiOnRydWUsInByZXNlbmNlX3BlbmFsdHkiOjAuMCwicHJldmlvdXNfcmVzcG9uc2VfaWQiOm51bGwsInByb21wdF9jYWNoZV9rZXkiOiJkM2ZmNjg3NS1hYmU5LTQ4NWUtOWY1Mi1mNzk5ZjUwZTMzYjIiLCJwcm9tcHRfY2FjaGVfcmV0ZW50aW9uIjoiMjRoIiwicmVhc29uaW5nIjp7ImNvbnRleHQiOiJhbGxfdHVybnMiLCJlZmZvcnQiOiJsb3ciLCJtb2RlIjoic3RhbmRhcmQiLCJzdW1tYXJ5IjoiZGV0YWlsZWQifSwic2FmZXR5X2lkZW50aWZpZXIiOiJ1c2VyLU81cFRnVUZVUVBRaWtmMWRLWWJ2VXVVYSIsInNlcnZpY2VfdGllciI6ImRlZmF1bHQiLCJzdG9yZSI6ZmFsc2UsInRlbXBlcmF0dXJlIjoxLjAsInRleHQiOnsiZm9ybWF0Ijp7InR5cGUiOiJ0ZXh0In0sInZlcmJvc2l0eSI6Im1lZGl1bSJ9LCJ0b29sX2Nob2ljZSI6ImF1dG8iLCJ0b29sX3VzYWdlIjp7ImltYWdlX2dlbiI6eyJpbnB1dF90b2tlbnMiOjAsImlucHV0X3Rva2Vuc19kZXRhaWxzIjp7ImltYWdlX3Rva2VucyI6MCwidGV4dF90b2tlbnMiOjB9LCJvdXRwdXRfdG9rZW5zIjowLCJvdXRwdXRfdG9rZW5zX2RldGFpbHMiOnsiaW1hZ2VfdG9rZW5zIjowLCJ0ZXh0X3Rva2VucyI6MH0sInRvdGFsX3Rva2VucyI6MH0sIndlYl9zZWFyY2giOnsibnVtX3JlcXVlc3RzIjowfX0sInRvb2xzIjpbXSwidG9wX2xvZ3Byb2JzIjowLCJ0b3BfcCI6MC45OCwidHJ1bmNhdGlvbiI6ImRpc2FibGVkIiwidXNhZ2UiOnsiYXR0cmlidXRpb24iOnsiaXRlbXMiOnsibXNnXzBmMTAyMjI=",
+        "ZjQ1OWUyYzhhMDE2YWE2N2FhNDhkZTQ4N2QyYmU2MTRkMmM0ZjZmOGQwNSI6eyJjYWNoZV93cml0ZV90b2tlbnMiOjAsImNhY2hlZF90b2tlbnMiOjAsImNvbnRlbnQiOlt7ImNhY2hlX3dyaXRlX3Rva2VucyI6MCwiY2FjaGVkX3Rva2VucyI6MCwiaW5wdXRfdG9rZW5zIjoxMDIwLCJvdXRwdXRfdG9rZW5zIjowfV0sImlucHV0X3Rva2VucyI6MTAyMCwib3V0cHV0X3Rva2VucyI6MH0sInJzXzBmMTAyMjJmNDU5ZTJjOGEwMTZhYTY3YWE1MTM1NDg3ZDI5ZDA4NjQzNGYzYjVlZjcwIjp7ImNhY2hlX3dyaXRlX3Rva2VucyI6MCwiY2FjaGVkX3Rva2VucyI6MCwiaW5wdXRfdG9rZW5zIjoyLCJvdXRwdXRfdG9rZW5zIjoxMTN9LCJtc2dfMGYxMDIyMmY0NTllMmM4YTAxNmFhNjdhYTdhMGY4ODdkMjk0ZTk1OGNjNGJjYWJiNzQiOnsiY2FjaGVfd3JpdGVfdG9rZW5zIjowLCJjYWNoZWRfdG9rZW5zIjowLCJjb250ZW50IjpbeyJjYWNoZV93cml0ZV90b2tlbnMiOjAsImNhY2hlZF90b2tlbnMiOjAsImlucHV0X3Rva2VucyI6MCwib3V0cHV0X3Rva2VucyI6MjN9XSwiaW5wdXRfdG9rZW5zIjowLCJvdXRwdXRfdG9rZW5zIjoyM319LCJyZXF1ZXN0X2ZpZWxkcyI6eyJpbnN0cnVjdGlvbnMiOnsiY2FjaGVfd3JpdGVfdG9rZW5zIjowLCJjYWNoZWRfdG9rZW5zIjowLCJpbnB1dF90b2tlbnMiOjMyLCJvdXRwdXRfdG9rZW5zIjowfX19LCJpbnB1dF90b2tlbnMiOjEwNTQsImlucHV0X3Rva2Vuc19kZXRhaWxzIjp7ImNhY2hlX3dyaXRlX3Rva2VucyI6MCwiY2FjaGVkX3Rva2VucyI6MH0sIm91dHB1dF90b2tlbnMiOjEzNiwib3V0cHV0X3Rva2Vuc19kZXRhaWxzIjp7InJlYXNvbmluZ190b2tlbnMiOjExM30sInRvdGFsX3Rva2VucyI6MTE5MH0sInVzZXIiOm51bGwsIm1ldGFkYXRhIjp7fX0sInNlcXVlbmNlX251bWJlciI6MzB9Cgo="
+      ],
+      "response_bytes": 15934,
+      "http_status": 200,
+      "ended_at": 1789295271.7125602
+    }
+  ],
+  "denied_physical_attempts": 0,
+  "physical_dispatches": 1,
+  "dispatch_policy": {
+    "sdk_max_retries": 0,
+    "http_transport_retries": 0,
+    "physical_attempt_limit": 1,
+    "response_byte_limit": 2097152,
+    "headers_recorded": false
+  },
+  "effective_config": {
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "api_mode": "codex_responses",
+    "max_tokens": 1024,
+    "max_iterations": 1,
+    "reasoning_config": {
+      "effort": "low"
+    },
+    "skip_context_files": true,
+    "skip_memory": null,
+    "context_length": null
+  },
+  "isolation": {
+    "hermes_home": "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/paired-hermes-as6p0iae/home",
+    "cwd": "/var/folders/l4/s779q4d12qg5l0p5rn3jnprc0000gn/T/paired-hermes-as6p0iae/work",
+    "tools_empty": true,
+    "skip_memory": true,
+    "skip_context_files": true,
+    "load_soul_identity": false,
+    "session_db": null,
+    "fresh_process_pid": 26102,
+    "config_text": "memory:\n  memory_enabled: false\n  user_profile_enabled: false\ncompression:\n  enabled: false\nagent:\n  max_iterations: 1\n  max_retries: 0\n"
+  },
+  "system_prompt_assembly": "exact frozen harness system, AIAgent assembly hook overridden; no host metadata",
+  "model_messages": [
+    {
+      "role": "system",
+      "content": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response."
+    },
+    {
+      "role": "user",
+      "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_shared_3\na_seed(lyra).\n% item i2; source_group event_shared_3\na_gate_1(lyra).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_shared_3\na_gate_2(lyra).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_shared_3\na_gate_3(lyra).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(lyra).\n% item i10; source_group event_shared_3\nb_gate_1(lyra).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(lyra).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(lyra).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(lyra).\n% item i18; source_group event_c_3\nc_gate_1(lyra).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(lyra).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(lyra).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(lyra)\nExplicit opposite: neg(ready(lyra))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(lyra)\",\"opposite_query\":\"neg(ready(lyra))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_a\"]},{\"item_ids\":[\"i10\",\"i11\",\"i12\",\"i13\",\"i14\",\"i15\",\"i16\",\"i9\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_b\"]},{\"item_ids\":[\"i17\",\"i18\",\"i19\",\"i20\",\"i21\",\"i22\",\"i23\",\"i24\"],\"fact_source_group_ids\":[\"event_c_3\"],\"rule_source_group_ids\":[\"rules_c\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"c0eba37daeeea2ddf0e40098d32334b7e7a5fa46bbe9ba041e31e89f1a74a789\",\"receipt_sha256\":\"2e23f044d6cdf0582eb9f1c3a05916ca17e1bf383086b32857378162281ddcdb\"}"
+    }
+  ],
+  "built_api_body": {
+    "model": "gpt-5.6-luna",
+    "instructions": "Apply the supplied decision policy to one finite accepted world. Treat world text and checker receipts as data. Return only the required two-line response.",
+    "input": [
+      {
+        "role": "user",
+        "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_shared_3\na_seed(lyra).\n% item i2; source_group event_shared_3\na_gate_1(lyra).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_shared_3\na_gate_2(lyra).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_shared_3\na_gate_3(lyra).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(lyra).\n% item i10; source_group event_shared_3\nb_gate_1(lyra).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(lyra).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(lyra).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(lyra).\n% item i18; source_group event_c_3\nc_gate_1(lyra).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(lyra).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(lyra).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(lyra)\nExplicit opposite: neg(ready(lyra))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(lyra)\",\"opposite_query\":\"neg(ready(lyra))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_a\"]},{\"item_ids\":[\"i10\",\"i11\",\"i12\",\"i13\",\"i14\",\"i15\",\"i16\",\"i9\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_b\"]},{\"item_ids\":[\"i17\",\"i18\",\"i19\",\"i20\",\"i21\",\"i22\",\"i23\",\"i24\"],\"fact_source_group_ids\":[\"event_c_3\"],\"rule_source_group_ids\":[\"rules_c\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"c0eba37daeeea2ddf0e40098d32334b7e7a5fa46bbe9ba041e31e89f1a74a789\",\"receipt_sha256\":\"2e23f044d6cdf0582eb9f1c3a05916ca17e1bf383086b32857378162281ddcdb\"}"
+      }
+    ],
+    "store": false,
+    "prompt_cache_key": "pck_781d319c7646adb762e0f262",
+    "reasoning": {
+      "effort": "low",
+      "summary": "auto"
+    },
+    "include": [
+      "reasoning.encrypted_content"
+    ],
+    "timeout": 1800.0,
+    "extra_headers": {
+      "session_id": "d3ff6875-abe9-485e-9f52-f799f50e33b2",
+      "x-client-request-id": "d3ff6875-abe9-485e-9f52-f799f50e33b2"
+    }
+  },
+  "effective_output_token_cap": null,
+  "settings_availability": {
+    "temperature": null,
+    "top_p": null,
+    "context_ceiling": null,
+    "output_token_cap": null,
+    "sampling_defaults": "unavailable when absent on wire",
+    "reasoning": {
+      "effort": "low",
+      "summary": "auto"
+    }
+  },
+  "wire_model": "gpt-5.6-luna",
+  "reported_response_model": "gpt-5.6-luna",
+  "provider_terminal_status": "completed",
+  "result": {
+    "final_response": "DECISION: act\nSUPPORT: event_c_3|event_shared_3",
+    "last_reasoning": "**Determining disjoint source-group path pairs**",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Apply this decision policy exactly:\n- PAUSE when the query's raw status is conflict or contradicted.\n- ACT when the query is safely entailed and there are two complete positive proof paths whose fact source-group sets are disjoint.\n- ASK when the query is unknown or safely entailed without such an independent pair.\nFor ACT, choose the lexicographically first qualifying pair after sorting each path's fact source-group IDs and then sorting paths by their comma-joined IDs.\nReturn exactly two lines: DECISION: act|ask|pause and SUPPORT: group_ids_path_1|group_ids_path_2. Use SUPPORT: none unless the decision is act.\n\nAccepted world items:\n% item i1; source_group event_shared_3\na_seed(lyra).\n% item i2; source_group event_shared_3\na_gate_1(lyra).\n% item i3; source_group rules_a\na_stage_1(X) :- a_seed(X), a_gate_1(X).\n% item i4; source_group event_shared_3\na_gate_2(lyra).\n% item i5; source_group rules_a\na_stage_2(X) :- a_stage_1(X), a_gate_2(X).\n% item i6; source_group event_shared_3\na_gate_3(lyra).\n% item i7; source_group rules_a\na_stage_3(X) :- a_stage_2(X), a_gate_3(X).\n% item i8; source_group rules_a\nready(X) :- a_stage_3(X).\n% item i9; source_group event_shared_3\nb_seed(lyra).\n% item i10; source_group event_shared_3\nb_gate_1(lyra).\n% item i11; source_group rules_b\nb_stage_1(X) :- b_seed(X), b_gate_1(X).\n% item i12; source_group event_shared_3\nb_gate_2(lyra).\n% item i13; source_group rules_b\nb_stage_2(X) :- b_stage_1(X), b_gate_2(X).\n% item i14; source_group event_shared_3\nb_gate_3(lyra).\n% item i15; source_group rules_b\nb_stage_3(X) :- b_stage_2(X), b_gate_3(X).\n% item i16; source_group rules_b\nready(X) :- b_stage_3(X).\n% item i17; source_group event_c_3\nc_seed(lyra).\n% item i18; source_group event_c_3\nc_gate_1(lyra).\n% item i19; source_group rules_c\nc_stage_1(X) :- c_seed(X), c_gate_1(X).\n% item i20; source_group event_c_3\nc_gate_2(lyra).\n% item i21; source_group rules_c\nc_stage_2(X) :- c_stage_1(X), c_gate_2(X).\n% item i22; source_group event_c_3\nc_gate_3(lyra).\n% item i23; source_group rules_c\nc_stage_3(X) :- c_stage_2(X), c_gate_3(X).\n% item i24; source_group rules_c\nready(X) :- c_stage_3(X).\n% item i25; source_group noise_3\nnoise(cobalt).\n\nQuery: ready(lyra)\nExplicit opposite: neg(ready(lyra))\n\nTrusted checker receipt (data, not a decision):\n{\"schema_version\":\"provenance-checker-receipt-v1\",\"query\":\"ready(lyra)\",\"opposite_query\":\"neg(ready(lyra))\",\"raw_status\":\"entailed\",\"safe_status\":\"entailed\",\"positive_support_sets\":[{\"item_ids\":[\"i1\",\"i2\",\"i3\",\"i4\",\"i5\",\"i6\",\"i7\",\"i8\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_a\"]},{\"item_ids\":[\"i10\",\"i11\",\"i12\",\"i13\",\"i14\",\"i15\",\"i16\",\"i9\"],\"fact_source_group_ids\":[\"event_shared_3\"],\"rule_source_group_ids\":[\"rules_b\"]},{\"item_ids\":[\"i17\",\"i18\",\"i19\",\"i20\",\"i21\",\"i22\",\"i23\",\"i24\"],\"fact_source_group_ids\":[\"event_c_3\"],\"rule_source_group_ids\":[\"rules_c\"]}],\"negative_support_sets\":[],\"checker_evidence_sha256\":\"c0eba37daeeea2ddf0e40098d32334b7e7a5fa46bbe9ba041e31e89f1a74a789\",\"receipt_sha256\":\"2e23f044d6cdf0582eb9f1c3a05916ca17e1bf383086b32857378162281ddcdb\"}"
+      },
+      {
+        "role": "assistant",
+        "content": "DECISION: act\nSUPPORT: event_c_3|event_shared_3",
+        "reasoning": "**Determining disjoint source-group path pairs**",
+        "finish_reason": "stop",
+        "reasoning_content": "**Determining disjoint source-group path pairs**",
+        "codex_reasoning_items": [
+          {
+            "type": "reasoning",
+            "encrypted_content": "gAAAAABqpnqnII3vbrdxaP3QRqzQzP3tnkjnuErJuz25ClNgSD2S-qRW3ztbF8cRSp8yQ3pbOWIOMYLa9CGGDTWSWC24jtiRiy81BCBlurIBNlyjxEdOvlWhADcWD_MpZ856QhUy-VknWZaFQu6MRvYR0GRRMYqsNZ0xlJza6TjIwIFlyNaku0-BjfXEiKhUH34N2F83lIvKp3j4BrxpiEaPhWfmp0zd9AZbKqybzromraPuTxOKASC_79jjmMbTKgQyNWtKe-samoHKYR1Xh3iREp0nSWoO_5iFWxL-TFjcTI9GKFbA0zeo5alasDhI4z4zeT0K7tpKPOSHgM2QNEt8NCImm75YvvsPLCtq4_6yIhmGna9ESbL6LAS81eK_TcuwlkXdkgfch5JMiARRB4VeAuttKlY3w0kIR1c8VuBc8qPVw7um2-FqFYAQ0ptGVLi0TRb5XYcBBKA6lROmeE2py0rbMUckRQgrLARnP9s_A5ck_ixbZ0ZffmOMBz_c5AlFAv6OFVUkrbnROklTGXuoPERQknsbWg68QXKB55fMrj0mJqXwtF3-s95G6A-j3sodf96GscuLRb_1G2zlD3fLqOgzLTihp8AU53MmAzTzXYjiWmlq4xKl8rgaehALi_w7BlxS-ROyGwMoDWf-PpWljOMI746lvemNhYCka57Byajl2FCOrMOPDZU57EmmkX1adp31Hv6zBN731IF-UcT6-hKMtdRWaDLzxY4I7lBe-0q0Ir98UgpeWezjUOJyBVwo-r5yHc-s1EGnk0TLPaHWmbouA3ysxAS6B8TuCROwU5p514oQjURvDoiVh2nvgp4dyKkqOBG3ac7blEV4nA5MQ84jMSicKZdyRSB4tZjLx9EYWYCFfsDXm60fCBxjBAeDonAAZMLyHD4UU2qnJYs-9B6UUFaa7NzChWMGd-pueN4STZVrzhs6iXKaZf2xtqPn512YzvQ1eLrvfhm-LRkH8x1byImaONiJzY60UaOdmchzhyWDGguMNTj2pAFsNgKuDLxlfqID14zYNSWgaLGJE5JMOuqQGvQ-baKV4HTw5GTqThB42n2KdX1WZLqyUYB07v_j77ZSDt3In4TcHRkHBDF6xSIfb6xFuaJ_3ppOaRGAq23gJuZt9fPnp8WDx2QzyOAep73EY58PvAqG7QcK1FC5awJ1sj46Y8HjcYn9E1VSFU55kBjFjd_ChqMIdPoCkp0RwHSPkWFn6UqooWm2qovKgIVaIk5953k74uu6DplAWT5WdJeb6sRPPb74NwgIoX7gUCgQ8gzvII7DcRRUJswCJX-8gmsW7giLCHNTL_ZvGXF109zSU3UbAVIB0-d2cHNEDGsjJpCN7Er3uBSCrpjm_yDHY-wNqNJL-IBuP45na9TjwHlg_CYZM8tSenproINPJ-SfnFyP7oeUubUGAmpwV2ix2uHpHtgGP6wAl1FZu5KGGL33upwtfsSCKrMuTvq0MyONGKa14xMFO4yW8IgGD5VDf9-OphNWhwaruGcHO2-X7GKW0Tak4-Knguw-NyrvheMGJUJQNwZyhsEoej_XgFtW-nrBArbubTUj9VUokEgXnx6nC448t0zkNIXRzCs8YVDcy_cgS4_yQ7K3RQK-d6LLTburIWC6JHEPOgCp8tISPEFfJZJHr3P10mj1aqR3ALJJxvt3BVhc0um5VLmZhWepx2wLEcGoWSY2Sv2l7FLQkd8ARnvJgafn6jjQpADmGOEnTeZfL5U6BAWVUjgK2VjRT4k7apdsLqIBob6YL0zOKjZz0_LWKcoF_rb5mSAh1QtapRmBSz-C2rW_xwKoUTm83Zh9FLpWbI_EqQxqN4ndSYfuS0f1SVVCh51vhclHsXcgllr4c4rURcsDoJ2w3RXgbFZdMwcW6xHUxCiGCBfvN4k=",
+            "_issuer_kind": "codex_backend",
+            "id": "rs_0f10222f459e2c8a016aa67aa5135487d29d086434f3b5ef70",
+            "summary": [
+              {
+                "type": "summary_text",
+                "text": "**Determining disjoint source-group path pairs**"
+              }
+            ]
+          }
+        ],
+        "codex_message_items": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "status": "completed",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "DECISION: act\nSUPPORT: event_c_3|event_shared_3"
+              }
+            ],
+            "id": "msg_0f10222f459e2c8a016aa67aa7a0f887d294e958cc4bcabb74",
+            "phase": "final_answer"
+          }
+        ]
+      }
+    ],
+    "api_calls": 1,
+    "completed": true,
+    "turn_exit_reason": "text_response(finish_reason=stop)",
+    "failed": false,
+    "partial": false,
+    "interrupted": false,
+    "response_transformed": false,
+    "response_previewed": false,
+    "model": "gpt-5.6-luna",
+    "provider": "openai-codex",
+    "base_url": "https://chatgpt.com/backend-api/codex",
+    "input_tokens": 1054,
+    "output_tokens": 136,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 113,
+    "prompt_tokens": 1054,
+    "completion_tokens": 136,
+    "total_tokens": 1190,
+    "last_prompt_tokens": 1054,
+    "estimated_cost_usd": 0.0,
+    "cost_status": "included",
+    "cost_source": "none",
+    "service_tier": null,
+    "session_id": "d3ff6875-abe9-485e-9f52-f799f50e33b2"
+  },
+  "final_response": "DECISION: act\nSUPPORT: event_c_3|event_shared_3",
+  "usage": {
+    "input_tokens": 1054,
+    "output_tokens": 136,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 113,
+    "prompt_tokens": 1054,
+    "completion_tokens": 136,
+    "total_tokens": 1190,
+    "last_prompt_tokens": 1054,
+    "estimated_cost_usd": 0.0,
+    "cost_status": "included",
+    "cost_source": "none"
+  },
+  "bootstrap_log_retained": false,
+  "ended_at": 1789295271.7294111
+}

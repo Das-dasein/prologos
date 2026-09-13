@@ -1,18 +1,32 @@
 const OpenAI = require("openai");
 const { zodResponseFormat } = require("openai/helpers/zod");
-const { Extraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS } = require("../llm-schema");
+const { Extraction, PolicyDecisionExtraction, ReflectionProposal, EXTRACTION_INSTRUCTIONS, POLICY_DECISION_EXTRACTION_INSTRUCTIONS, POLICY_DECISION_EXTRACTION_REPAIR_INSTRUCTIONS } = require("../llm-schema");
 
 const configuredModel = process.env.OPENAI_MODEL || "gpt-5.6";
 let client;
 function getClient() { client ??= new OpenAI(); return client; }
 
 async function extractMemory(text) {
-  const evidence = await extractMemoryEvidence(text, { model: configuredModel });
+  const evidence = await extractAdmissionMemoryEvidence(text, { model: configuredModel });
   return evidence.output;
 }
 
-// Harness-facing path: retain the complete provider envelope for audit while
-// keeping extractMemory's application-facing parsed-output contract intact.
+async function extractAdmissionMemoryEvidence(text, { model } = {}) {
+  if (typeof model !== "string" || !model) throw Object.assign(new Error("an explicit model is required"), { code: "MODEL_REQUIRED" });
+  const result = await getClient().chat.completions.parse({
+    model,
+    messages: [
+      { role: "system", content: POLICY_DECISION_EXTRACTION_INSTRUCTIONS },
+      { role: "user", content: text },
+    ],
+    response_format: zodResponseFormat(PolicyDecisionExtraction, "memory_extraction_v5"),
+  });
+  if (result.model && result.model !== model) throw Object.assign(new Error(`provider model ${result.model} does not match selected model ${model}`), { code: "MODEL_MISMATCH" });
+  return { output: result.choices[0].message.parsed, model: result.model || model, native_usage: result.usage, raw_output: result };
+}
+
+// Frozen v2 harness path: retain the complete provider envelope without
+// changing historical experiment prompts or output schemas.
 async function extractMemoryEvidence(text, { model } = {}) {
   if (typeof model !== "string" || !model) throw Object.assign(new Error("an explicit model is required"), { code: "MODEL_REQUIRED" });
   const result = await getClient().chat.completions.parse({
@@ -31,6 +45,20 @@ async function extractMemoryEvidence(text, { model } = {}) {
     native_usage: usage,
     raw_output: result,
   };
+}
+
+async function repairMemory(text, candidate, diagnostics) {
+  const result = await getClient().chat.completions.parse({
+    model: configuredModel,
+    messages: [
+      { role: "system", content: POLICY_DECISION_EXTRACTION_REPAIR_INSTRUCTIONS },
+      { role: "user", content: `USER MESSAGE:\n${text}\n\nREJECTED CANDIDATE:\n${JSON.stringify(candidate)}\n\nVALIDATOR DIAGNOSTICS:\n${JSON.stringify(diagnostics)}` },
+    ],
+    response_format: zodResponseFormat(PolicyDecisionExtraction, "memory_extraction_repair_v5"),
+  });
+  if (result.model && result.model !== configuredModel)
+    throw Object.assign(new Error(`provider model ${result.model} does not match selected model ${configuredModel}`), { code: "MODEL_MISMATCH" });
+  return result.choices[0].message.parsed;
 }
 
 async function respond(text, memory, conflicts) {
@@ -55,4 +83,4 @@ async function reflect(report) {
   return result.choices[0].message.parsed;
 }
 
-module.exports = { name: "openai-api", extractMemory, extractMemoryEvidence, respond, reflect };
+module.exports = { name: "openai-api", model: configuredModel, extractMemory, extractAdmissionMemoryEvidence, extractMemoryEvidence, repairMemory, respond, reflect };

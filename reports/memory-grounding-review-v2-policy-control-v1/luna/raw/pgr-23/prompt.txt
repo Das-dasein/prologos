@@ -1,0 +1,61 @@
+You review a quarantined memory extraction candidate against one user message.
+You cannot write memory and must emit one memory-grounding-review-v2 object with no prose.
+Copy the exact grounding policy identity into policy_identity.
+
+Review every assertion independently and exactly once, in assertion_index order.
+- entailed: the literal user message licenses the normalized relation and every argument under the supplied grounding policy.
+- not_entailed: the message can be true while the assertion is false under that policy.
+- uncertain: the proposition might be intended, but an entity reference, scope, modality, quotation, time, or normalization is ambiguous.
+
+Do not add defeasible world knowledge. Copy one exact non-empty supporting or problematic span from the user message into evidence_span.
+
+Predicate grounding policy:
+Policy conversation_grounding@1.0.0 sha256:c012e2b9ca0f571d226076656324f62dc6919059dd2b342c94cb09b5782d402f
+Default: License an assertion only when the source directly entails the registered predicate and all normalized arguments under ordinary lexical meaning, with the same polarity, modality, and time. Do not add defeasible world knowledge.
+Normalization: Lowercase Latin atoms preserve source identity but do not establish entity equivalence. Non-ASCII name transliterations remain provisional until an alias or identity decision is explicitly admitted.
+role: A stable present-tense role may be stated by explicit role framing or by direct habitual use of the corresponding role verb, such as mentors people licensing role(Person, mentor). Excludes: one isolated action; mere contact with a role holder; a desired or hypothetical role.
+works_at: The source directly states an employment or work affiliation between the person and organization. Excludes: joining a project or team without employment wording; attending or organizing an event; meeting or contacting the organization.
+lives_in: The source directly states the person's usual or time-bounded residence in the place. Excludes: travel; visiting; property ownership; an intended or hypothetical move.
+studies_at: The source directly states enrollment or ongoing study at the organization. Excludes: attending one event or course without institutional enrollment; applying to the organization.
+knows_technology: The source directly states knowledge, skill, or proficiency in the technology. Excludes: interest; reading or watching material; mere membership in a technology-related group.
+worked_with_technology: The source directly states past or completed work using the technology. Excludes: current use without past-work scope; study or interest alone.
+uses: The source directly states actual use of the thing by the agent. Excludes: knowledge or interest without use; reading documentation; a hypothetical future use.
+interested_in: The source directly states interest or sustained curiosity in the entity or activity. Excludes: one attendance, mention, or encounter; knowledge without stated interest.
+previous_project: The source directly states earlier participation in the named project. Excludes: employment without project participation; current or hypothetical participation.
+
+Registered predicate meanings:
+[core: universal_core@1.0.0]
+- instance_of/2 (entity, class): an entity is an instance of a class
+- subclass_of/2 (class, class): one class is a specialization of another class
+- same_as/2 (entity, entity): two identifiers refer to the same entity
+- has_name/2 (entity, value): an entity has a stated name
+[domain: conversation_profile@1.0.0]
+- likes/2 (agent, thing): use likes(Person, Thing) with polarity=positive for like/love and polarity=negative for dislike/hate/cannot stand/do not like; never invent or emit an antonym predicate such as dislikes
+- lives_in/2 (person, place): a person lives in a place
+- works_at/2 (person, organization): a person works at an organization
+- studies_at/2 (person, organization): a person studies at an organization
+- role/2 (entity, role_kind): an entity has a role
+- birth_year/2 (person, value): a person has a stated year of birth
+- email/2 (entity, value): an entity has a stated email address atom
+- prefers/2 (agent, thing): an agent prefers a thing
+- owns/2 (agent, thing): an agent owns a thing
+- uses/2 (agent, thing): an agent uses a thing
+- interested_in/2 (agent, entity): an agent is interested in an entity or activity
+- previous_project/2 (person, project): a person previously participated in a project
+- role_at_semester/4 (person, organization, role_kind, semester): person, organization, role, and semester
+- role_before_semester/4 (person, organization, role_kind, semester): person, organization, role, and boundary semester
+- project_role_at/4 (person, organization, project, role_kind): person, organization, project, and project role
+- current_project_at/3 (person, organization, project): person, organization, and current project
+- knows_technology/2 (person, technology): a person knows a technology
+- worked_with_technology/2 (person, technology): a person has worked with a technology
+
+USER MESSAGE:
+Acme employs me.
+
+CANDIDATE SHA256:
+48f4720a1347bea9db779963d96a80bb052feb3c1beb15b806042d86dfe49616
+
+QUARANTINED CANDIDATE:
+{"schema_version":"memory-extraction-v4","registry_identity":{"name":"prologos_agent_memory","version":"1.0.0","sha256":"40558d46e4e73028cc19e5f97cdaf316833f74b916f76552f6443e8d5312e3a0"},"decision":"write","clarification":null,"assertions":[{"polarity":"positive","relation":"works_at","arguments":["user","acme"],"valid_from":null,"valid_to":null,"confidence":0.99,"evidence_span":"Acme employs me."}],"ontology_candidates":[]}
+
+Return only the schema-conforming review. Do not use tools.

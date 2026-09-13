@@ -1,0 +1,249 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "memory-extraction-v5"
+    },
+    "registry_identity": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "prologos_agent_memory"
+        },
+        "version": {
+          "type": "string",
+          "const": "1.0.0"
+        },
+        "sha256": {
+          "type": "string",
+          "const": "40558d46e4e73028cc19e5f97cdaf316833f74b916f76552f6443e8d5312e3a0"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "policy_identity": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "conversation_grounding"
+        },
+        "version": {
+          "type": "string",
+          "const": "1.0.0"
+        },
+        "sha256": {
+          "type": "string",
+          "const": "c012e2b9ca0f571d226076656324f62dc6919059dd2b342c94cb09b5782d402f"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "assertions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "properties": {
+          "polarity": {
+            "type": "string",
+            "enum": [
+              "positive",
+              "negative"
+            ]
+          },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "instance_of",
+              "subclass_of",
+              "same_as",
+              "has_name",
+              "likes",
+              "lives_in",
+              "works_at",
+              "studies_at",
+              "role",
+              "birth_year",
+              "email",
+              "prefers",
+              "owns",
+              "uses",
+              "interested_in",
+              "previous_project",
+              "role_at_semester",
+              "role_before_semester",
+              "project_role_at",
+              "current_project_at",
+              "knows_technology",
+              "worked_with_technology"
+            ]
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "minItems": 1,
+            "maxItems": 4
+          },
+          "valid_from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 10000101,
+            "maximum": 99991231
+          },
+          "valid_to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 10000101,
+            "maximum": 99991231
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "evidence_span": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "polarity",
+          "relation",
+          "arguments",
+          "valid_from",
+          "valid_to",
+          "confidence",
+          "evidence_span"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "ontology_candidates": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "arity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "argument_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "entity",
+                "class",
+                "agent",
+                "person",
+                "organization",
+                "place",
+                "thing",
+                "activity",
+                "information_object",
+                "value",
+                "technology",
+                "project",
+                "role_kind",
+                "semester"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4
+          },
+          "meaning": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "evidence_span": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "name",
+          "arity",
+          "argument_types",
+          "meaning",
+          "evidence_span"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "write",
+        "ignore",
+        "clarify",
+        "ontology_candidate"
+      ]
+    },
+    "clarification": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "evidence_span": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "required": [
+            "question",
+            "evidence_span"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "registry_identity",
+    "policy_identity",
+    "assertions",
+    "ontology_candidates",
+    "decision",
+    "clarification"
+  ],
+  "additionalProperties": false
+}

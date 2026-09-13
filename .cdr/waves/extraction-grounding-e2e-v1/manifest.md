@@ -1,0 +1,24 @@
+# Extraction plus grounding end-to-end v1
+
+All fresh inputs, gold decisions, two-stage collector, verifier, schemas, prompt sources, product validator, provider adapter, and ontology dependencies were frozen before live output existed. Review runs only after a write candidate. Neither stage has admission authority.
+
+fixture.jsonl: 9c689d800924d8a467f79700213121ed4ad32c323930200b72f113a662440c9c
+gold.jsonl: d0e2cdf10789d769efefc8ff61effca6dfa30b040df058662317421f698a6d40
+collector-v1.source.cjs: 068bc54b7e1ca33b3e27ea45bb4c8ff2b785fd70b309416b3f0438447c6e4dcc
+verifier-v1.source.cjs: 0139f5fea4be88b95fbe9addc0133938f303ae203c31c28e33da7d7a93e2e102
+grounding-review-v1.source.js: 22d56db11127c1c13ae57efc5b4fc411e54b83ee44074a276ab064c4b03f4350
+llm-schema.source.js: 0e136b1af73a74ff2fed62da652324396cfb292c5925bdd577417b8520a03fb0
+extraction-admission-v2-product.source.js: 21d3e7bc79e4e68ed389042fdfe5e96cf8361501d4bdf491d45dbccfe11fb8b2
+provider-codex.source.js: c9c2fc6d7a6c22b04ddefcb17e98c1ad4bcf556e2ad76f568518faae754e2c8e
+ontology-registry.source.js: 465acb06454dd6d6625cd3e296da1aad4a21411fdfdfb39d7232bb00555a6937
+memory-extraction-v4.schema.json: a4984b4cb7ffe20e3fc2878ed1a3ce8f917e6c5d7ece0662b1853fa21c62b116
+memory-grounding-review-v1.schema.json: c94856fb84d586d20a98bbada8e18de00fd2ab7a895f540676c63ae59e5c0887
+active-profile-v1.json: 5945d526a641b487b7ada667a54bd95476408d87b9f3d670c4f18eaa83d40fbb
+universal-core-v1.json: 2fd5bbc833d84e3b4dafe92f19e1b4b8611a6c29e92e1961f5e13db222c6d881
+conversation-profile-v1.json: e6255a2329b457d905f5f6790da1b4818d8ab8b690def04449d44fcddc393801
+
+Planned provider: codex
+Planned model argument: gpt-5.6-luna
+Planned extraction calls: 12
+Planned review calls: determined by live write decisions
+Planned admission writes: 0

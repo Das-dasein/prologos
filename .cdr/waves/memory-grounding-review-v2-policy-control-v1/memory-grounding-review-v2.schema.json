@@ -1,0 +1,82 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "memory-grounding-review-v2"
+    },
+    "candidate_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "reviews": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "properties": {
+          "assertion_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "entailed",
+              "not_entailed",
+              "uncertain"
+            ]
+          },
+          "evidence_span": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "assertion_index",
+          "verdict",
+          "evidence_span",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "policy_identity": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "conversation_grounding"
+        },
+        "version": {
+          "type": "string",
+          "const": "1.0.0"
+        },
+        "sha256": {
+          "type": "string",
+          "const": "c012e2b9ca0f571d226076656324f62dc6919059dd2b342c94cb09b5782d402f"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "sha256"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "candidate_sha256",
+    "policy_identity",
+    "reviews"
+  ],
+  "additionalProperties": false
+}

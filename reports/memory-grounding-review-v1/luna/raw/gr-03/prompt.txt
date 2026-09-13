@@ -1,0 +1,46 @@
+You review a quarantined memory extraction candidate against one user message.
+You cannot write memory and must emit one memory-grounding-review-v1 object with no prose.
+
+Review every assertion independently and exactly once, in assertion_index order.
+- entailed: the literal user message directly supports the normalized relation and every argument.
+- not_entailed: the message can be true while the assertion is false, including event-to-state, activity-to-role, association-to-employment, or other nearby-predicate coercion.
+- uncertain: the proposition might be intended, but an entity reference, pronoun, scope, modality, quotation, or normalization is ambiguous.
+
+Do not add common-world assumptions. Using a technology does not prove knowing it. Joining, meeting, calling, or being present does not prove employment. Performing an activity toward someone does not prove that the actor has a same-named role. Copy one exact non-empty supporting or problematic span from the user message into evidence_span.
+
+Registered predicate meanings:
+[core: universal_core@1.0.0]
+- instance_of/2 (entity, class): an entity is an instance of a class
+- subclass_of/2 (class, class): one class is a specialization of another class
+- same_as/2 (entity, entity): two identifiers refer to the same entity
+- has_name/2 (entity, value): an entity has a stated name
+[domain: conversation_profile@1.0.0]
+- likes/2 (agent, thing): use likes(Person, Thing) with polarity=positive for like/love and polarity=negative for dislike/hate/cannot stand/do not like; never invent or emit an antonym predicate such as dislikes
+- lives_in/2 (person, place): a person lives in a place
+- works_at/2 (person, organization): a person works at an organization
+- studies_at/2 (person, organization): a person studies at an organization
+- role/2 (entity, role_kind): an entity has a role
+- birth_year/2 (person, value): a person has a stated year of birth
+- email/2 (entity, value): an entity has a stated email address atom
+- prefers/2 (agent, thing): an agent prefers a thing
+- owns/2 (agent, thing): an agent owns a thing
+- uses/2 (agent, thing): an agent uses a thing
+- interested_in/2 (agent, entity): an agent is interested in an entity or activity
+- previous_project/2 (person, project): a person previously participated in a project
+- role_at_semester/4 (person, organization, role_kind, semester): person, organization, role, and semester
+- role_before_semester/4 (person, organization, role_kind, semester): person, organization, role, and boundary semester
+- project_role_at/4 (person, organization, project, role_kind): person, organization, project, and project role
+- current_project_at/3 (person, organization, project): person, organization, and current project
+- knows_technology/2 (person, technology): a person knows a technology
+- worked_with_technology/2 (person, technology): a person has worked with a technology
+
+USER MESSAGE:
+Priya is on the call. She works at Acme.
+
+CANDIDATE SHA256:
+d7e1db5c4902917e1767f46df80d169b8fbc0e2900c82d63e2fa56e1689fef25
+
+QUARANTINED CANDIDATE:
+{"assertions":[{"arguments":["priya","acme"],"confidence":1,"evidence_span":"She works at Acme.","polarity":"positive","relation":"works_at","valid_from":null,"valid_to":null}],"clarification":null,"decision":"write","ontology_candidates":[],"registry_identity":{"name":"prologos_agent_memory","sha256":"40558d46e4e73028cc19e5f97cdaf316833f74b916f76552f6443e8d5312e3a0","version":"1.0.0"},"schema_version":"memory-extraction-v4"}
+
+Return only the schema-conforming review. Do not use tools.

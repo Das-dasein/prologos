@@ -1,0 +1,21 @@
+# Product extraction v4 coreference control v1
+
+All inputs, scoring code, both validator implementations, provider adapter, schema, and ontology dependencies were frozen before any live output existed. Eight expected writes and eight expected clarifications cover clear, ambiguous, absent, and explicit subjects.
+
+fixture.jsonl: 09c0a64bbb8099aad4ac34191a7d3cabc14f51049d68c6de4f5c798972796e5b
+gold.jsonl: 2c33057611a6fdceb53fb5f6bc4361e09149b48ccc45c49ddcdfa6b5c50c55de
+collector-v1.source.cjs: 9de34e15cbe2d5d0bfe6b4c613324afe11bc847a85adb04b5c9bd0091ff8b614
+verifier-v1.source.cjs: 0bfc1c33b82397f7d269f9fa8a045770c9b3537a8499a44641a0a236b134d38a
+llm-schema.source.js: 0e136b1af73a74ff2fed62da652324396cfb292c5925bdd577417b8520a03fb0
+extraction-admission-v3-candidate.source.js: 21d3e7bc79e4e68ed389042fdfe5e96cf8361501d4bdf491d45dbccfe11fb8b2
+provider-codex.source.js: c9c2fc6d7a6c22b04ddefcb17e98c1ad4bcf556e2ad76f568518faae754e2c8e
+ontology-registry.source.js: 465acb06454dd6d6625cd3e296da1aad4a21411fdfdfb39d7232bb00555a6937
+memory-extraction-v4.schema.json: a4984b4cb7ffe20e3fc2878ed1a3ce8f917e6c5d7ece0662b1853fa21c62b116
+active-profile-v1.json: 5945d526a641b487b7ada667a54bd95476408d87b9f3d670c4f18eaa83d40fbb
+universal-core-v1.json: 2fd5bbc833d84e3b4dafe92f19e1b4b8611a6c29e92e1961f5e13db222c6d881
+conversation-profile-v1.json: e6255a2329b457d905f5f6790da1b4818d8ab8b690def04449d44fcddc393801
+
+Planned provider: codex
+Planned model argument: gpt-5.6-luna
+Planned provider calls: 16
+Planned admission writes: 0

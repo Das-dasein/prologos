@@ -1,0 +1,3441 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Мир агента · первая сцена</title>
+  <style>*{box-sizing:border-box}body{margin:0;background:#10171c;color:#e9eee9;font:16px/1.6 system-ui,sans-serif}main{max-width:1240px;margin:auto;padding:52px 26px}h1{font-size:clamp(30px,4.2vw,54px);line-height:1.15;max-width:850px;margin:12px 0 22px}h2{font-size:27px;line-height:1.2}.eyebrow{color:#98cfae;text-transform:uppercase;letter-spacing:.1em;font-size:12px}.intro{color:#b9c8ce;max-width:900px}.scene{padding:22px 26px;border-left:3px solid #b5d7bc;background:#19232a;margin:26px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}article{min-width:0;background:#1a252c;border:1px solid #35454d;border-radius:16px;padding:25px}.rule{background:#10191f;color:#d9d8aa;min-height:104px}.branches{display:grid;gap:10px;margin-top:20px}.branches>div{border:1px solid #43535b;border-radius:8px;padding:13px}.branches strong{display:block;color:#b6ddc1}.branches small{display:block;color:#a7b6bb;overflow-wrap:anywhere}.check{color:#a8dabb}pre{padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace;max-height:650px;overflow:auto}details{border-top:1px solid #3c4a51;padding:13px 0}summary{cursor:pointer;font-size:14px}footer{color:#b3c1c7;margin-top:30px}a{color:#b7d9c1}.result{padding:24px;border:1px solid #597361;border-radius:12px;margin-top:28px}@media(max-width:820px){.grid{grid-template-columns:1fr}main{padding:28px 16px}article{padding:20px}}</style>
+  <main><p class="eyebrow">Prolog agent memory / PoC v0 / воспроизводимая синтетическая сцена</p>
+  <h1>Один вопрос.<br>Разное прошлое — разный выбор.</h1>
+  <p class="intro">Агент хранит события, вспоминает старое правило, проверяет две возможности и выбирает следующий шаг. После сна предположения исчезают из рабочего мира, а ход исследования остаётся в биографии.</p>
+  <div class="scene">Основной сервис упал. Можно ли выпустить orion?<br><small>Готовность резерва неизвестна. Цель, текущие наблюдения, вопрос о резерве и бюджеты в обеих историях совпадают.</small></div>
+  <div class="grid"><article><p class="eyebrow">H1 · одна цель, другая история</p>
+    <h2>Спросить о резерве</h2><p>Старое правило связывает выпуск с готовностью резерва. Уточнение меняет доступное действие.</p>
+    <pre class="rule">release(X) :- main_down(X), backup_ready(X).</pre>
+    <div class="branches"><div><span>Допустить: резерв готов</span><strong>entailed</strong><small>ok · assumption_07c811e2daff_positive</small></div><div><span>Допустить: резерв не готов</span><strong>unknown</strong><small>ok · assumption_07c811e2daff_negative</small></div></div>
+    <p class="check">Память после сна: не изменилась ✓</p>
+    <p>Контроль без сна: <b>Спросить о резерве</b> · 1 исполнение; со сном: 3.</p>
+    <details><summary>Текущий вопрос, обязательства и бюджет</summary><pre>{
+  &quot;id&quot;: &quot;release_episode&quot;,
+  &quot;text&quot;: &quot;Основной сервис упал. Можно ли выпустить orion?&quot;,
+  &quot;query&quot;: &quot;release(orion)&quot;,
+  &quot;action&quot;: &quot;request_release_orion&quot;,
+  &quot;questions&quot;: [
+    {
+      &quot;id&quot;: &quot;backup&quot;,
+      &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+      &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+      &quot;cost&quot;: 1
+    }
+  ],
+  &quot;budget&quot;: {
+    &quot;queries&quot;: 24,
+    &quot;branches&quot;: 8,
+    &quot;questions&quot;: 2,
+    &quot;maxQuestionCost&quot;: 1
+  },
+  &quot;commitments&quot;: [
+    {
+      &quot;id&quot;: &quot;require_safe_proof&quot;,
+      &quot;source&quot;: &quot;operator goal policy v0&quot;
+    }
+  ]
+}</pre></details>
+    <details><summary>Полный снимок памяти и исходные Prolog-программы</summary><pre>{
+  &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+  &quot;ideas&quot;: {
+    &quot;version&quot;: &quot;release-domain-v0&quot;,
+    &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+    &quot;predicates&quot;: [
+      {
+        &quot;name&quot;: &quot;release&quot;,
+        &quot;arity&quot;: 1
+      },
+      {
+        &quot;name&quot;: &quot;main_down&quot;,
+        &quot;arity&quot;: 1
+      },
+      {
+        &quot;name&quot;: &quot;backup_ready&quot;,
+        &quot;arity&quot;: 1
+      },
+      {
+        &quot;name&quot;: &quot;certified_route&quot;,
+        &quot;arity&quot;: 1
+      },
+      {
+        &quot;name&quot;: &quot;note&quot;,
+        &quot;arity&quot;: 1
+      }
+    ]
+  },
+  &quot;at&quot;: 100,
+  &quot;items&quot;: [
+    {
+      &quot;id&quot;: &quot;old_release_rule&quot;,
+      &quot;program&quot;: &quot;release(X) :- main_down(X), backup_ready(X).&quot;,
+      &quot;source&quot;: &quot;e2&quot;,
+      &quot;observedAt&quot;: 1,
+      &quot;validFrom&quot;: 1,
+      &quot;validTo&quot;: null,
+      &quot;modality&quot;: &quot;asserted&quot;,
+      &quot;replaces&quot;: null,
+      &quot;origin&quot;: null,
+      &quot;status&quot;: &quot;accepted&quot;,
+      &quot;admittedAt&quot;: 1,
+      &quot;admission&quot;: &quot;e4&quot;
+    },
+    {
+      &quot;id&quot;: &quot;route_observation&quot;,
+      &quot;program&quot;: &quot;certified_route(orion).&quot;,
+      &quot;source&quot;: &quot;e5&quot;,
+      &quot;observedAt&quot;: 2,
+      &quot;validFrom&quot;: 2,
+      &quot;validTo&quot;: null,
+      &quot;modality&quot;: &quot;asserted&quot;,
+      &quot;replaces&quot;: null,
+      &quot;origin&quot;: null,
+      &quot;status&quot;: &quot;accepted&quot;,
+      &quot;admittedAt&quot;: 2,
+      &quot;admission&quot;: &quot;e7&quot;
+    },
+    {
+      &quot;id&quot;: &quot;outage&quot;,
+      &quot;program&quot;: &quot;main_down(orion).&quot;,
+      &quot;source&quot;: &quot;e20&quot;,
+      &quot;observedAt&quot;: 100,
+      &quot;validFrom&quot;: 100,
+      &quot;validTo&quot;: null,
+      &quot;modality&quot;: &quot;asserted&quot;,
+      &quot;replaces&quot;: null,
+      &quot;origin&quot;: null,
+      &quot;status&quot;: &quot;accepted&quot;,
+      &quot;admittedAt&quot;: 100,
+      &quot;admission&quot;: &quot;e22&quot;
+    }
+  ],
+  &quot;sha256&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;
+}</pre></details>
+    <details><summary>Обе ветви: предположения, доказательства, источники и статусы</summary><pre>{
+  &quot;goalId&quot;: &quot;release_episode&quot;,
+  &quot;strategy&quot;: &quot;dream&quot;,
+  &quot;snapshot&quot;: {
+    &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+    &quot;ideas&quot;: {
+      &quot;version&quot;: &quot;release-domain-v0&quot;,
+      &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+      &quot;predicates&quot;: [
+        {
+          &quot;name&quot;: &quot;release&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;main_down&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;backup_ready&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;certified_route&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;note&quot;,
+          &quot;arity&quot;: 1
+        }
+      ]
+    },
+    &quot;at&quot;: 100,
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: &quot;old_release_rule&quot;,
+        &quot;program&quot;: &quot;release(X) :- main_down(X), backup_ready(X).&quot;,
+        &quot;source&quot;: &quot;e2&quot;,
+        &quot;observedAt&quot;: 1,
+        &quot;validFrom&quot;: 1,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 1,
+        &quot;admission&quot;: &quot;e4&quot;
+      },
+      {
+        &quot;id&quot;: &quot;route_observation&quot;,
+        &quot;program&quot;: &quot;certified_route(orion).&quot;,
+        &quot;source&quot;: &quot;e5&quot;,
+        &quot;observedAt&quot;: 2,
+        &quot;validFrom&quot;: 2,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 2,
+        &quot;admission&quot;: &quot;e7&quot;
+      },
+      {
+        &quot;id&quot;: &quot;outage&quot;,
+        &quot;program&quot;: &quot;main_down(orion).&quot;,
+        &quot;source&quot;: &quot;e20&quot;,
+        &quot;observedAt&quot;: 100,
+        &quot;validFrom&quot;: 100,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 100,
+        &quot;admission&quot;: &quot;e22&quot;
+      }
+    ],
+    &quot;sha256&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;
+  },
+  &quot;snapshot_after&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;,
+  &quot;baseline&quot;: {
+    &quot;conflicts&quot;: [],
+    &quot;plans&quot;: [
+      {
+        &quot;missing&quot;: [
+          &quot;backup_ready(orion)&quot;
+        ],
+        &quot;rule_ids&quot;: [
+          &quot;old_release_rule&quot;
+        ]
+      }
+    ],
+    &quot;query&quot;: &quot;release(orion)&quot;,
+    &quot;raw&quot;: [
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;route_observation&quot;,
+        &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+        &quot;source&quot;: &quot;e5&quot;
+      },
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;outage&quot;,
+        &quot;literal&quot;: &quot;main_down(orion)&quot;,
+        &quot;source&quot;: &quot;e20&quot;
+      }
+    ],
+    &quot;raw_status&quot;: &quot;unknown&quot;,
+    &quot;safe&quot;: [
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;route_observation&quot;,
+        &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+        &quot;source&quot;: &quot;e5&quot;
+      },
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;outage&quot;,
+        &quot;literal&quot;: &quot;main_down(orion)&quot;,
+        &quot;source&quot;: &quot;e20&quot;
+      }
+    ],
+    &quot;safe_status&quot;: &quot;unknown&quot;,
+    &quot;status&quot;: &quot;ok&quot;,
+    &quot;evidence&quot;: {
+      &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+      &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+      &quot;input_sha256&quot;: &quot;eb8a2ae49ee89f4370c26680a739407a4343635a78819b370cba5254d0ff3456&quot;,
+      &quot;timeoutMs&quot;: 2000,
+      &quot;inferences&quot;: 1000000,
+      &quot;maxFacts&quot;: 2048,
+      &quot;maxOutputBytes&quot;: 2097152
+    }
+  },
+  &quot;questions&quot;: [
+    {
+      &quot;question&quot;: {
+        &quot;id&quot;: &quot;backup&quot;,
+        &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+        &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+        &quot;cost&quot;: 1
+      },
+      &quot;disposition&quot;: &quot;decision_relevant&quot;,
+      &quot;branches&quot;: [
+        {
+          &quot;polarity&quot;: &quot;positive&quot;,
+          &quot;assumption&quot;: {
+            &quot;id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+            &quot;source&quot;: &quot;conditional:backup:positive&quot;,
+            &quot;program&quot;: &quot;backup_ready(orion).&quot;
+          },
+          &quot;result&quot;: {
+            &quot;conflicts&quot;: [],
+            &quot;plans&quot;: [
+              {
+                &quot;missing&quot;: [],
+                &quot;rule_ids&quot;: []
+              }
+            ],
+            &quot;query&quot;: &quot;release(orion)&quot;,
+            &quot;raw&quot;: [
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;route_observation&quot;,
+                &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                &quot;source&quot;: &quot;e5&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;outage&quot;,
+                &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                &quot;source&quot;: &quot;e20&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+                &quot;source&quot;: &quot;conditional:backup:positive&quot;
+              },
+              {
+                &quot;children&quot;: [
+                  &quot;main_down(orion)&quot;,
+                  &quot;backup_ready(orion)&quot;
+                ],
+                &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                &quot;literal&quot;: &quot;release(orion)&quot;,
+                &quot;source&quot;: &quot;e2&quot;
+              }
+            ],
+            &quot;raw_status&quot;: &quot;entailed&quot;,
+            &quot;safe&quot;: [
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;route_observation&quot;,
+                &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                &quot;source&quot;: &quot;e5&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;outage&quot;,
+                &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                &quot;source&quot;: &quot;e20&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+                &quot;source&quot;: &quot;conditional:backup:positive&quot;
+              },
+              {
+                &quot;children&quot;: [
+                  &quot;main_down(orion)&quot;,
+                  &quot;backup_ready(orion)&quot;
+                ],
+                &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                &quot;literal&quot;: &quot;release(orion)&quot;,
+                &quot;source&quot;: &quot;e2&quot;
+              }
+            ],
+            &quot;safe_status&quot;: &quot;entailed&quot;,
+            &quot;status&quot;: &quot;ok&quot;,
+            &quot;evidence&quot;: {
+              &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+              &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+              &quot;input_sha256&quot;: &quot;8ab4bc135ea284ee7fd8fd76a0c75e49680f124ccd480af79befcfe6f84b4db1&quot;,
+              &quot;timeoutMs&quot;: 2000,
+              &quot;inferences&quot;: 1000000,
+              &quot;maxFacts&quot;: 2048,
+              &quot;maxOutputBytes&quot;: 2097152
+            }
+          }
+        },
+        {
+          &quot;polarity&quot;: &quot;negative&quot;,
+          &quot;assumption&quot;: {
+            &quot;id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+            &quot;source&quot;: &quot;conditional:backup:negative&quot;,
+            &quot;program&quot;: &quot;neg(backup_ready(orion)).&quot;
+          },
+          &quot;result&quot;: {
+            &quot;conflicts&quot;: [],
+            &quot;plans&quot;: [],
+            &quot;query&quot;: &quot;release(orion)&quot;,
+            &quot;raw&quot;: [
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;route_observation&quot;,
+                &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                &quot;source&quot;: &quot;e5&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;outage&quot;,
+                &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                &quot;source&quot;: &quot;e20&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                &quot;literal&quot;: &quot;neg(backup_ready(orion))&quot;,
+                &quot;source&quot;: &quot;conditional:backup:negative&quot;
+              }
+            ],
+            &quot;raw_status&quot;: &quot;unknown&quot;,
+            &quot;safe&quot;: [
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;route_observation&quot;,
+                &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                &quot;source&quot;: &quot;e5&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;outage&quot;,
+                &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                &quot;source&quot;: &quot;e20&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                &quot;literal&quot;: &quot;neg(backup_ready(orion))&quot;,
+                &quot;source&quot;: &quot;conditional:backup:negative&quot;
+              }
+            ],
+            &quot;safe_status&quot;: &quot;unknown&quot;,
+            &quot;status&quot;: &quot;ok&quot;,
+            &quot;evidence&quot;: {
+              &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+              &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+              &quot;input_sha256&quot;: &quot;641e86b79864b86e7d3fa79ec8db04db21af68d145e003da5591c6c77a398b26&quot;,
+              &quot;timeoutMs&quot;: 2000,
+              &quot;inferences&quot;: 1000000,
+              &quot;maxFacts&quot;: 2048,
+              &quot;maxOutputBytes&quot;: 2097152
+            }
+          }
+        }
+      ]
+    }
+  ],
+  &quot;simple_control&quot;: {
+    &quot;id&quot;: &quot;backup&quot;,
+    &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+    &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+    &quot;cost&quot;: 1
+  },
+  &quot;cost&quot;: {
+    &quot;queries&quot;: 3,
+    &quot;branches&quot;: 2
+  },
+  &quot;decision&quot;: {
+    &quot;kind&quot;: &quot;ask&quot;,
+    &quot;question&quot;: {
+      &quot;id&quot;: &quot;backup&quot;,
+      &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+      &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+      &quot;cost&quot;: 1
+    },
+    &quot;goalId&quot;: &quot;release_episode&quot;,
+    &quot;snapshot&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;,
+    &quot;reason&quot;: &quot;conditional_action_changes&quot;
+  }
+}</pre></details>
+    <details><summary>Продолжение: ответ, действие, наблюдённый результат, позднее воспоминание</summary><pre>[
+  {
+    &quot;event&quot;: &quot;restart_and_answer&quot;,
+    &quot;answer&quot;: &quot;yes&quot;,
+    &quot;decision&quot;: {
+      &quot;kind&quot;: &quot;act&quot;,
+      &quot;action&quot;: &quot;request_release_orion&quot;,
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;snapshot&quot;: &quot;84922b65f87b73258c71fe33c231a631df37420d9dab3a30231126f39307e184&quot;,
+      &quot;proof&quot;: [
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;outage&quot;,
+          &quot;literal&quot;: &quot;main_down(orion)&quot;,
+          &quot;source&quot;: &quot;e20&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;item_28_1&quot;,
+          &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+          &quot;source&quot;: &quot;e27&quot;
+        },
+        {
+          &quot;children&quot;: [
+            &quot;main_down(orion)&quot;,
+            &quot;backup_ready(orion)&quot;
+          ],
+          &quot;item_id&quot;: &quot;old_release_rule&quot;,
+          &quot;literal&quot;: &quot;release(orion)&quot;,
+          &quot;source&quot;: &quot;e2&quot;
+        }
+      ],
+      &quot;mode&quot;: &quot;simulated_action_request&quot;,
+      &quot;eventId&quot;: &quot;e33&quot;
+    }
+  },
+  {
+    &quot;event&quot;: &quot;later_recall_after_outcome&quot;,
+    &quot;result&quot;: {
+      &quot;conflicts&quot;: [],
+      &quot;plans&quot;: [
+        {
+          &quot;missing&quot;: [],
+          &quot;rule_ids&quot;: []
+        }
+      ],
+      &quot;query&quot;: &quot;release(orion)&quot;,
+      &quot;raw&quot;: [
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;route_observation&quot;,
+          &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+          &quot;source&quot;: &quot;e5&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;outage&quot;,
+          &quot;literal&quot;: &quot;main_down(orion)&quot;,
+          &quot;source&quot;: &quot;e20&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;item_28_1&quot;,
+          &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+          &quot;source&quot;: &quot;e27&quot;
+        },
+        {
+          &quot;children&quot;: [
+            &quot;main_down(orion)&quot;,
+            &quot;backup_ready(orion)&quot;
+          ],
+          &quot;item_id&quot;: &quot;old_release_rule&quot;,
+          &quot;literal&quot;: &quot;release(orion)&quot;,
+          &quot;source&quot;: &quot;e2&quot;
+        }
+      ],
+      &quot;raw_status&quot;: &quot;entailed&quot;,
+      &quot;safe&quot;: [
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;route_observation&quot;,
+          &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+          &quot;source&quot;: &quot;e5&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;outage&quot;,
+          &quot;literal&quot;: &quot;main_down(orion)&quot;,
+          &quot;source&quot;: &quot;e20&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;item_28_1&quot;,
+          &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+          &quot;source&quot;: &quot;e27&quot;
+        },
+        {
+          &quot;children&quot;: [
+            &quot;main_down(orion)&quot;,
+            &quot;backup_ready(orion)&quot;
+          ],
+          &quot;item_id&quot;: &quot;old_release_rule&quot;,
+          &quot;literal&quot;: &quot;release(orion)&quot;,
+          &quot;source&quot;: &quot;e2&quot;
+        }
+      ],
+      &quot;safe_status&quot;: &quot;entailed&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;evidence&quot;: {
+        &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+        &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+        &quot;input_sha256&quot;: &quot;c2c41ad85941c4527938c4760ceeb68c5daeb12b9df24f0fac0e9c42a3f0fa6d&quot;,
+        &quot;timeoutMs&quot;: 2000,
+        &quot;inferences&quot;: 1000000,
+        &quot;maxFacts&quot;: 2048,
+        &quot;maxOutputBytes&quot;: 2097152
+      }
+    },
+    &quot;episode_status&quot;: &quot;completed&quot;
+  }
+]</pre></details>
+    <details><summary>Вся биография: источники, предложения, принятие и решения</summary><pre>[
+  {
+    &quot;seq&quot;: 1,
+    &quot;id&quot;: &quot;e1&quot;,
+    &quot;previous&quot;: null,
+    &quot;at&quot;: 0,
+    &quot;type&quot;: &quot;created&quot;,
+    &quot;payload&quot;: {
+      &quot;agent_id&quot;: &quot;traveller&quot;,
+      &quot;ideas&quot;: {
+        &quot;version&quot;: &quot;release-domain-v0&quot;,
+        &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+        &quot;predicates&quot;: [
+          {
+            &quot;name&quot;: &quot;release&quot;,
+            &quot;arity&quot;: 1
+          },
+          {
+            &quot;name&quot;: &quot;main_down&quot;,
+            &quot;arity&quot;: 1
+          },
+          {
+            &quot;name&quot;: &quot;backup_ready&quot;,
+            &quot;arity&quot;: 1
+          },
+          {
+            &quot;name&quot;: &quot;certified_route&quot;,
+            &quot;arity&quot;: 1
+          },
+          {
+            &quot;name&quot;: &quot;note&quot;,
+            &quot;arity&quot;: 1
+          }
+        ]
+      },
+      &quot;startTime&quot;: 0
+    },
+    &quot;sha256&quot;: &quot;7115ab9e9a7cd5e26f65b1186cb4697fcb9bb135378df11f3eebe396d3d88844&quot;
+  },
+  {
+    &quot;seq&quot;: 2,
+    &quot;id&quot;: &quot;e2&quot;,
+    &quot;previous&quot;: &quot;7115ab9e9a7cd5e26f65b1186cb4697fcb9bb135378df11f3eebe396d3d88844&quot;,
+    &quot;at&quot;: 1,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;При отказе основного сервиса выпуск разрешён при готовности резерва.&quot;,
+      &quot;kind&quot;: &quot;operator_rule&quot;
+    },
+    &quot;sha256&quot;: &quot;00f75733bd5bf8f530ff3bf4ee3d726d1f82fa5a4b5eca86a8199cb84b63f4eb&quot;
+  },
+  {
+    &quot;seq&quot;: 3,
+    &quot;id&quot;: &quot;e3&quot;,
+    &quot;previous&quot;: &quot;00f75733bd5bf8f530ff3bf4ee3d726d1f82fa5a4b5eca86a8199cb84b63f4eb&quot;,
+    &quot;at&quot;: 1,
+    &quot;type&quot;: &quot;proposal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;proposal_3&quot;,
+      &quot;source&quot;: &quot;e2&quot;,
+      &quot;interpretation&quot;: &quot;explicit-operator&quot;,
+      &quot;items&quot;: [
+        {
+          &quot;id&quot;: &quot;old_release_rule&quot;,
+          &quot;program&quot;: &quot;release(X) :- main_down(X), backup_ready(X).&quot;,
+          &quot;source&quot;: &quot;e2&quot;,
+          &quot;observedAt&quot;: 1,
+          &quot;validFrom&quot;: 1,
+          &quot;validTo&quot;: null,
+          &quot;modality&quot;: &quot;asserted&quot;,
+          &quot;replaces&quot;: null,
+          &quot;origin&quot;: null
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;9ff552ab42856fa666b019d9a8d44269ec83999e616c04cc55ffc9123d269f21&quot;
+  },
+  {
+    &quot;seq&quot;: 4,
+    &quot;id&quot;: &quot;e4&quot;,
+    &quot;previous&quot;: &quot;9ff552ab42856fa666b019d9a8d44269ec83999e616c04cc55ffc9123d269f21&quot;,
+    &quot;at&quot;: 1,
+    &quot;type&quot;: &quot;admission&quot;,
+    &quot;payload&quot;: {
+      &quot;proposalId&quot;: &quot;proposal_3&quot;,
+      &quot;decision&quot;: {
+        &quot;admit&quot;: true,
+        &quot;by&quot;: &quot;fixture_operator&quot;,
+        &quot;reason&quot;: &quot;Explicit rule in the synthetic episode; semantic mapping authored by the fixture.&quot;
+      },
+      &quot;checks&quot;: {
+        &quot;query&quot;: &quot;release(poc_probe)&quot;,
+        &quot;status&quot;: &quot;valid&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;28836f1eb2fb3172d840464f020f898fe8d14f6340ff06ef9f64b2a8fb80a5b5&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;epistemicMeaning&quot;: &quot;accepted for use; no empirical truth certification&quot;
+    },
+    &quot;sha256&quot;: &quot;c762f7443def9677eb71ca8b0911090e2baee79d7eb6c93c679340ede457b166&quot;
+  },
+  {
+    &quot;seq&quot;: 5,
+    &quot;id&quot;: &quot;e5&quot;,
+    &quot;previous&quot;: &quot;c762f7443def9677eb71ca8b0911090e2baee79d7eb6c93c679340ede457b166&quot;,
+    &quot;at&quot;: 2,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Для orion подтверждён независимый маршрут.&quot;,
+      &quot;kind&quot;: &quot;operator_observation&quot;
+    },
+    &quot;sha256&quot;: &quot;63bce331e1435263b94bbe45abdc6086e95d244f4c05452dc9211e1ed0750d98&quot;
+  },
+  {
+    &quot;seq&quot;: 6,
+    &quot;id&quot;: &quot;e6&quot;,
+    &quot;previous&quot;: &quot;63bce331e1435263b94bbe45abdc6086e95d244f4c05452dc9211e1ed0750d98&quot;,
+    &quot;at&quot;: 2,
+    &quot;type&quot;: &quot;proposal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;proposal_6&quot;,
+      &quot;source&quot;: &quot;e5&quot;,
+      &quot;interpretation&quot;: &quot;explicit-operator&quot;,
+      &quot;items&quot;: [
+        {
+          &quot;id&quot;: &quot;route_observation&quot;,
+          &quot;program&quot;: &quot;certified_route(orion).&quot;,
+          &quot;source&quot;: &quot;e5&quot;,
+          &quot;observedAt&quot;: 2,
+          &quot;validFrom&quot;: 2,
+          &quot;validTo&quot;: null,
+          &quot;modality&quot;: &quot;asserted&quot;,
+          &quot;replaces&quot;: null,
+          &quot;origin&quot;: null
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;fef7e33e2aaec4c4cb69a02d59917acc13fabeadd9538c9eb7f28ded8508609b&quot;
+  },
+  {
+    &quot;seq&quot;: 7,
+    &quot;id&quot;: &quot;e7&quot;,
+    &quot;previous&quot;: &quot;fef7e33e2aaec4c4cb69a02d59917acc13fabeadd9538c9eb7f28ded8508609b&quot;,
+    &quot;at&quot;: 2,
+    &quot;type&quot;: &quot;admission&quot;,
+    &quot;payload&quot;: {
+      &quot;proposalId&quot;: &quot;proposal_6&quot;,
+      &quot;decision&quot;: {
+        &quot;admit&quot;: true,
+        &quot;by&quot;: &quot;fixture_operator&quot;,
+        &quot;reason&quot;: &quot;Explicit synthetic observation.&quot;
+      },
+      &quot;checks&quot;: {
+        &quot;query&quot;: &quot;release(poc_probe)&quot;,
+        &quot;status&quot;: &quot;valid&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;6cd7308893ea316c11101755988ccef2c023271d3b6333580cd0c9e4aeaed658&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;epistemicMeaning&quot;: &quot;accepted for use; no empirical truth certification&quot;
+    },
+    &quot;sha256&quot;: &quot;68c75cd5436505703673556fd62cd2501ac2856156980bb7b90c6da1be97da82&quot;
+  },
+  {
+    &quot;seq&quot;: 8,
+    &quot;id&quot;: &quot;e8&quot;,
+    &quot;previous&quot;: &quot;68c75cd5436505703673556fd62cd2501ac2856156980bb7b90c6da1be97da82&quot;,
+    &quot;at&quot;: 3,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 1: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;e3af324cb76da48721d14057f36219c0586c25d89df16eafebede0a5e101ee3a&quot;
+  },
+  {
+    &quot;seq&quot;: 9,
+    &quot;id&quot;: &quot;e9&quot;,
+    &quot;previous&quot;: &quot;e3af324cb76da48721d14057f36219c0586c25d89df16eafebede0a5e101ee3a&quot;,
+    &quot;at&quot;: 4,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 2: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;85f637b72afe001ec6074e46729c1c109a9729eb80275205d7c22357c2425372&quot;
+  },
+  {
+    &quot;seq&quot;: 10,
+    &quot;id&quot;: &quot;e10&quot;,
+    &quot;previous&quot;: &quot;85f637b72afe001ec6074e46729c1c109a9729eb80275205d7c22357c2425372&quot;,
+    &quot;at&quot;: 5,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 3: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;b1cabb7d968a94df3f9c569cb66ed21911a9183339b1075ab1e9bd03ada7c41a&quot;
+  },
+  {
+    &quot;seq&quot;: 11,
+    &quot;id&quot;: &quot;e11&quot;,
+    &quot;previous&quot;: &quot;b1cabb7d968a94df3f9c569cb66ed21911a9183339b1075ab1e9bd03ada7c41a&quot;,
+    &quot;at&quot;: 6,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 4: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;3b745cae14a41c4ae103a9e59ea48b0fd61b1cd9bcce6c7ed1b72d0539845c1f&quot;
+  },
+  {
+    &quot;seq&quot;: 12,
+    &quot;id&quot;: &quot;e12&quot;,
+    &quot;previous&quot;: &quot;3b745cae14a41c4ae103a9e59ea48b0fd61b1cd9bcce6c7ed1b72d0539845c1f&quot;,
+    &quot;at&quot;: 7,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 5: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;55ca037ed043d2d7e4557b9dce8026eac9a47a0650393d248adde4582b7337d3&quot;
+  },
+  {
+    &quot;seq&quot;: 13,
+    &quot;id&quot;: &quot;e13&quot;,
+    &quot;previous&quot;: &quot;55ca037ed043d2d7e4557b9dce8026eac9a47a0650393d248adde4582b7337d3&quot;,
+    &quot;at&quot;: 8,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 6: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;cdc26eb8d0b905f7812c826b3487e964eaf07ce80a3dfdef32e7d00569ec3f78&quot;
+  },
+  {
+    &quot;seq&quot;: 14,
+    &quot;id&quot;: &quot;e14&quot;,
+    &quot;previous&quot;: &quot;cdc26eb8d0b905f7812c826b3487e964eaf07ce80a3dfdef32e7d00569ec3f78&quot;,
+    &quot;at&quot;: 9,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 7: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;6470d2e2ea38c04fc221dac1f5b0bfc754707b6d5fd33db7057df304165f0fd3&quot;
+  },
+  {
+    &quot;seq&quot;: 15,
+    &quot;id&quot;: &quot;e15&quot;,
+    &quot;previous&quot;: &quot;6470d2e2ea38c04fc221dac1f5b0bfc754707b6d5fd33db7057df304165f0fd3&quot;,
+    &quot;at&quot;: 10,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 8: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;f2665ea86102098a3826fbbb309e756b21d6c100d683e93166b61efd55a020e5&quot;
+  },
+  {
+    &quot;seq&quot;: 16,
+    &quot;id&quot;: &quot;e16&quot;,
+    &quot;previous&quot;: &quot;f2665ea86102098a3826fbbb309e756b21d6c100d683e93166b61efd55a020e5&quot;,
+    &quot;at&quot;: 11,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 9: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;d2babab1b1f84da9c8a5377e343c0c9e8c614a7ea30849ccfb0949c1238d8c8b&quot;
+  },
+  {
+    &quot;seq&quot;: 17,
+    &quot;id&quot;: &quot;e17&quot;,
+    &quot;previous&quot;: &quot;d2babab1b1f84da9c8a5377e343c0c9e8c614a7ea30849ccfb0949c1238d8c8b&quot;,
+    &quot;at&quot;: 12,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 10: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;ae2a0d9d8243fa0755e6bf5abfb761354782aa3709e9baeedff694ca971cef70&quot;
+  },
+  {
+    &quot;seq&quot;: 18,
+    &quot;id&quot;: &quot;e18&quot;,
+    &quot;previous&quot;: &quot;ae2a0d9d8243fa0755e6bf5abfb761354782aa3709e9baeedff694ca971cef70&quot;,
+    &quot;at&quot;: 13,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 11: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;375eedafc018fa578da0f8dfabf2ca6f216d8bdf8095d0d722eda1e98b7ac240&quot;
+  },
+  {
+    &quot;seq&quot;: 19,
+    &quot;id&quot;: &quot;e19&quot;,
+    &quot;previous&quot;: &quot;375eedafc018fa578da0f8dfabf2ca6f216d8bdf8095d0d722eda1e98b7ac240&quot;,
+    &quot;at&quot;: 14,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 12: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;d812676b2074b8861c20a77780545aff5bb9e6f3c0c9f214769a8f97ed7edac4&quot;
+  },
+  {
+    &quot;seq&quot;: 20,
+    &quot;id&quot;: &quot;e20&quot;,
+    &quot;previous&quot;: &quot;d812676b2074b8861c20a77780545aff5bb9e6f3c0c9f214769a8f97ed7edac4&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Основной сервис orion сейчас недоступен.&quot;,
+      &quot;kind&quot;: &quot;operator_observation&quot;
+    },
+    &quot;sha256&quot;: &quot;7d7de7e9654e658f020f1f56f55da73c65b59b8e697892ed5020c2aa2ee0d680&quot;
+  },
+  {
+    &quot;seq&quot;: 21,
+    &quot;id&quot;: &quot;e21&quot;,
+    &quot;previous&quot;: &quot;7d7de7e9654e658f020f1f56f55da73c65b59b8e697892ed5020c2aa2ee0d680&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;proposal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;proposal_21&quot;,
+      &quot;source&quot;: &quot;e20&quot;,
+      &quot;interpretation&quot;: &quot;explicit-operator&quot;,
+      &quot;items&quot;: [
+        {
+          &quot;id&quot;: &quot;outage&quot;,
+          &quot;program&quot;: &quot;main_down(orion).&quot;,
+          &quot;source&quot;: &quot;e20&quot;,
+          &quot;observedAt&quot;: 100,
+          &quot;validFrom&quot;: 100,
+          &quot;validTo&quot;: null,
+          &quot;modality&quot;: &quot;asserted&quot;,
+          &quot;replaces&quot;: null,
+          &quot;origin&quot;: null
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;b5632d7a695424001277bbc1abef5fe130736961454758118bac1d686e1869bd&quot;
+  },
+  {
+    &quot;seq&quot;: 22,
+    &quot;id&quot;: &quot;e22&quot;,
+    &quot;previous&quot;: &quot;b5632d7a695424001277bbc1abef5fe130736961454758118bac1d686e1869bd&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;admission&quot;,
+    &quot;payload&quot;: {
+      &quot;proposalId&quot;: &quot;proposal_21&quot;,
+      &quot;decision&quot;: {
+        &quot;admit&quot;: true,
+        &quot;by&quot;: &quot;fixture_operator&quot;,
+        &quot;reason&quot;: &quot;Explicit current synthetic observation.&quot;
+      },
+      &quot;checks&quot;: {
+        &quot;query&quot;: &quot;release(poc_probe)&quot;,
+        &quot;status&quot;: &quot;valid&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;67704a91d08ff59c661d92944ef5ba556eb29ee0319dd720c6a07067d376dbfc&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;epistemicMeaning&quot;: &quot;accepted for use; no empirical truth certification&quot;
+    },
+    &quot;sha256&quot;: &quot;dcedf246b6fe4c47899eb0e48c13d0231e0363d7c756390dc5016e8c0d0e96d8&quot;
+  },
+  {
+    &quot;seq&quot;: 23,
+    &quot;id&quot;: &quot;e23&quot;,
+    &quot;previous&quot;: &quot;dcedf246b6fe4c47899eb0e48c13d0231e0363d7c756390dc5016e8c0d0e96d8&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;goal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;release_episode&quot;,
+      &quot;text&quot;: &quot;Основной сервис упал. Можно ли выпустить orion?&quot;,
+      &quot;query&quot;: &quot;release(orion)&quot;,
+      &quot;action&quot;: &quot;request_release_orion&quot;,
+      &quot;questions&quot;: [
+        {
+          &quot;id&quot;: &quot;backup&quot;,
+          &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+          &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+          &quot;cost&quot;: 1
+        }
+      ],
+      &quot;budget&quot;: {
+        &quot;queries&quot;: 24,
+        &quot;branches&quot;: 8,
+        &quot;questions&quot;: 2,
+        &quot;maxQuestionCost&quot;: 1
+      },
+      &quot;commitments&quot;: [
+        {
+          &quot;id&quot;: &quot;require_safe_proof&quot;,
+          &quot;source&quot;: &quot;operator goal policy v0&quot;
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;de59a9ae42c93352178a10d5657676281200bad8a0715083c00976168610d070&quot;
+  },
+  {
+    &quot;seq&quot;: 24,
+    &quot;id&quot;: &quot;e24&quot;,
+    &quot;previous&quot;: &quot;de59a9ae42c93352178a10d5657676281200bad8a0715083c00976168610d070&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;reflection_started&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;strategy&quot;: &quot;dream&quot;,
+      &quot;snapshot&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;,
+      &quot;reserved&quot;: {
+        &quot;queries&quot;: 3,
+        &quot;branches&quot;: 2
+      }
+    },
+    &quot;sha256&quot;: &quot;4db7f538fd008c22f81ff6f0dcf1f1291c069cbecd3da3aa255822588d95c9d0&quot;
+  },
+  {
+    &quot;seq&quot;: 25,
+    &quot;id&quot;: &quot;e25&quot;,
+    &quot;previous&quot;: &quot;4db7f538fd008c22f81ff6f0dcf1f1291c069cbecd3da3aa255822588d95c9d0&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;reflection&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;strategy&quot;: &quot;dream&quot;,
+      &quot;snapshot&quot;: {
+        &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+        &quot;ideas&quot;: {
+          &quot;version&quot;: &quot;release-domain-v0&quot;,
+          &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+          &quot;predicates&quot;: [
+            {
+              &quot;name&quot;: &quot;release&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;main_down&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;backup_ready&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;certified_route&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;note&quot;,
+              &quot;arity&quot;: 1
+            }
+          ]
+        },
+        &quot;at&quot;: 100,
+        &quot;items&quot;: [
+          {
+            &quot;id&quot;: &quot;old_release_rule&quot;,
+            &quot;program&quot;: &quot;release(X) :- main_down(X), backup_ready(X).&quot;,
+            &quot;source&quot;: &quot;e2&quot;,
+            &quot;observedAt&quot;: 1,
+            &quot;validFrom&quot;: 1,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 1,
+            &quot;admission&quot;: &quot;e4&quot;
+          },
+          {
+            &quot;id&quot;: &quot;route_observation&quot;,
+            &quot;program&quot;: &quot;certified_route(orion).&quot;,
+            &quot;source&quot;: &quot;e5&quot;,
+            &quot;observedAt&quot;: 2,
+            &quot;validFrom&quot;: 2,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 2,
+            &quot;admission&quot;: &quot;e7&quot;
+          },
+          {
+            &quot;id&quot;: &quot;outage&quot;,
+            &quot;program&quot;: &quot;main_down(orion).&quot;,
+            &quot;source&quot;: &quot;e20&quot;,
+            &quot;observedAt&quot;: 100,
+            &quot;validFrom&quot;: 100,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 100,
+            &quot;admission&quot;: &quot;e22&quot;
+          }
+        ],
+        &quot;sha256&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;
+      },
+      &quot;snapshot_after&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;,
+      &quot;baseline&quot;: {
+        &quot;conflicts&quot;: [],
+        &quot;plans&quot;: [
+          {
+            &quot;missing&quot;: [
+              &quot;backup_ready(orion)&quot;
+            ],
+            &quot;rule_ids&quot;: [
+              &quot;old_release_rule&quot;
+            ]
+          }
+        ],
+        &quot;query&quot;: &quot;release(orion)&quot;,
+        &quot;raw&quot;: [
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;route_observation&quot;,
+            &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+            &quot;source&quot;: &quot;e5&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;outage&quot;,
+            &quot;literal&quot;: &quot;main_down(orion)&quot;,
+            &quot;source&quot;: &quot;e20&quot;
+          }
+        ],
+        &quot;raw_status&quot;: &quot;unknown&quot;,
+        &quot;safe&quot;: [
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;route_observation&quot;,
+            &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+            &quot;source&quot;: &quot;e5&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;outage&quot;,
+            &quot;literal&quot;: &quot;main_down(orion)&quot;,
+            &quot;source&quot;: &quot;e20&quot;
+          }
+        ],
+        &quot;safe_status&quot;: &quot;unknown&quot;,
+        &quot;status&quot;: &quot;ok&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;eb8a2ae49ee89f4370c26680a739407a4343635a78819b370cba5254d0ff3456&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;questions&quot;: [
+        {
+          &quot;question&quot;: {
+            &quot;id&quot;: &quot;backup&quot;,
+            &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+            &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+            &quot;cost&quot;: 1
+          },
+          &quot;disposition&quot;: &quot;decision_relevant&quot;,
+          &quot;branches&quot;: [
+            {
+              &quot;polarity&quot;: &quot;positive&quot;,
+              &quot;assumption&quot;: {
+                &quot;id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                &quot;source&quot;: &quot;conditional:backup:positive&quot;,
+                &quot;program&quot;: &quot;backup_ready(orion).&quot;
+              },
+              &quot;result&quot;: {
+                &quot;conflicts&quot;: [],
+                &quot;plans&quot;: [
+                  {
+                    &quot;missing&quot;: [],
+                    &quot;rule_ids&quot;: []
+                  }
+                ],
+                &quot;query&quot;: &quot;release(orion)&quot;,
+                &quot;raw&quot;: [
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;route_observation&quot;,
+                    &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                    &quot;source&quot;: &quot;e5&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;outage&quot;,
+                    &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                    &quot;source&quot;: &quot;e20&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                    &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+                    &quot;source&quot;: &quot;conditional:backup:positive&quot;
+                  },
+                  {
+                    &quot;children&quot;: [
+                      &quot;main_down(orion)&quot;,
+                      &quot;backup_ready(orion)&quot;
+                    ],
+                    &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                    &quot;literal&quot;: &quot;release(orion)&quot;,
+                    &quot;source&quot;: &quot;e2&quot;
+                  }
+                ],
+                &quot;raw_status&quot;: &quot;entailed&quot;,
+                &quot;safe&quot;: [
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;route_observation&quot;,
+                    &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                    &quot;source&quot;: &quot;e5&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;outage&quot;,
+                    &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                    &quot;source&quot;: &quot;e20&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                    &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+                    &quot;source&quot;: &quot;conditional:backup:positive&quot;
+                  },
+                  {
+                    &quot;children&quot;: [
+                      &quot;main_down(orion)&quot;,
+                      &quot;backup_ready(orion)&quot;
+                    ],
+                    &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                    &quot;literal&quot;: &quot;release(orion)&quot;,
+                    &quot;source&quot;: &quot;e2&quot;
+                  }
+                ],
+                &quot;safe_status&quot;: &quot;entailed&quot;,
+                &quot;status&quot;: &quot;ok&quot;,
+                &quot;evidence&quot;: {
+                  &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+                  &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+                  &quot;input_sha256&quot;: &quot;8ab4bc135ea284ee7fd8fd76a0c75e49680f124ccd480af79befcfe6f84b4db1&quot;,
+                  &quot;timeoutMs&quot;: 2000,
+                  &quot;inferences&quot;: 1000000,
+                  &quot;maxFacts&quot;: 2048,
+                  &quot;maxOutputBytes&quot;: 2097152
+                }
+              }
+            },
+            {
+              &quot;polarity&quot;: &quot;negative&quot;,
+              &quot;assumption&quot;: {
+                &quot;id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                &quot;source&quot;: &quot;conditional:backup:negative&quot;,
+                &quot;program&quot;: &quot;neg(backup_ready(orion)).&quot;
+              },
+              &quot;result&quot;: {
+                &quot;conflicts&quot;: [],
+                &quot;plans&quot;: [],
+                &quot;query&quot;: &quot;release(orion)&quot;,
+                &quot;raw&quot;: [
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;route_observation&quot;,
+                    &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                    &quot;source&quot;: &quot;e5&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;outage&quot;,
+                    &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                    &quot;source&quot;: &quot;e20&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                    &quot;literal&quot;: &quot;neg(backup_ready(orion))&quot;,
+                    &quot;source&quot;: &quot;conditional:backup:negative&quot;
+                  }
+                ],
+                &quot;raw_status&quot;: &quot;unknown&quot;,
+                &quot;safe&quot;: [
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;route_observation&quot;,
+                    &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                    &quot;source&quot;: &quot;e5&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;outage&quot;,
+                    &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                    &quot;source&quot;: &quot;e20&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                    &quot;literal&quot;: &quot;neg(backup_ready(orion))&quot;,
+                    &quot;source&quot;: &quot;conditional:backup:negative&quot;
+                  }
+                ],
+                &quot;safe_status&quot;: &quot;unknown&quot;,
+                &quot;status&quot;: &quot;ok&quot;,
+                &quot;evidence&quot;: {
+                  &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+                  &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+                  &quot;input_sha256&quot;: &quot;641e86b79864b86e7d3fa79ec8db04db21af68d145e003da5591c6c77a398b26&quot;,
+                  &quot;timeoutMs&quot;: 2000,
+                  &quot;inferences&quot;: 1000000,
+                  &quot;maxFacts&quot;: 2048,
+                  &quot;maxOutputBytes&quot;: 2097152
+                }
+              }
+            }
+          ]
+        }
+      ],
+      &quot;simple_control&quot;: {
+        &quot;id&quot;: &quot;backup&quot;,
+        &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+        &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+        &quot;cost&quot;: 1
+      },
+      &quot;cost&quot;: {
+        &quot;queries&quot;: 3,
+        &quot;branches&quot;: 2
+      },
+      &quot;decision&quot;: {
+        &quot;kind&quot;: &quot;ask&quot;,
+        &quot;question&quot;: {
+          &quot;id&quot;: &quot;backup&quot;,
+          &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+          &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+          &quot;cost&quot;: 1
+        },
+        &quot;goalId&quot;: &quot;release_episode&quot;,
+        &quot;snapshot&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;,
+        &quot;reason&quot;: &quot;conditional_action_changes&quot;
+      }
+    },
+    &quot;sha256&quot;: &quot;1107e3d94b505ed8996784315582fe4f3b93643da25d37469c4126b190ecd40c&quot;
+  },
+  {
+    &quot;seq&quot;: 26,
+    &quot;id&quot;: &quot;e26&quot;,
+    &quot;previous&quot;: &quot;1107e3d94b505ed8996784315582fe4f3b93643da25d37469c4126b190ecd40c&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;decision&quot;,
+    &quot;payload&quot;: {
+      &quot;kind&quot;: &quot;ask&quot;,
+      &quot;question&quot;: {
+        &quot;id&quot;: &quot;backup&quot;,
+        &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+        &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+        &quot;cost&quot;: 1
+      },
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;snapshot&quot;: &quot;14fe939167a0766ce00382fdcb0b1995a42bf694d990df39fbc2a6beb0d1a40d&quot;,
+      &quot;reason&quot;: &quot;conditional_action_changes&quot;
+    },
+    &quot;sha256&quot;: &quot;4f9b2e7fba2c65a5b446b12ec8b53357fdf4782acfdf3b9293250521799e283b&quot;
+  },
+  {
+    &quot;seq&quot;: 27,
+    &quot;id&quot;: &quot;e27&quot;,
+    &quot;previous&quot;: &quot;4f9b2e7fba2c65a5b446b12ec8b53357fdf4782acfdf3b9293250521799e283b&quot;,
+    &quot;at&quot;: 101,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Резерв orion готов — это явный ответ участника синтетической сцены.&quot;,
+      &quot;kind&quot;: &quot;answer&quot;
+    },
+    &quot;sha256&quot;: &quot;953b09c91074b8fd283418dd195a6f36185582666c49ad0fd24ed392b12062cb&quot;
+  },
+  {
+    &quot;seq&quot;: 28,
+    &quot;id&quot;: &quot;e28&quot;,
+    &quot;previous&quot;: &quot;953b09c91074b8fd283418dd195a6f36185582666c49ad0fd24ed392b12062cb&quot;,
+    &quot;at&quot;: 101,
+    &quot;type&quot;: &quot;proposal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;proposal_28&quot;,
+      &quot;source&quot;: &quot;e27&quot;,
+      &quot;interpretation&quot;: &quot;explicit-binary-answer-v0&quot;,
+      &quot;items&quot;: [
+        {
+          &quot;id&quot;: &quot;item_28_1&quot;,
+          &quot;program&quot;: &quot;backup_ready(orion).&quot;,
+          &quot;source&quot;: &quot;e27&quot;,
+          &quot;observedAt&quot;: 101,
+          &quot;validFrom&quot;: 101,
+          &quot;validTo&quot;: null,
+          &quot;modality&quot;: &quot;asserted&quot;,
+          &quot;replaces&quot;: null,
+          &quot;origin&quot;: null
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;63f73154fcb4b73504cebe984f3c12303398824beb53c1d76c764cac887c8112&quot;
+  },
+  {
+    &quot;seq&quot;: 29,
+    &quot;id&quot;: &quot;e29&quot;,
+    &quot;previous&quot;: &quot;63f73154fcb4b73504cebe984f3c12303398824beb53c1d76c764cac887c8112&quot;,
+    &quot;at&quot;: 101,
+    &quot;type&quot;: &quot;admission&quot;,
+    &quot;payload&quot;: {
+      &quot;proposalId&quot;: &quot;proposal_28&quot;,
+      &quot;decision&quot;: {
+        &quot;admit&quot;: true,
+        &quot;by&quot;: &quot;explicit-binary-answer-v0&quot;,
+        &quot;reason&quot;: &quot;The participant explicitly answered yes to the recorded question; no empirical verification claimed.&quot;
+      },
+      &quot;checks&quot;: {
+        &quot;query&quot;: &quot;release(poc_probe)&quot;,
+        &quot;status&quot;: &quot;valid&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;cc0e204ddb3dfee6d5d2f4ee747f2d3a47931a2d39d13c15de23a0854a4e7c0c&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;epistemicMeaning&quot;: &quot;accepted for use; no empirical truth certification&quot;
+    },
+    &quot;sha256&quot;: &quot;781b774fbed751607844a3f4a45e0ba76db541d29d85339c57fbcebc2638ae6d&quot;
+  },
+  {
+    &quot;seq&quot;: 30,
+    &quot;id&quot;: &quot;e30&quot;,
+    &quot;previous&quot;: &quot;781b774fbed751607844a3f4a45e0ba76db541d29d85339c57fbcebc2638ae6d&quot;,
+    &quot;at&quot;: 101,
+    &quot;type&quot;: &quot;reply&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;question&quot;: {
+        &quot;id&quot;: &quot;backup&quot;,
+        &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+        &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+        &quot;cost&quot;: 1
+      },
+      &quot;answer&quot;: &quot;yes&quot;,
+      &quot;source&quot;: &quot;e27&quot;
+    },
+    &quot;sha256&quot;: &quot;20e07a36c158b76a94237313f6397060bf9604f948e5672b3eb5e840a819e965&quot;
+  },
+  {
+    &quot;seq&quot;: 31,
+    &quot;id&quot;: &quot;e31&quot;,
+    &quot;previous&quot;: &quot;20e07a36c158b76a94237313f6397060bf9604f948e5672b3eb5e840a819e965&quot;,
+    &quot;at&quot;: 101,
+    &quot;type&quot;: &quot;reflection_started&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;strategy&quot;: &quot;missing&quot;,
+      &quot;snapshot&quot;: &quot;84922b65f87b73258c71fe33c231a631df37420d9dab3a30231126f39307e184&quot;,
+      &quot;reserved&quot;: {
+        &quot;queries&quot;: 1,
+        &quot;branches&quot;: 0
+      }
+    },
+    &quot;sha256&quot;: &quot;07fb6f0e5974405f66a62f2c0f60ceb4fdfb1b9c4fb248b4197e631ada1f28ca&quot;
+  },
+  {
+    &quot;seq&quot;: 32,
+    &quot;id&quot;: &quot;e32&quot;,
+    &quot;previous&quot;: &quot;07fb6f0e5974405f66a62f2c0f60ceb4fdfb1b9c4fb248b4197e631ada1f28ca&quot;,
+    &quot;at&quot;: 101,
+    &quot;type&quot;: &quot;reflection&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;strategy&quot;: &quot;missing&quot;,
+      &quot;snapshot&quot;: {
+        &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+        &quot;ideas&quot;: {
+          &quot;version&quot;: &quot;release-domain-v0&quot;,
+          &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+          &quot;predicates&quot;: [
+            {
+              &quot;name&quot;: &quot;release&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;main_down&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;backup_ready&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;certified_route&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;note&quot;,
+              &quot;arity&quot;: 1
+            }
+          ]
+        },
+        &quot;at&quot;: 101,
+        &quot;items&quot;: [
+          {
+            &quot;id&quot;: &quot;old_release_rule&quot;,
+            &quot;program&quot;: &quot;release(X) :- main_down(X), backup_ready(X).&quot;,
+            &quot;source&quot;: &quot;e2&quot;,
+            &quot;observedAt&quot;: 1,
+            &quot;validFrom&quot;: 1,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 1,
+            &quot;admission&quot;: &quot;e4&quot;
+          },
+          {
+            &quot;id&quot;: &quot;route_observation&quot;,
+            &quot;program&quot;: &quot;certified_route(orion).&quot;,
+            &quot;source&quot;: &quot;e5&quot;,
+            &quot;observedAt&quot;: 2,
+            &quot;validFrom&quot;: 2,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 2,
+            &quot;admission&quot;: &quot;e7&quot;
+          },
+          {
+            &quot;id&quot;: &quot;outage&quot;,
+            &quot;program&quot;: &quot;main_down(orion).&quot;,
+            &quot;source&quot;: &quot;e20&quot;,
+            &quot;observedAt&quot;: 100,
+            &quot;validFrom&quot;: 100,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 100,
+            &quot;admission&quot;: &quot;e22&quot;
+          },
+          {
+            &quot;id&quot;: &quot;item_28_1&quot;,
+            &quot;program&quot;: &quot;backup_ready(orion).&quot;,
+            &quot;source&quot;: &quot;e27&quot;,
+            &quot;observedAt&quot;: 101,
+            &quot;validFrom&quot;: 101,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 101,
+            &quot;admission&quot;: &quot;e29&quot;
+          }
+        ],
+        &quot;sha256&quot;: &quot;84922b65f87b73258c71fe33c231a631df37420d9dab3a30231126f39307e184&quot;
+      },
+      &quot;snapshot_after&quot;: &quot;84922b65f87b73258c71fe33c231a631df37420d9dab3a30231126f39307e184&quot;,
+      &quot;baseline&quot;: {
+        &quot;conflicts&quot;: [],
+        &quot;plans&quot;: [
+          {
+            &quot;missing&quot;: [],
+            &quot;rule_ids&quot;: []
+          }
+        ],
+        &quot;query&quot;: &quot;release(orion)&quot;,
+        &quot;raw&quot;: [
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;route_observation&quot;,
+            &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+            &quot;source&quot;: &quot;e5&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;outage&quot;,
+            &quot;literal&quot;: &quot;main_down(orion)&quot;,
+            &quot;source&quot;: &quot;e20&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;item_28_1&quot;,
+            &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+            &quot;source&quot;: &quot;e27&quot;
+          },
+          {
+            &quot;children&quot;: [
+              &quot;main_down(orion)&quot;,
+              &quot;backup_ready(orion)&quot;
+            ],
+            &quot;item_id&quot;: &quot;old_release_rule&quot;,
+            &quot;literal&quot;: &quot;release(orion)&quot;,
+            &quot;source&quot;: &quot;e2&quot;
+          }
+        ],
+        &quot;raw_status&quot;: &quot;entailed&quot;,
+        &quot;safe&quot;: [
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;route_observation&quot;,
+            &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+            &quot;source&quot;: &quot;e5&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;outage&quot;,
+            &quot;literal&quot;: &quot;main_down(orion)&quot;,
+            &quot;source&quot;: &quot;e20&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;item_28_1&quot;,
+            &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+            &quot;source&quot;: &quot;e27&quot;
+          },
+          {
+            &quot;children&quot;: [
+              &quot;main_down(orion)&quot;,
+              &quot;backup_ready(orion)&quot;
+            ],
+            &quot;item_id&quot;: &quot;old_release_rule&quot;,
+            &quot;literal&quot;: &quot;release(orion)&quot;,
+            &quot;source&quot;: &quot;e2&quot;
+          }
+        ],
+        &quot;safe_status&quot;: &quot;entailed&quot;,
+        &quot;status&quot;: &quot;ok&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;c2c41ad85941c4527938c4760ceeb68c5daeb12b9df24f0fac0e9c42a3f0fa6d&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;questions&quot;: [],
+      &quot;simple_control&quot;: null,
+      &quot;cost&quot;: {
+        &quot;queries&quot;: 1,
+        &quot;branches&quot;: 0
+      },
+      &quot;decision&quot;: {
+        &quot;kind&quot;: &quot;act&quot;,
+        &quot;action&quot;: &quot;request_release_orion&quot;,
+        &quot;goalId&quot;: &quot;release_episode&quot;,
+        &quot;snapshot&quot;: &quot;84922b65f87b73258c71fe33c231a631df37420d9dab3a30231126f39307e184&quot;,
+        &quot;proof&quot;: [
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;outage&quot;,
+            &quot;literal&quot;: &quot;main_down(orion)&quot;,
+            &quot;source&quot;: &quot;e20&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;item_28_1&quot;,
+            &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+            &quot;source&quot;: &quot;e27&quot;
+          },
+          {
+            &quot;children&quot;: [
+              &quot;main_down(orion)&quot;,
+              &quot;backup_ready(orion)&quot;
+            ],
+            &quot;item_id&quot;: &quot;old_release_rule&quot;,
+            &quot;literal&quot;: &quot;release(orion)&quot;,
+            &quot;source&quot;: &quot;e2&quot;
+          }
+        ],
+        &quot;mode&quot;: &quot;simulated_action_request&quot;
+      }
+    },
+    &quot;sha256&quot;: &quot;eed9329e4236961bb4c495a035237c266ca601c0ba68e332af3a673ee1d67bb5&quot;
+  },
+  {
+    &quot;seq&quot;: 33,
+    &quot;id&quot;: &quot;e33&quot;,
+    &quot;previous&quot;: &quot;eed9329e4236961bb4c495a035237c266ca601c0ba68e332af3a673ee1d67bb5&quot;,
+    &quot;at&quot;: 101,
+    &quot;type&quot;: &quot;decision&quot;,
+    &quot;payload&quot;: {
+      &quot;kind&quot;: &quot;act&quot;,
+      &quot;action&quot;: &quot;request_release_orion&quot;,
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;snapshot&quot;: &quot;84922b65f87b73258c71fe33c231a631df37420d9dab3a30231126f39307e184&quot;,
+      &quot;proof&quot;: [
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;outage&quot;,
+          &quot;literal&quot;: &quot;main_down(orion)&quot;,
+          &quot;source&quot;: &quot;e20&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;item_28_1&quot;,
+          &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+          &quot;source&quot;: &quot;e27&quot;
+        },
+        {
+          &quot;children&quot;: [
+            &quot;main_down(orion)&quot;,
+            &quot;backup_ready(orion)&quot;
+          ],
+          &quot;item_id&quot;: &quot;old_release_rule&quot;,
+          &quot;literal&quot;: &quot;release(orion)&quot;,
+          &quot;source&quot;: &quot;e2&quot;
+        }
+      ],
+      &quot;mode&quot;: &quot;simulated_action_request&quot;
+    },
+    &quot;sha256&quot;: &quot;ff8e24ae6e2bf051a97555c43d2cd926afff9898ea1ca18e9789fae174878e1b&quot;
+  },
+  {
+    &quot;seq&quot;: 34,
+    &quot;id&quot;: &quot;e34&quot;,
+    &quot;previous&quot;: &quot;ff8e24ae6e2bf051a97555c43d2cd926afff9898ea1ca18e9789fae174878e1b&quot;,
+    &quot;at&quot;: 102,
+    &quot;type&quot;: &quot;action_result&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;decisionId&quot;: &quot;e33&quot;,
+      &quot;outcome&quot;: &quot;success&quot;,
+      &quot;text&quot;: &quot;Симулятор сообщил: выпуск выполнен.&quot;,
+      &quot;mode&quot;: &quot;reported_simulation_outcome&quot;
+    },
+    &quot;sha256&quot;: &quot;3383f2091e06b04fc7533053df6bfdf1fac6ea0f4d2161037deb278f66d80150&quot;
+  },
+  {
+    &quot;seq&quot;: 35,
+    &quot;id&quot;: &quot;e35&quot;,
+    &quot;previous&quot;: &quot;3383f2091e06b04fc7533053df6bfdf1fac6ea0f4d2161037deb278f66d80150&quot;,
+    &quot;at&quot;: 102,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Исследовать структуру собственной программы без принятия новых утверждений.&quot;,
+      &quot;kind&quot;: &quot;message&quot;
+    },
+    &quot;sha256&quot;: &quot;88a0eb3f8461c8c55784f193ccb47fa95f346691c41926cd847ed174f313d295&quot;
+  },
+  {
+    &quot;seq&quot;: 36,
+    &quot;id&quot;: &quot;e36&quot;,
+    &quot;previous&quot;: &quot;88a0eb3f8461c8c55784f193ccb47fa95f346691c41926cd847ed174f313d295&quot;,
+    &quot;at&quot;: 102,
+    &quot;type&quot;: &quot;thought&quot;,
+    &quot;payload&quot;: {
+      &quot;source&quot;: &quot;e35&quot;,
+      &quot;memory&quot;: {
+        &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+        &quot;ideas&quot;: {
+          &quot;version&quot;: &quot;release-domain-v0&quot;,
+          &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+          &quot;predicates&quot;: [
+            {
+              &quot;name&quot;: &quot;release&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;main_down&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;backup_ready&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;certified_route&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;note&quot;,
+              &quot;arity&quot;: 1
+            }
+          ]
+        },
+        &quot;at&quot;: 102,
+        &quot;items&quot;: [
+          {
+            &quot;id&quot;: &quot;old_release_rule&quot;,
+            &quot;program&quot;: &quot;release(X) :- main_down(X), backup_ready(X).&quot;,
+            &quot;source&quot;: &quot;e2&quot;,
+            &quot;observedAt&quot;: 1,
+            &quot;validFrom&quot;: 1,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 1,
+            &quot;admission&quot;: &quot;e4&quot;
+          },
+          {
+            &quot;id&quot;: &quot;route_observation&quot;,
+            &quot;program&quot;: &quot;certified_route(orion).&quot;,
+            &quot;source&quot;: &quot;e5&quot;,
+            &quot;observedAt&quot;: 2,
+            &quot;validFrom&quot;: 2,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 2,
+            &quot;admission&quot;: &quot;e7&quot;
+          },
+          {
+            &quot;id&quot;: &quot;outage&quot;,
+            &quot;program&quot;: &quot;main_down(orion).&quot;,
+            &quot;source&quot;: &quot;e20&quot;,
+            &quot;observedAt&quot;: 100,
+            &quot;validFrom&quot;: 100,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 100,
+            &quot;admission&quot;: &quot;e22&quot;
+          },
+          {
+            &quot;id&quot;: &quot;item_28_1&quot;,
+            &quot;program&quot;: &quot;backup_ready(orion).&quot;,
+            &quot;source&quot;: &quot;e27&quot;,
+            &quot;observedAt&quot;: 101,
+            &quot;validFrom&quot;: 101,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 101,
+            &quot;admission&quot;: &quot;e29&quot;
+          }
+        ],
+        &quot;sha256&quot;: &quot;a691294bab3f6fef0b62bf1218722650d7f4ab5aefb2197f494af3ca70cf1d54&quot;
+      },
+      &quot;candidate&quot;: {
+        &quot;id&quot;: &quot;thought_36&quot;,
+        &quot;program&quot;: &quot;explore :- findall(Head, (pam_item(_, _, Text), read_term_from_atom(Text, Clause, []), (Clause = (Head :- _) -&gt; true ; Head = Clause)), Heads), length(Heads, N), format(&#39;Observed ~d clause heads: ~q~n&#39;, [N, Heads]).&quot;,
+        &quot;source&quot;: &quot;e35&quot;,
+        &quot;support&quot;: [],
+        &quot;status&quot;: &quot;candidate&quot;,
+        &quot;sha256&quot;: &quot;08ff0601fe9086ec6eb94ce1ea157d5a9dce61882e31db382f8bee4f44265c64&quot;
+      },
+      &quot;query&quot;: &quot;explore&quot;,
+      &quot;evidence&quot;: {
+        &quot;candidate&quot;: {
+          &quot;id&quot;: &quot;thought_36&quot;,
+          &quot;status&quot;: &quot;candidate&quot;,
+          &quot;sha256&quot;: &quot;08ff0601fe9086ec6eb94ce1ea157d5a9dce61882e31db382f8bee4f44265c64&quot;,
+          &quot;source&quot;: &quot;e35&quot;
+        },
+        &quot;snapshot&quot;: {
+          &quot;id&quot;: &quot;a691294bab3f6fef0b62bf1218722650d7f4ab5aefb2197f494af3ca70cf1d54&quot;,
+          &quot;sha256&quot;: &quot;4928dfb15bb139ec2f25065aa6455121e96da876a3da14aadb6a4b3652e030e1&quot;
+        },
+        &quot;runEvidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-prolog-isolated&quot;,
+          &quot;timeoutMs&quot;: 1500,
+          &quot;maxOutputBytes&quot;: 262144,
+          &quot;forbidSubprocesses&quot;: true,
+          &quot;transcript&quot;: {
+            &quot;transcript&quot;: &quot;Observed 4 clause heads: [release(_2454),certified_route(orion),main_down(orion),backup_ready(orion)]\nPAM_DIAGNOSTIC_BINDINGS: explore\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;,
+            &quot;exitCode&quot;: 0,
+            &quot;signal&quot;: null
+          },
+          &quot;trust&quot;: &quot;untrusted&quot;
+        }
+      },
+      &quot;trust&quot;: &quot;untrusted&quot;,
+      &quot;memory_after&quot;: &quot;a691294bab3f6fef0b62bf1218722650d7f4ab5aefb2197f494af3ca70cf1d54&quot;
+    },
+    &quot;sha256&quot;: &quot;e662c893e0d22ea1cb66f705f4c263824d1636c77131e1fc297681e256673632&quot;
+  }
+]</pre></details>
+  </article><article><p class="eyebrow">H2 · одна цель, другая история</p>
+    <h2>Запросить выпуск</h2><p>Старое правило разрешает независимый подтверждённый путь. Состояние резерва не меняет решение о выпуске.</p>
+    <pre class="rule">release(X) :- main_down(X), certified_route(X).</pre>
+    <div class="branches"><div><span>Допустить: резерв готов</span><strong>entailed</strong><small>ok · assumption_07c811e2daff_positive</small></div><div><span>Допустить: резерв не готов</span><strong>entailed</strong><small>ok · assumption_07c811e2daff_negative</small></div></div>
+    <p class="check">Память после сна: не изменилась ✓</p>
+    <p>Контроль без сна: <b>Запросить выпуск</b> · 1 исполнение; со сном: 3.</p>
+    <details><summary>Текущий вопрос, обязательства и бюджет</summary><pre>{
+  &quot;id&quot;: &quot;release_episode&quot;,
+  &quot;text&quot;: &quot;Основной сервис упал. Можно ли выпустить orion?&quot;,
+  &quot;query&quot;: &quot;release(orion)&quot;,
+  &quot;action&quot;: &quot;request_release_orion&quot;,
+  &quot;questions&quot;: [
+    {
+      &quot;id&quot;: &quot;backup&quot;,
+      &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+      &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+      &quot;cost&quot;: 1
+    }
+  ],
+  &quot;budget&quot;: {
+    &quot;queries&quot;: 24,
+    &quot;branches&quot;: 8,
+    &quot;questions&quot;: 2,
+    &quot;maxQuestionCost&quot;: 1
+  },
+  &quot;commitments&quot;: [
+    {
+      &quot;id&quot;: &quot;require_safe_proof&quot;,
+      &quot;source&quot;: &quot;operator goal policy v0&quot;
+    }
+  ]
+}</pre></details>
+    <details><summary>Полный снимок памяти и исходные Prolog-программы</summary><pre>{
+  &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+  &quot;ideas&quot;: {
+    &quot;version&quot;: &quot;release-domain-v0&quot;,
+    &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+    &quot;predicates&quot;: [
+      {
+        &quot;name&quot;: &quot;release&quot;,
+        &quot;arity&quot;: 1
+      },
+      {
+        &quot;name&quot;: &quot;main_down&quot;,
+        &quot;arity&quot;: 1
+      },
+      {
+        &quot;name&quot;: &quot;backup_ready&quot;,
+        &quot;arity&quot;: 1
+      },
+      {
+        &quot;name&quot;: &quot;certified_route&quot;,
+        &quot;arity&quot;: 1
+      },
+      {
+        &quot;name&quot;: &quot;note&quot;,
+        &quot;arity&quot;: 1
+      }
+    ]
+  },
+  &quot;at&quot;: 100,
+  &quot;items&quot;: [
+    {
+      &quot;id&quot;: &quot;old_release_rule&quot;,
+      &quot;program&quot;: &quot;release(X) :- main_down(X), certified_route(X).&quot;,
+      &quot;source&quot;: &quot;e2&quot;,
+      &quot;observedAt&quot;: 1,
+      &quot;validFrom&quot;: 1,
+      &quot;validTo&quot;: null,
+      &quot;modality&quot;: &quot;asserted&quot;,
+      &quot;replaces&quot;: null,
+      &quot;origin&quot;: null,
+      &quot;status&quot;: &quot;accepted&quot;,
+      &quot;admittedAt&quot;: 1,
+      &quot;admission&quot;: &quot;e4&quot;
+    },
+    {
+      &quot;id&quot;: &quot;route_observation&quot;,
+      &quot;program&quot;: &quot;certified_route(orion).&quot;,
+      &quot;source&quot;: &quot;e5&quot;,
+      &quot;observedAt&quot;: 2,
+      &quot;validFrom&quot;: 2,
+      &quot;validTo&quot;: null,
+      &quot;modality&quot;: &quot;asserted&quot;,
+      &quot;replaces&quot;: null,
+      &quot;origin&quot;: null,
+      &quot;status&quot;: &quot;accepted&quot;,
+      &quot;admittedAt&quot;: 2,
+      &quot;admission&quot;: &quot;e7&quot;
+    },
+    {
+      &quot;id&quot;: &quot;outage&quot;,
+      &quot;program&quot;: &quot;main_down(orion).&quot;,
+      &quot;source&quot;: &quot;e20&quot;,
+      &quot;observedAt&quot;: 100,
+      &quot;validFrom&quot;: 100,
+      &quot;validTo&quot;: null,
+      &quot;modality&quot;: &quot;asserted&quot;,
+      &quot;replaces&quot;: null,
+      &quot;origin&quot;: null,
+      &quot;status&quot;: &quot;accepted&quot;,
+      &quot;admittedAt&quot;: 100,
+      &quot;admission&quot;: &quot;e22&quot;
+    }
+  ],
+  &quot;sha256&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;
+}</pre></details>
+    <details><summary>Обе ветви: предположения, доказательства, источники и статусы</summary><pre>{
+  &quot;goalId&quot;: &quot;release_episode&quot;,
+  &quot;strategy&quot;: &quot;dream&quot;,
+  &quot;snapshot&quot;: {
+    &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+    &quot;ideas&quot;: {
+      &quot;version&quot;: &quot;release-domain-v0&quot;,
+      &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+      &quot;predicates&quot;: [
+        {
+          &quot;name&quot;: &quot;release&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;main_down&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;backup_ready&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;certified_route&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;note&quot;,
+          &quot;arity&quot;: 1
+        }
+      ]
+    },
+    &quot;at&quot;: 100,
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: &quot;old_release_rule&quot;,
+        &quot;program&quot;: &quot;release(X) :- main_down(X), certified_route(X).&quot;,
+        &quot;source&quot;: &quot;e2&quot;,
+        &quot;observedAt&quot;: 1,
+        &quot;validFrom&quot;: 1,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 1,
+        &quot;admission&quot;: &quot;e4&quot;
+      },
+      {
+        &quot;id&quot;: &quot;route_observation&quot;,
+        &quot;program&quot;: &quot;certified_route(orion).&quot;,
+        &quot;source&quot;: &quot;e5&quot;,
+        &quot;observedAt&quot;: 2,
+        &quot;validFrom&quot;: 2,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 2,
+        &quot;admission&quot;: &quot;e7&quot;
+      },
+      {
+        &quot;id&quot;: &quot;outage&quot;,
+        &quot;program&quot;: &quot;main_down(orion).&quot;,
+        &quot;source&quot;: &quot;e20&quot;,
+        &quot;observedAt&quot;: 100,
+        &quot;validFrom&quot;: 100,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 100,
+        &quot;admission&quot;: &quot;e22&quot;
+      }
+    ],
+    &quot;sha256&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;
+  },
+  &quot;snapshot_after&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;,
+  &quot;baseline&quot;: {
+    &quot;conflicts&quot;: [],
+    &quot;plans&quot;: [
+      {
+        &quot;missing&quot;: [],
+        &quot;rule_ids&quot;: []
+      }
+    ],
+    &quot;query&quot;: &quot;release(orion)&quot;,
+    &quot;raw&quot;: [
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;route_observation&quot;,
+        &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+        &quot;source&quot;: &quot;e5&quot;
+      },
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;outage&quot;,
+        &quot;literal&quot;: &quot;main_down(orion)&quot;,
+        &quot;source&quot;: &quot;e20&quot;
+      },
+      {
+        &quot;children&quot;: [
+          &quot;main_down(orion)&quot;,
+          &quot;certified_route(orion)&quot;
+        ],
+        &quot;item_id&quot;: &quot;old_release_rule&quot;,
+        &quot;literal&quot;: &quot;release(orion)&quot;,
+        &quot;source&quot;: &quot;e2&quot;
+      }
+    ],
+    &quot;raw_status&quot;: &quot;entailed&quot;,
+    &quot;safe&quot;: [
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;route_observation&quot;,
+        &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+        &quot;source&quot;: &quot;e5&quot;
+      },
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;outage&quot;,
+        &quot;literal&quot;: &quot;main_down(orion)&quot;,
+        &quot;source&quot;: &quot;e20&quot;
+      },
+      {
+        &quot;children&quot;: [
+          &quot;main_down(orion)&quot;,
+          &quot;certified_route(orion)&quot;
+        ],
+        &quot;item_id&quot;: &quot;old_release_rule&quot;,
+        &quot;literal&quot;: &quot;release(orion)&quot;,
+        &quot;source&quot;: &quot;e2&quot;
+      }
+    ],
+    &quot;safe_status&quot;: &quot;entailed&quot;,
+    &quot;status&quot;: &quot;ok&quot;,
+    &quot;evidence&quot;: {
+      &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+      &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+      &quot;input_sha256&quot;: &quot;799838dff582feebed5a2a418ff9d847f8fd31429a561e6c0d1c499a848b6394&quot;,
+      &quot;timeoutMs&quot;: 2000,
+      &quot;inferences&quot;: 1000000,
+      &quot;maxFacts&quot;: 2048,
+      &quot;maxOutputBytes&quot;: 2097152
+    }
+  },
+  &quot;questions&quot;: [
+    {
+      &quot;question&quot;: {
+        &quot;id&quot;: &quot;backup&quot;,
+        &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+        &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+        &quot;cost&quot;: 1
+      },
+      &quot;disposition&quot;: &quot;irrelevant_to_this_goal&quot;,
+      &quot;branches&quot;: [
+        {
+          &quot;polarity&quot;: &quot;positive&quot;,
+          &quot;assumption&quot;: {
+            &quot;id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+            &quot;source&quot;: &quot;conditional:backup:positive&quot;,
+            &quot;program&quot;: &quot;backup_ready(orion).&quot;
+          },
+          &quot;result&quot;: {
+            &quot;conflicts&quot;: [],
+            &quot;plans&quot;: [
+              {
+                &quot;missing&quot;: [],
+                &quot;rule_ids&quot;: []
+              }
+            ],
+            &quot;query&quot;: &quot;release(orion)&quot;,
+            &quot;raw&quot;: [
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;route_observation&quot;,
+                &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                &quot;source&quot;: &quot;e5&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;outage&quot;,
+                &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                &quot;source&quot;: &quot;e20&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+                &quot;source&quot;: &quot;conditional:backup:positive&quot;
+              },
+              {
+                &quot;children&quot;: [
+                  &quot;main_down(orion)&quot;,
+                  &quot;certified_route(orion)&quot;
+                ],
+                &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                &quot;literal&quot;: &quot;release(orion)&quot;,
+                &quot;source&quot;: &quot;e2&quot;
+              }
+            ],
+            &quot;raw_status&quot;: &quot;entailed&quot;,
+            &quot;safe&quot;: [
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;route_observation&quot;,
+                &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                &quot;source&quot;: &quot;e5&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;outage&quot;,
+                &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                &quot;source&quot;: &quot;e20&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+                &quot;source&quot;: &quot;conditional:backup:positive&quot;
+              },
+              {
+                &quot;children&quot;: [
+                  &quot;main_down(orion)&quot;,
+                  &quot;certified_route(orion)&quot;
+                ],
+                &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                &quot;literal&quot;: &quot;release(orion)&quot;,
+                &quot;source&quot;: &quot;e2&quot;
+              }
+            ],
+            &quot;safe_status&quot;: &quot;entailed&quot;,
+            &quot;status&quot;: &quot;ok&quot;,
+            &quot;evidence&quot;: {
+              &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+              &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+              &quot;input_sha256&quot;: &quot;a54bd99afac82ba45f1a400f37c77c029713376ac67db50751d4c1c292b262ec&quot;,
+              &quot;timeoutMs&quot;: 2000,
+              &quot;inferences&quot;: 1000000,
+              &quot;maxFacts&quot;: 2048,
+              &quot;maxOutputBytes&quot;: 2097152
+            }
+          }
+        },
+        {
+          &quot;polarity&quot;: &quot;negative&quot;,
+          &quot;assumption&quot;: {
+            &quot;id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+            &quot;source&quot;: &quot;conditional:backup:negative&quot;,
+            &quot;program&quot;: &quot;neg(backup_ready(orion)).&quot;
+          },
+          &quot;result&quot;: {
+            &quot;conflicts&quot;: [],
+            &quot;plans&quot;: [
+              {
+                &quot;missing&quot;: [],
+                &quot;rule_ids&quot;: []
+              }
+            ],
+            &quot;query&quot;: &quot;release(orion)&quot;,
+            &quot;raw&quot;: [
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;route_observation&quot;,
+                &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                &quot;source&quot;: &quot;e5&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;outage&quot;,
+                &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                &quot;source&quot;: &quot;e20&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                &quot;literal&quot;: &quot;neg(backup_ready(orion))&quot;,
+                &quot;source&quot;: &quot;conditional:backup:negative&quot;
+              },
+              {
+                &quot;children&quot;: [
+                  &quot;main_down(orion)&quot;,
+                  &quot;certified_route(orion)&quot;
+                ],
+                &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                &quot;literal&quot;: &quot;release(orion)&quot;,
+                &quot;source&quot;: &quot;e2&quot;
+              }
+            ],
+            &quot;raw_status&quot;: &quot;entailed&quot;,
+            &quot;safe&quot;: [
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;route_observation&quot;,
+                &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                &quot;source&quot;: &quot;e5&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;outage&quot;,
+                &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                &quot;source&quot;: &quot;e20&quot;
+              },
+              {
+                &quot;children&quot;: [],
+                &quot;item_id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                &quot;literal&quot;: &quot;neg(backup_ready(orion))&quot;,
+                &quot;source&quot;: &quot;conditional:backup:negative&quot;
+              },
+              {
+                &quot;children&quot;: [
+                  &quot;main_down(orion)&quot;,
+                  &quot;certified_route(orion)&quot;
+                ],
+                &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                &quot;literal&quot;: &quot;release(orion)&quot;,
+                &quot;source&quot;: &quot;e2&quot;
+              }
+            ],
+            &quot;safe_status&quot;: &quot;entailed&quot;,
+            &quot;status&quot;: &quot;ok&quot;,
+            &quot;evidence&quot;: {
+              &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+              &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+              &quot;input_sha256&quot;: &quot;85152ec85827e8c2a9c65affc94ccf8dbb72122a836f829731865077542b64c1&quot;,
+              &quot;timeoutMs&quot;: 2000,
+              &quot;inferences&quot;: 1000000,
+              &quot;maxFacts&quot;: 2048,
+              &quot;maxOutputBytes&quot;: 2097152
+            }
+          }
+        }
+      ]
+    }
+  ],
+  &quot;simple_control&quot;: null,
+  &quot;cost&quot;: {
+    &quot;queries&quot;: 3,
+    &quot;branches&quot;: 2
+  },
+  &quot;decision&quot;: {
+    &quot;kind&quot;: &quot;act&quot;,
+    &quot;action&quot;: &quot;request_release_orion&quot;,
+    &quot;goalId&quot;: &quot;release_episode&quot;,
+    &quot;snapshot&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;,
+    &quot;proof&quot;: [
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;outage&quot;,
+        &quot;literal&quot;: &quot;main_down(orion)&quot;,
+        &quot;source&quot;: &quot;e20&quot;
+      },
+      {
+        &quot;children&quot;: [],
+        &quot;item_id&quot;: &quot;route_observation&quot;,
+        &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+        &quot;source&quot;: &quot;e5&quot;
+      },
+      {
+        &quot;children&quot;: [
+          &quot;main_down(orion)&quot;,
+          &quot;certified_route(orion)&quot;
+        ],
+        &quot;item_id&quot;: &quot;old_release_rule&quot;,
+        &quot;literal&quot;: &quot;release(orion)&quot;,
+        &quot;source&quot;: &quot;e2&quot;
+      }
+    ],
+    &quot;mode&quot;: &quot;simulated_action_request&quot;
+  }
+}</pre></details>
+    <details><summary>Продолжение: ответ, действие, наблюдённый результат, позднее воспоминание</summary><pre>[
+  {
+    &quot;event&quot;: &quot;later_recall_after_outcome&quot;,
+    &quot;result&quot;: {
+      &quot;conflicts&quot;: [],
+      &quot;plans&quot;: [
+        {
+          &quot;missing&quot;: [],
+          &quot;rule_ids&quot;: []
+        }
+      ],
+      &quot;query&quot;: &quot;release(orion)&quot;,
+      &quot;raw&quot;: [
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;route_observation&quot;,
+          &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+          &quot;source&quot;: &quot;e5&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;outage&quot;,
+          &quot;literal&quot;: &quot;main_down(orion)&quot;,
+          &quot;source&quot;: &quot;e20&quot;
+        },
+        {
+          &quot;children&quot;: [
+            &quot;main_down(orion)&quot;,
+            &quot;certified_route(orion)&quot;
+          ],
+          &quot;item_id&quot;: &quot;old_release_rule&quot;,
+          &quot;literal&quot;: &quot;release(orion)&quot;,
+          &quot;source&quot;: &quot;e2&quot;
+        }
+      ],
+      &quot;raw_status&quot;: &quot;entailed&quot;,
+      &quot;safe&quot;: [
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;route_observation&quot;,
+          &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+          &quot;source&quot;: &quot;e5&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;outage&quot;,
+          &quot;literal&quot;: &quot;main_down(orion)&quot;,
+          &quot;source&quot;: &quot;e20&quot;
+        },
+        {
+          &quot;children&quot;: [
+            &quot;main_down(orion)&quot;,
+            &quot;certified_route(orion)&quot;
+          ],
+          &quot;item_id&quot;: &quot;old_release_rule&quot;,
+          &quot;literal&quot;: &quot;release(orion)&quot;,
+          &quot;source&quot;: &quot;e2&quot;
+        }
+      ],
+      &quot;safe_status&quot;: &quot;entailed&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;evidence&quot;: {
+        &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+        &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+        &quot;input_sha256&quot;: &quot;799838dff582feebed5a2a418ff9d847f8fd31429a561e6c0d1c499a848b6394&quot;,
+        &quot;timeoutMs&quot;: 2000,
+        &quot;inferences&quot;: 1000000,
+        &quot;maxFacts&quot;: 2048,
+        &quot;maxOutputBytes&quot;: 2097152
+      }
+    },
+    &quot;episode_status&quot;: &quot;completed&quot;
+  }
+]</pre></details>
+    <details><summary>Вся биография: источники, предложения, принятие и решения</summary><pre>[
+  {
+    &quot;seq&quot;: 1,
+    &quot;id&quot;: &quot;e1&quot;,
+    &quot;previous&quot;: null,
+    &quot;at&quot;: 0,
+    &quot;type&quot;: &quot;created&quot;,
+    &quot;payload&quot;: {
+      &quot;agent_id&quot;: &quot;traveller&quot;,
+      &quot;ideas&quot;: {
+        &quot;version&quot;: &quot;release-domain-v0&quot;,
+        &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+        &quot;predicates&quot;: [
+          {
+            &quot;name&quot;: &quot;release&quot;,
+            &quot;arity&quot;: 1
+          },
+          {
+            &quot;name&quot;: &quot;main_down&quot;,
+            &quot;arity&quot;: 1
+          },
+          {
+            &quot;name&quot;: &quot;backup_ready&quot;,
+            &quot;arity&quot;: 1
+          },
+          {
+            &quot;name&quot;: &quot;certified_route&quot;,
+            &quot;arity&quot;: 1
+          },
+          {
+            &quot;name&quot;: &quot;note&quot;,
+            &quot;arity&quot;: 1
+          }
+        ]
+      },
+      &quot;startTime&quot;: 0
+    },
+    &quot;sha256&quot;: &quot;7115ab9e9a7cd5e26f65b1186cb4697fcb9bb135378df11f3eebe396d3d88844&quot;
+  },
+  {
+    &quot;seq&quot;: 2,
+    &quot;id&quot;: &quot;e2&quot;,
+    &quot;previous&quot;: &quot;7115ab9e9a7cd5e26f65b1186cb4697fcb9bb135378df11f3eebe396d3d88844&quot;,
+    &quot;at&quot;: 1,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;При отказе основного сервиса выпуск разрешён через подтверждённый независимый маршрут.&quot;,
+      &quot;kind&quot;: &quot;operator_rule&quot;
+    },
+    &quot;sha256&quot;: &quot;c1e3c0e1224c8799cabeb23202788fc47b0dcce068e8359754b8a081ac9cf96a&quot;
+  },
+  {
+    &quot;seq&quot;: 3,
+    &quot;id&quot;: &quot;e3&quot;,
+    &quot;previous&quot;: &quot;c1e3c0e1224c8799cabeb23202788fc47b0dcce068e8359754b8a081ac9cf96a&quot;,
+    &quot;at&quot;: 1,
+    &quot;type&quot;: &quot;proposal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;proposal_3&quot;,
+      &quot;source&quot;: &quot;e2&quot;,
+      &quot;interpretation&quot;: &quot;explicit-operator&quot;,
+      &quot;items&quot;: [
+        {
+          &quot;id&quot;: &quot;old_release_rule&quot;,
+          &quot;program&quot;: &quot;release(X) :- main_down(X), certified_route(X).&quot;,
+          &quot;source&quot;: &quot;e2&quot;,
+          &quot;observedAt&quot;: 1,
+          &quot;validFrom&quot;: 1,
+          &quot;validTo&quot;: null,
+          &quot;modality&quot;: &quot;asserted&quot;,
+          &quot;replaces&quot;: null,
+          &quot;origin&quot;: null
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;ed183fca7261989eb726aba0bc36562505d13b56d92d66cd71c3366740f93ed2&quot;
+  },
+  {
+    &quot;seq&quot;: 4,
+    &quot;id&quot;: &quot;e4&quot;,
+    &quot;previous&quot;: &quot;ed183fca7261989eb726aba0bc36562505d13b56d92d66cd71c3366740f93ed2&quot;,
+    &quot;at&quot;: 1,
+    &quot;type&quot;: &quot;admission&quot;,
+    &quot;payload&quot;: {
+      &quot;proposalId&quot;: &quot;proposal_3&quot;,
+      &quot;decision&quot;: {
+        &quot;admit&quot;: true,
+        &quot;by&quot;: &quot;fixture_operator&quot;,
+        &quot;reason&quot;: &quot;Explicit rule in the synthetic episode; semantic mapping authored by the fixture.&quot;
+      },
+      &quot;checks&quot;: {
+        &quot;query&quot;: &quot;release(poc_probe)&quot;,
+        &quot;status&quot;: &quot;valid&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;51611b8898700251e602a8355a136ad1e73e819d26de9393a6ee4b7e6c190d3d&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;epistemicMeaning&quot;: &quot;accepted for use; no empirical truth certification&quot;
+    },
+    &quot;sha256&quot;: &quot;5ce33723a16a5e4115ff6d07c2b9d922c7894a7ad007519b7f442d50febaa5d2&quot;
+  },
+  {
+    &quot;seq&quot;: 5,
+    &quot;id&quot;: &quot;e5&quot;,
+    &quot;previous&quot;: &quot;5ce33723a16a5e4115ff6d07c2b9d922c7894a7ad007519b7f442d50febaa5d2&quot;,
+    &quot;at&quot;: 2,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Для orion подтверждён независимый маршрут.&quot;,
+      &quot;kind&quot;: &quot;operator_observation&quot;
+    },
+    &quot;sha256&quot;: &quot;7831ff676fd48afc9ad5e3a82c3d78ace54abf7a15c37c436c7336b7fe510925&quot;
+  },
+  {
+    &quot;seq&quot;: 6,
+    &quot;id&quot;: &quot;e6&quot;,
+    &quot;previous&quot;: &quot;7831ff676fd48afc9ad5e3a82c3d78ace54abf7a15c37c436c7336b7fe510925&quot;,
+    &quot;at&quot;: 2,
+    &quot;type&quot;: &quot;proposal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;proposal_6&quot;,
+      &quot;source&quot;: &quot;e5&quot;,
+      &quot;interpretation&quot;: &quot;explicit-operator&quot;,
+      &quot;items&quot;: [
+        {
+          &quot;id&quot;: &quot;route_observation&quot;,
+          &quot;program&quot;: &quot;certified_route(orion).&quot;,
+          &quot;source&quot;: &quot;e5&quot;,
+          &quot;observedAt&quot;: 2,
+          &quot;validFrom&quot;: 2,
+          &quot;validTo&quot;: null,
+          &quot;modality&quot;: &quot;asserted&quot;,
+          &quot;replaces&quot;: null,
+          &quot;origin&quot;: null
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;34ec6b539c6e4fb99459bb125bab534b6f8e4f711fa4a461d4b7b564f686f1cb&quot;
+  },
+  {
+    &quot;seq&quot;: 7,
+    &quot;id&quot;: &quot;e7&quot;,
+    &quot;previous&quot;: &quot;34ec6b539c6e4fb99459bb125bab534b6f8e4f711fa4a461d4b7b564f686f1cb&quot;,
+    &quot;at&quot;: 2,
+    &quot;type&quot;: &quot;admission&quot;,
+    &quot;payload&quot;: {
+      &quot;proposalId&quot;: &quot;proposal_6&quot;,
+      &quot;decision&quot;: {
+        &quot;admit&quot;: true,
+        &quot;by&quot;: &quot;fixture_operator&quot;,
+        &quot;reason&quot;: &quot;Explicit synthetic observation.&quot;
+      },
+      &quot;checks&quot;: {
+        &quot;query&quot;: &quot;release(poc_probe)&quot;,
+        &quot;status&quot;: &quot;valid&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;6cd7308893ea316c11101755988ccef2c023271d3b6333580cd0c9e4aeaed658&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;epistemicMeaning&quot;: &quot;accepted for use; no empirical truth certification&quot;
+    },
+    &quot;sha256&quot;: &quot;c50f7937677aefa8cdfeba525731429a02caf536c964cd7692a687b6a10ab339&quot;
+  },
+  {
+    &quot;seq&quot;: 8,
+    &quot;id&quot;: &quot;e8&quot;,
+    &quot;previous&quot;: &quot;c50f7937677aefa8cdfeba525731429a02caf536c964cd7692a687b6a10ab339&quot;,
+    &quot;at&quot;: 3,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 1: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;185ca8b37a872c8c2e2dabc7345eec9a79ab40f935547ee5cc8590849b64f65b&quot;
+  },
+  {
+    &quot;seq&quot;: 9,
+    &quot;id&quot;: &quot;e9&quot;,
+    &quot;previous&quot;: &quot;185ca8b37a872c8c2e2dabc7345eec9a79ab40f935547ee5cc8590849b64f65b&quot;,
+    &quot;at&quot;: 4,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 2: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;08b83bcdba744ac969fb6cbe1b845e65dde6d1a1c315ac0c40ed27e03805ad33&quot;
+  },
+  {
+    &quot;seq&quot;: 10,
+    &quot;id&quot;: &quot;e10&quot;,
+    &quot;previous&quot;: &quot;08b83bcdba744ac969fb6cbe1b845e65dde6d1a1c315ac0c40ed27e03805ad33&quot;,
+    &quot;at&quot;: 5,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 3: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;343f690a1c4a55dd56dc8dd00fae507802379e7d9340def54948b63e246eaa33&quot;
+  },
+  {
+    &quot;seq&quot;: 11,
+    &quot;id&quot;: &quot;e11&quot;,
+    &quot;previous&quot;: &quot;343f690a1c4a55dd56dc8dd00fae507802379e7d9340def54948b63e246eaa33&quot;,
+    &quot;at&quot;: 6,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 4: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;9d18df49a42890bb8b564397b394b04ad88e545a7c57a35018f69d0fd037aa5a&quot;
+  },
+  {
+    &quot;seq&quot;: 12,
+    &quot;id&quot;: &quot;e12&quot;,
+    &quot;previous&quot;: &quot;9d18df49a42890bb8b564397b394b04ad88e545a7c57a35018f69d0fd037aa5a&quot;,
+    &quot;at&quot;: 7,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 5: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;299afb718ac21b38da1dae7a9671527540832b10e702f0baa52b5324d420eee7&quot;
+  },
+  {
+    &quot;seq&quot;: 13,
+    &quot;id&quot;: &quot;e13&quot;,
+    &quot;previous&quot;: &quot;299afb718ac21b38da1dae7a9671527540832b10e702f0baa52b5324d420eee7&quot;,
+    &quot;at&quot;: 8,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 6: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;e691f8b0cf946141a996f3d6fd88ee9d8dce467dae290f1b7121738cc3fe4f78&quot;
+  },
+  {
+    &quot;seq&quot;: 14,
+    &quot;id&quot;: &quot;e14&quot;,
+    &quot;previous&quot;: &quot;e691f8b0cf946141a996f3d6fd88ee9d8dce467dae290f1b7121738cc3fe4f78&quot;,
+    &quot;at&quot;: 9,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 7: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;e29e9fb2ad94ecf32029eef51a8bd675e3106880f8630323181335602fda5482&quot;
+  },
+  {
+    &quot;seq&quot;: 15,
+    &quot;id&quot;: &quot;e15&quot;,
+    &quot;previous&quot;: &quot;e29e9fb2ad94ecf32029eef51a8bd675e3106880f8630323181335602fda5482&quot;,
+    &quot;at&quot;: 10,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 8: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;9a9dd20d6691c54d267c36ab9995cd1af9abcac030d9181bce610d0cb6dbe678&quot;
+  },
+  {
+    &quot;seq&quot;: 16,
+    &quot;id&quot;: &quot;e16&quot;,
+    &quot;previous&quot;: &quot;9a9dd20d6691c54d267c36ab9995cd1af9abcac030d9181bce610d0cb6dbe678&quot;,
+    &quot;at&quot;: 11,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 9: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;105a0373cf5de11f4eed3fcf498a1a361d1824602bd7c8d6e5f5663e40514fc2&quot;
+  },
+  {
+    &quot;seq&quot;: 17,
+    &quot;id&quot;: &quot;e17&quot;,
+    &quot;previous&quot;: &quot;105a0373cf5de11f4eed3fcf498a1a361d1824602bd7c8d6e5f5663e40514fc2&quot;,
+    &quot;at&quot;: 12,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 10: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;d8e7d6707b14a259ca218ebf45a3fdd764fd0462cc5b78ad3a9e5a560844c482&quot;
+  },
+  {
+    &quot;seq&quot;: 18,
+    &quot;id&quot;: &quot;e18&quot;,
+    &quot;previous&quot;: &quot;d8e7d6707b14a259ca218ebf45a3fdd764fd0462cc5b78ad3a9e5a560844c482&quot;,
+    &quot;at&quot;: 13,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 11: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;dcef7049a7b7af1a0edfdad493b4bfef47452e6c479cc327ebb1f5248922e1b8&quot;
+  },
+  {
+    &quot;seq&quot;: 19,
+    &quot;id&quot;: &quot;e19&quot;,
+    &quot;previous&quot;: &quot;dcef7049a7b7af1a0edfdad493b4bfef47452e6c479cc327ebb1f5248922e1b8&quot;,
+    &quot;at&quot;: 14,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Промежуточное событие 12: просмотрен журнал обслуживания.&quot;,
+      &quot;kind&quot;: &quot;background&quot;
+    },
+    &quot;sha256&quot;: &quot;a4bef5f71360715444d2fbf04ab7ed5f4713cbee79030fc861190cdb978890b0&quot;
+  },
+  {
+    &quot;seq&quot;: 20,
+    &quot;id&quot;: &quot;e20&quot;,
+    &quot;previous&quot;: &quot;a4bef5f71360715444d2fbf04ab7ed5f4713cbee79030fc861190cdb978890b0&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;source&quot;,
+    &quot;payload&quot;: {
+      &quot;text&quot;: &quot;Основной сервис orion сейчас недоступен.&quot;,
+      &quot;kind&quot;: &quot;operator_observation&quot;
+    },
+    &quot;sha256&quot;: &quot;47e2c1d83c513dcbce42ddea7ee487667de2c178b31a21befc6ad4a0ebb58bcc&quot;
+  },
+  {
+    &quot;seq&quot;: 21,
+    &quot;id&quot;: &quot;e21&quot;,
+    &quot;previous&quot;: &quot;47e2c1d83c513dcbce42ddea7ee487667de2c178b31a21befc6ad4a0ebb58bcc&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;proposal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;proposal_21&quot;,
+      &quot;source&quot;: &quot;e20&quot;,
+      &quot;interpretation&quot;: &quot;explicit-operator&quot;,
+      &quot;items&quot;: [
+        {
+          &quot;id&quot;: &quot;outage&quot;,
+          &quot;program&quot;: &quot;main_down(orion).&quot;,
+          &quot;source&quot;: &quot;e20&quot;,
+          &quot;observedAt&quot;: 100,
+          &quot;validFrom&quot;: 100,
+          &quot;validTo&quot;: null,
+          &quot;modality&quot;: &quot;asserted&quot;,
+          &quot;replaces&quot;: null,
+          &quot;origin&quot;: null
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;37aafb62322901ded4bfdccdf3fcbca93d3dedab17b7f85f609c00ed0b959e13&quot;
+  },
+  {
+    &quot;seq&quot;: 22,
+    &quot;id&quot;: &quot;e22&quot;,
+    &quot;previous&quot;: &quot;37aafb62322901ded4bfdccdf3fcbca93d3dedab17b7f85f609c00ed0b959e13&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;admission&quot;,
+    &quot;payload&quot;: {
+      &quot;proposalId&quot;: &quot;proposal_21&quot;,
+      &quot;decision&quot;: {
+        &quot;admit&quot;: true,
+        &quot;by&quot;: &quot;fixture_operator&quot;,
+        &quot;reason&quot;: &quot;Explicit current synthetic observation.&quot;
+      },
+      &quot;checks&quot;: {
+        &quot;query&quot;: &quot;release(poc_probe)&quot;,
+        &quot;status&quot;: &quot;valid&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;67704a91d08ff59c661d92944ef5ba556eb29ee0319dd720c6a07067d376dbfc&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;epistemicMeaning&quot;: &quot;accepted for use; no empirical truth certification&quot;
+    },
+    &quot;sha256&quot;: &quot;97d110dad2a3743b3fb7b47c40962ec9779c48ae920919f05f696e4ed9837666&quot;
+  },
+  {
+    &quot;seq&quot;: 23,
+    &quot;id&quot;: &quot;e23&quot;,
+    &quot;previous&quot;: &quot;97d110dad2a3743b3fb7b47c40962ec9779c48ae920919f05f696e4ed9837666&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;goal&quot;,
+    &quot;payload&quot;: {
+      &quot;id&quot;: &quot;release_episode&quot;,
+      &quot;text&quot;: &quot;Основной сервис упал. Можно ли выпустить orion?&quot;,
+      &quot;query&quot;: &quot;release(orion)&quot;,
+      &quot;action&quot;: &quot;request_release_orion&quot;,
+      &quot;questions&quot;: [
+        {
+          &quot;id&quot;: &quot;backup&quot;,
+          &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+          &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+          &quot;cost&quot;: 1
+        }
+      ],
+      &quot;budget&quot;: {
+        &quot;queries&quot;: 24,
+        &quot;branches&quot;: 8,
+        &quot;questions&quot;: 2,
+        &quot;maxQuestionCost&quot;: 1
+      },
+      &quot;commitments&quot;: [
+        {
+          &quot;id&quot;: &quot;require_safe_proof&quot;,
+          &quot;source&quot;: &quot;operator goal policy v0&quot;
+        }
+      ]
+    },
+    &quot;sha256&quot;: &quot;f54495a3e3a5c12f6aec71523f1ca994e3f29be559b5bf4d1db687a411598681&quot;
+  },
+  {
+    &quot;seq&quot;: 24,
+    &quot;id&quot;: &quot;e24&quot;,
+    &quot;previous&quot;: &quot;f54495a3e3a5c12f6aec71523f1ca994e3f29be559b5bf4d1db687a411598681&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;reflection_started&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;strategy&quot;: &quot;dream&quot;,
+      &quot;snapshot&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;,
+      &quot;reserved&quot;: {
+        &quot;queries&quot;: 3,
+        &quot;branches&quot;: 2
+      }
+    },
+    &quot;sha256&quot;: &quot;91d1802a6f07a1108c22ac4a7911a1224da595125825691708b8e1fd76746785&quot;
+  },
+  {
+    &quot;seq&quot;: 25,
+    &quot;id&quot;: &quot;e25&quot;,
+    &quot;previous&quot;: &quot;91d1802a6f07a1108c22ac4a7911a1224da595125825691708b8e1fd76746785&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;reflection&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;strategy&quot;: &quot;dream&quot;,
+      &quot;snapshot&quot;: {
+        &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+        &quot;ideas&quot;: {
+          &quot;version&quot;: &quot;release-domain-v0&quot;,
+          &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+          &quot;predicates&quot;: [
+            {
+              &quot;name&quot;: &quot;release&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;main_down&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;backup_ready&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;certified_route&quot;,
+              &quot;arity&quot;: 1
+            },
+            {
+              &quot;name&quot;: &quot;note&quot;,
+              &quot;arity&quot;: 1
+            }
+          ]
+        },
+        &quot;at&quot;: 100,
+        &quot;items&quot;: [
+          {
+            &quot;id&quot;: &quot;old_release_rule&quot;,
+            &quot;program&quot;: &quot;release(X) :- main_down(X), certified_route(X).&quot;,
+            &quot;source&quot;: &quot;e2&quot;,
+            &quot;observedAt&quot;: 1,
+            &quot;validFrom&quot;: 1,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 1,
+            &quot;admission&quot;: &quot;e4&quot;
+          },
+          {
+            &quot;id&quot;: &quot;route_observation&quot;,
+            &quot;program&quot;: &quot;certified_route(orion).&quot;,
+            &quot;source&quot;: &quot;e5&quot;,
+            &quot;observedAt&quot;: 2,
+            &quot;validFrom&quot;: 2,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 2,
+            &quot;admission&quot;: &quot;e7&quot;
+          },
+          {
+            &quot;id&quot;: &quot;outage&quot;,
+            &quot;program&quot;: &quot;main_down(orion).&quot;,
+            &quot;source&quot;: &quot;e20&quot;,
+            &quot;observedAt&quot;: 100,
+            &quot;validFrom&quot;: 100,
+            &quot;validTo&quot;: null,
+            &quot;modality&quot;: &quot;asserted&quot;,
+            &quot;replaces&quot;: null,
+            &quot;origin&quot;: null,
+            &quot;status&quot;: &quot;accepted&quot;,
+            &quot;admittedAt&quot;: 100,
+            &quot;admission&quot;: &quot;e22&quot;
+          }
+        ],
+        &quot;sha256&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;
+      },
+      &quot;snapshot_after&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;,
+      &quot;baseline&quot;: {
+        &quot;conflicts&quot;: [],
+        &quot;plans&quot;: [
+          {
+            &quot;missing&quot;: [],
+            &quot;rule_ids&quot;: []
+          }
+        ],
+        &quot;query&quot;: &quot;release(orion)&quot;,
+        &quot;raw&quot;: [
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;route_observation&quot;,
+            &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+            &quot;source&quot;: &quot;e5&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;outage&quot;,
+            &quot;literal&quot;: &quot;main_down(orion)&quot;,
+            &quot;source&quot;: &quot;e20&quot;
+          },
+          {
+            &quot;children&quot;: [
+              &quot;main_down(orion)&quot;,
+              &quot;certified_route(orion)&quot;
+            ],
+            &quot;item_id&quot;: &quot;old_release_rule&quot;,
+            &quot;literal&quot;: &quot;release(orion)&quot;,
+            &quot;source&quot;: &quot;e2&quot;
+          }
+        ],
+        &quot;raw_status&quot;: &quot;entailed&quot;,
+        &quot;safe&quot;: [
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;route_observation&quot;,
+            &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+            &quot;source&quot;: &quot;e5&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;outage&quot;,
+            &quot;literal&quot;: &quot;main_down(orion)&quot;,
+            &quot;source&quot;: &quot;e20&quot;
+          },
+          {
+            &quot;children&quot;: [
+              &quot;main_down(orion)&quot;,
+              &quot;certified_route(orion)&quot;
+            ],
+            &quot;item_id&quot;: &quot;old_release_rule&quot;,
+            &quot;literal&quot;: &quot;release(orion)&quot;,
+            &quot;source&quot;: &quot;e2&quot;
+          }
+        ],
+        &quot;safe_status&quot;: &quot;entailed&quot;,
+        &quot;status&quot;: &quot;ok&quot;,
+        &quot;evidence&quot;: {
+          &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+          &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+          &quot;input_sha256&quot;: &quot;799838dff582feebed5a2a418ff9d847f8fd31429a561e6c0d1c499a848b6394&quot;,
+          &quot;timeoutMs&quot;: 2000,
+          &quot;inferences&quot;: 1000000,
+          &quot;maxFacts&quot;: 2048,
+          &quot;maxOutputBytes&quot;: 2097152
+        }
+      },
+      &quot;questions&quot;: [
+        {
+          &quot;question&quot;: {
+            &quot;id&quot;: &quot;backup&quot;,
+            &quot;text&quot;: &quot;Резерв для orion готов?&quot;,
+            &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+            &quot;cost&quot;: 1
+          },
+          &quot;disposition&quot;: &quot;irrelevant_to_this_goal&quot;,
+          &quot;branches&quot;: [
+            {
+              &quot;polarity&quot;: &quot;positive&quot;,
+              &quot;assumption&quot;: {
+                &quot;id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                &quot;source&quot;: &quot;conditional:backup:positive&quot;,
+                &quot;program&quot;: &quot;backup_ready(orion).&quot;
+              },
+              &quot;result&quot;: {
+                &quot;conflicts&quot;: [],
+                &quot;plans&quot;: [
+                  {
+                    &quot;missing&quot;: [],
+                    &quot;rule_ids&quot;: []
+                  }
+                ],
+                &quot;query&quot;: &quot;release(orion)&quot;,
+                &quot;raw&quot;: [
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;route_observation&quot;,
+                    &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                    &quot;source&quot;: &quot;e5&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;outage&quot;,
+                    &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                    &quot;source&quot;: &quot;e20&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                    &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+                    &quot;source&quot;: &quot;conditional:backup:positive&quot;
+                  },
+                  {
+                    &quot;children&quot;: [
+                      &quot;main_down(orion)&quot;,
+                      &quot;certified_route(orion)&quot;
+                    ],
+                    &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                    &quot;literal&quot;: &quot;release(orion)&quot;,
+                    &quot;source&quot;: &quot;e2&quot;
+                  }
+                ],
+                &quot;raw_status&quot;: &quot;entailed&quot;,
+                &quot;safe&quot;: [
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;route_observation&quot;,
+                    &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                    &quot;source&quot;: &quot;e5&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;outage&quot;,
+                    &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                    &quot;source&quot;: &quot;e20&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;assumption_07c811e2daff_positive&quot;,
+                    &quot;literal&quot;: &quot;backup_ready(orion)&quot;,
+                    &quot;source&quot;: &quot;conditional:backup:positive&quot;
+                  },
+                  {
+                    &quot;children&quot;: [
+                      &quot;main_down(orion)&quot;,
+                      &quot;certified_route(orion)&quot;
+                    ],
+                    &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                    &quot;literal&quot;: &quot;release(orion)&quot;,
+                    &quot;source&quot;: &quot;e2&quot;
+                  }
+                ],
+                &quot;safe_status&quot;: &quot;entailed&quot;,
+                &quot;status&quot;: &quot;ok&quot;,
+                &quot;evidence&quot;: {
+                  &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+                  &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+                  &quot;input_sha256&quot;: &quot;a54bd99afac82ba45f1a400f37c77c029713376ac67db50751d4c1c292b262ec&quot;,
+                  &quot;timeoutMs&quot;: 2000,
+                  &quot;inferences&quot;: 1000000,
+                  &quot;maxFacts&quot;: 2048,
+                  &quot;maxOutputBytes&quot;: 2097152
+                }
+              }
+            },
+            {
+              &quot;polarity&quot;: &quot;negative&quot;,
+              &quot;assumption&quot;: {
+                &quot;id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                &quot;source&quot;: &quot;conditional:backup:negative&quot;,
+                &quot;program&quot;: &quot;neg(backup_ready(orion)).&quot;
+              },
+              &quot;result&quot;: {
+                &quot;conflicts&quot;: [],
+                &quot;plans&quot;: [
+                  {
+                    &quot;missing&quot;: [],
+                    &quot;rule_ids&quot;: []
+                  }
+                ],
+                &quot;query&quot;: &quot;release(orion)&quot;,
+                &quot;raw&quot;: [
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;route_observation&quot;,
+                    &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                    &quot;source&quot;: &quot;e5&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;outage&quot;,
+                    &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                    &quot;source&quot;: &quot;e20&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                    &quot;literal&quot;: &quot;neg(backup_ready(orion))&quot;,
+                    &quot;source&quot;: &quot;conditional:backup:negative&quot;
+                  },
+                  {
+                    &quot;children&quot;: [
+                      &quot;main_down(orion)&quot;,
+                      &quot;certified_route(orion)&quot;
+                    ],
+                    &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                    &quot;literal&quot;: &quot;release(orion)&quot;,
+                    &quot;source&quot;: &quot;e2&quot;
+                  }
+                ],
+                &quot;raw_status&quot;: &quot;entailed&quot;,
+                &quot;safe&quot;: [
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;route_observation&quot;,
+                    &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+                    &quot;source&quot;: &quot;e5&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;outage&quot;,
+                    &quot;literal&quot;: &quot;main_down(orion)&quot;,
+                    &quot;source&quot;: &quot;e20&quot;
+                  },
+                  {
+                    &quot;children&quot;: [],
+                    &quot;item_id&quot;: &quot;assumption_07c811e2daff_negative&quot;,
+                    &quot;literal&quot;: &quot;neg(backup_ready(orion))&quot;,
+                    &quot;source&quot;: &quot;conditional:backup:negative&quot;
+                  },
+                  {
+                    &quot;children&quot;: [
+                      &quot;main_down(orion)&quot;,
+                      &quot;certified_route(orion)&quot;
+                    ],
+                    &quot;item_id&quot;: &quot;old_release_rule&quot;,
+                    &quot;literal&quot;: &quot;release(orion)&quot;,
+                    &quot;source&quot;: &quot;e2&quot;
+                  }
+                ],
+                &quot;safe_status&quot;: &quot;entailed&quot;,
+                &quot;status&quot;: &quot;ok&quot;,
+                &quot;evidence&quot;: {
+                  &quot;runtime&quot;: &quot;swi-signed-horn-v0&quot;,
+                  &quot;interpreter_sha256&quot;: &quot;2abc90f2187b3b1e28bf8edc64d55f83b64261a7561e424d03d51a2449eff5e9&quot;,
+                  &quot;input_sha256&quot;: &quot;85152ec85827e8c2a9c65affc94ccf8dbb72122a836f829731865077542b64c1&quot;,
+                  &quot;timeoutMs&quot;: 2000,
+                  &quot;inferences&quot;: 1000000,
+                  &quot;maxFacts&quot;: 2048,
+                  &quot;maxOutputBytes&quot;: 2097152
+                }
+              }
+            }
+          ]
+        }
+      ],
+      &quot;simple_control&quot;: null,
+      &quot;cost&quot;: {
+        &quot;queries&quot;: 3,
+        &quot;branches&quot;: 2
+      },
+      &quot;decision&quot;: {
+        &quot;kind&quot;: &quot;act&quot;,
+        &quot;action&quot;: &quot;request_release_orion&quot;,
+        &quot;goalId&quot;: &quot;release_episode&quot;,
+        &quot;snapshot&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;,
+        &quot;proof&quot;: [
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;outage&quot;,
+            &quot;literal&quot;: &quot;main_down(orion)&quot;,
+            &quot;source&quot;: &quot;e20&quot;
+          },
+          {
+            &quot;children&quot;: [],
+            &quot;item_id&quot;: &quot;route_observation&quot;,
+            &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+            &quot;source&quot;: &quot;e5&quot;
+          },
+          {
+            &quot;children&quot;: [
+              &quot;main_down(orion)&quot;,
+              &quot;certified_route(orion)&quot;
+            ],
+            &quot;item_id&quot;: &quot;old_release_rule&quot;,
+            &quot;literal&quot;: &quot;release(orion)&quot;,
+            &quot;source&quot;: &quot;e2&quot;
+          }
+        ],
+        &quot;mode&quot;: &quot;simulated_action_request&quot;
+      }
+    },
+    &quot;sha256&quot;: &quot;31827c91686f0cc194f560b11b0c84383591e18f41c738f2bc66d08df40960f7&quot;
+  },
+  {
+    &quot;seq&quot;: 26,
+    &quot;id&quot;: &quot;e26&quot;,
+    &quot;previous&quot;: &quot;31827c91686f0cc194f560b11b0c84383591e18f41c738f2bc66d08df40960f7&quot;,
+    &quot;at&quot;: 100,
+    &quot;type&quot;: &quot;decision&quot;,
+    &quot;payload&quot;: {
+      &quot;kind&quot;: &quot;act&quot;,
+      &quot;action&quot;: &quot;request_release_orion&quot;,
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;snapshot&quot;: &quot;a1835819f970ddbc566b271b344845dedadea6816deff8c7338c1f30d42b75c5&quot;,
+      &quot;proof&quot;: [
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;outage&quot;,
+          &quot;literal&quot;: &quot;main_down(orion)&quot;,
+          &quot;source&quot;: &quot;e20&quot;
+        },
+        {
+          &quot;children&quot;: [],
+          &quot;item_id&quot;: &quot;route_observation&quot;,
+          &quot;literal&quot;: &quot;certified_route(orion)&quot;,
+          &quot;source&quot;: &quot;e5&quot;
+        },
+        {
+          &quot;children&quot;: [
+            &quot;main_down(orion)&quot;,
+            &quot;certified_route(orion)&quot;
+          ],
+          &quot;item_id&quot;: &quot;old_release_rule&quot;,
+          &quot;literal&quot;: &quot;release(orion)&quot;,
+          &quot;source&quot;: &quot;e2&quot;
+        }
+      ],
+      &quot;mode&quot;: &quot;simulated_action_request&quot;
+    },
+    &quot;sha256&quot;: &quot;d4ffe0efed71baf871a53d829506e3d49f0b347efe059d643e37dc80d738855c&quot;
+  },
+  {
+    &quot;seq&quot;: 27,
+    &quot;id&quot;: &quot;e27&quot;,
+    &quot;previous&quot;: &quot;d4ffe0efed71baf871a53d829506e3d49f0b347efe059d643e37dc80d738855c&quot;,
+    &quot;at&quot;: 102,
+    &quot;type&quot;: &quot;action_result&quot;,
+    &quot;payload&quot;: {
+      &quot;goalId&quot;: &quot;release_episode&quot;,
+      &quot;decisionId&quot;: &quot;e26&quot;,
+      &quot;outcome&quot;: &quot;success&quot;,
+      &quot;text&quot;: &quot;Симулятор сообщил: выпуск выполнен.&quot;,
+      &quot;mode&quot;: &quot;reported_simulation_outcome&quot;
+    },
+    &quot;sha256&quot;: &quot;ec9ede99a2493bba515a453c8400a84606c11096cccc9709e18bd9e5eefcdfeb&quot;
+  }
+]</pre></details>
+  </article></div>
+  <div class="result"><b>Что показал этот запуск</b><p>Прошлое изменило следующий выбор: H1 задал вопрос о резерве, H2 выбрал выпуск по независимому правилу. Контроль без сна выбрал те же действия и потребовал меньше исполнений. В этой сцене преимущество сна не показано; для обычного запуска достаточно анализа недостающих предпосылок.</p></div>
+  <details><summary>Протокол и границы результата</summary><pre>{
+  &quot;source&quot;: &quot;hand-authored synthetic episodes; no LLM extraction in this demo&quot;,
+  &quot;same&quot;: [
+    &quot;goal&quot;,
+    &quot;current observation&quot;,
+    &quot;questions&quot;,
+    &quot;budget&quot;
+  ],
+  &quot;intervention&quot;: &quot;old rule&quot;,
+  &quot;control&quot;: &quot;bounded missing-premise analysis&quot;,
+  &quot;knowledgeInvariant&quot;: &quot;snapshot hash at fixed episode time unchanged by dreaming&quot;,
+  &quot;limitations&quot;: [
+    &quot;single explicit goal&quot;,
+    &quot;signed Horn trusted profile&quot;,
+    &quot;no empirical truth certification&quot;,
+    &quot;no claim of psyche or dream advantage&quot;,
+    &quot;full Prolog thought transcript is untrusted&quot;
+  ]
+}</pre></details>
+  <details><summary>Отдельная свободная Prolog-мысль: программа и недоверенный transcript</summary><pre>{
+  &quot;source&quot;: &quot;e35&quot;,
+  &quot;memory&quot;: {
+    &quot;profile&quot;: &quot;signed-horn-v0&quot;,
+    &quot;ideas&quot;: {
+      &quot;version&quot;: &quot;release-domain-v0&quot;,
+      &quot;core&quot;: &quot;agent-world-core-v0&quot;,
+      &quot;predicates&quot;: [
+        {
+          &quot;name&quot;: &quot;release&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;main_down&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;backup_ready&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;certified_route&quot;,
+          &quot;arity&quot;: 1
+        },
+        {
+          &quot;name&quot;: &quot;note&quot;,
+          &quot;arity&quot;: 1
+        }
+      ]
+    },
+    &quot;at&quot;: 102,
+    &quot;items&quot;: [
+      {
+        &quot;id&quot;: &quot;old_release_rule&quot;,
+        &quot;program&quot;: &quot;release(X) :- main_down(X), backup_ready(X).&quot;,
+        &quot;source&quot;: &quot;e2&quot;,
+        &quot;observedAt&quot;: 1,
+        &quot;validFrom&quot;: 1,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 1,
+        &quot;admission&quot;: &quot;e4&quot;
+      },
+      {
+        &quot;id&quot;: &quot;route_observation&quot;,
+        &quot;program&quot;: &quot;certified_route(orion).&quot;,
+        &quot;source&quot;: &quot;e5&quot;,
+        &quot;observedAt&quot;: 2,
+        &quot;validFrom&quot;: 2,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 2,
+        &quot;admission&quot;: &quot;e7&quot;
+      },
+      {
+        &quot;id&quot;: &quot;outage&quot;,
+        &quot;program&quot;: &quot;main_down(orion).&quot;,
+        &quot;source&quot;: &quot;e20&quot;,
+        &quot;observedAt&quot;: 100,
+        &quot;validFrom&quot;: 100,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 100,
+        &quot;admission&quot;: &quot;e22&quot;
+      },
+      {
+        &quot;id&quot;: &quot;item_28_1&quot;,
+        &quot;program&quot;: &quot;backup_ready(orion).&quot;,
+        &quot;source&quot;: &quot;e27&quot;,
+        &quot;observedAt&quot;: 101,
+        &quot;validFrom&quot;: 101,
+        &quot;validTo&quot;: null,
+        &quot;modality&quot;: &quot;asserted&quot;,
+        &quot;replaces&quot;: null,
+        &quot;origin&quot;: null,
+        &quot;status&quot;: &quot;accepted&quot;,
+        &quot;admittedAt&quot;: 101,
+        &quot;admission&quot;: &quot;e29&quot;
+      }
+    ],
+    &quot;sha256&quot;: &quot;a691294bab3f6fef0b62bf1218722650d7f4ab5aefb2197f494af3ca70cf1d54&quot;
+  },
+  &quot;candidate&quot;: {
+    &quot;id&quot;: &quot;thought_36&quot;,
+    &quot;program&quot;: &quot;explore :- findall(Head, (pam_item(_, _, Text), read_term_from_atom(Text, Clause, []), (Clause = (Head :- _) -&gt; true ; Head = Clause)), Heads), length(Heads, N), format(&#39;Observed ~d clause heads: ~q~n&#39;, [N, Heads]).&quot;,
+    &quot;source&quot;: &quot;e35&quot;,
+    &quot;support&quot;: [],
+    &quot;status&quot;: &quot;candidate&quot;,
+    &quot;sha256&quot;: &quot;08ff0601fe9086ec6eb94ce1ea157d5a9dce61882e31db382f8bee4f44265c64&quot;
+  },
+  &quot;query&quot;: &quot;explore&quot;,
+  &quot;evidence&quot;: {
+    &quot;candidate&quot;: {
+      &quot;id&quot;: &quot;thought_36&quot;,
+      &quot;status&quot;: &quot;candidate&quot;,
+      &quot;sha256&quot;: &quot;08ff0601fe9086ec6eb94ce1ea157d5a9dce61882e31db382f8bee4f44265c64&quot;,
+      &quot;source&quot;: &quot;e35&quot;
+    },
+    &quot;snapshot&quot;: {
+      &quot;id&quot;: &quot;a691294bab3f6fef0b62bf1218722650d7f4ab5aefb2197f494af3ca70cf1d54&quot;,
+      &quot;sha256&quot;: &quot;4928dfb15bb139ec2f25065aa6455121e96da876a3da14aadb6a4b3652e030e1&quot;
+    },
+    &quot;runEvidence&quot;: {
+      &quot;runtime&quot;: &quot;swi-prolog-isolated&quot;,
+      &quot;timeoutMs&quot;: 1500,
+      &quot;maxOutputBytes&quot;: 262144,
+      &quot;forbidSubprocesses&quot;: true,
+      &quot;transcript&quot;: {
+        &quot;transcript&quot;: &quot;Observed 4 clause heads: [release(_2454),certified_route(orion),main_down(orion),backup_ready(orion)]\nPAM_DIAGNOSTIC_BINDINGS: explore\nPAM_DIAGNOSTIC_OUTCOME: succeeded&quot;,
+        &quot;exitCode&quot;: 0,
+        &quot;signal&quot;: null
+      },
+      &quot;trust&quot;: &quot;untrusted&quot;
+    }
+  },
+  &quot;trust&quot;: &quot;untrusted&quot;,
+  &quot;memory_after&quot;: &quot;a691294bab3f6fef0b62bf1218722650d7f4ab5aefb2197f494af3ca70cf1d54&quot;
+}</pre></details>
+  <footer>Результаты выпуска в сцене поступают от симулятора. Логический вывод не удостоверяет истинность исходных утверждений. <a href="report.json">Полный JSON-артефакт</a></footer></main></html>

@@ -1,0 +1,323 @@
+{
+  "status": "pass",
+  "evaluation": "gold_memory",
+  "case_id": "p04_a",
+  "case_sha256": "48220079dcc9ba89224a703ae38d88acd9dacad0578313e597801ff95c27e8a3",
+  "snapshot": {
+    "profile": "signed-horn-v0",
+    "ideas": {
+      "version": "p04-domain-v1",
+      "predicates": [
+        {
+          "name": "release",
+          "arity": 1,
+          "description": "Выпуск объекта разрешён."
+        },
+        {
+          "name": "ready",
+          "arity": 1,
+          "description": "Объект готов."
+        },
+        {
+          "name": "staged",
+          "arity": 1,
+          "description": "Объект подготовлен к выпуску."
+        },
+        {
+          "name": "reviewed",
+          "arity": 1,
+          "description": "Объект прошёл рецензию."
+        },
+        {
+          "name": "audited",
+          "arity": 1,
+          "description": "Объект прошёл независимый аудит."
+        }
+      ]
+    },
+    "at": 50,
+    "items": [
+      {
+        "id": "r_stage",
+        "program": "staged(X) :- ready(X).",
+        "source": "e2",
+        "observedAt": 1,
+        "validFrom": 1,
+        "validTo": null,
+        "modality": "asserted",
+        "replaces": null,
+        "origin": null,
+        "status": "accepted",
+        "admittedAt": 1,
+        "admission": "e7"
+      },
+      {
+        "id": "r_ready",
+        "program": "release(X) :- staged(X).",
+        "source": "e2",
+        "observedAt": 1,
+        "validFrom": 1,
+        "validTo": null,
+        "modality": "asserted",
+        "replaces": null,
+        "origin": null,
+        "status": "accepted",
+        "admittedAt": 1,
+        "admission": "e8"
+      },
+      {
+        "id": "r_review",
+        "program": "release(X) :- reviewed(X).",
+        "source": "e2",
+        "observedAt": 1,
+        "validFrom": 1,
+        "validTo": null,
+        "modality": "asserted",
+        "replaces": null,
+        "origin": null,
+        "status": "accepted",
+        "admittedAt": 1,
+        "admission": "e9"
+      },
+      {
+        "id": "r_audit",
+        "program": "release(X) :- audited(X).",
+        "source": "e2",
+        "observedAt": 1,
+        "validFrom": 1,
+        "validTo": null,
+        "modality": "asserted",
+        "replaces": null,
+        "origin": null,
+        "status": "accepted",
+        "admittedAt": 1,
+        "admission": "e10"
+      },
+      {
+        "id": "f_taint_yes",
+        "program": "ready(vega).",
+        "source": "e11",
+        "observedAt": 2,
+        "validFrom": 2,
+        "validTo": null,
+        "modality": "asserted",
+        "replaces": null,
+        "origin": null,
+        "status": "accepted",
+        "admittedAt": 2,
+        "admission": "e14"
+      },
+      {
+        "id": "f_taint_no",
+        "program": "neg(ready(vega)).",
+        "source": "e11",
+        "observedAt": 2,
+        "validFrom": 2,
+        "validTo": null,
+        "modality": "asserted",
+        "replaces": null,
+        "origin": null,
+        "status": "accepted",
+        "admittedAt": 2,
+        "admission": "e15"
+      },
+      {
+        "id": "f_audit",
+        "program": "audited(vega).",
+        "source": "e16",
+        "observedAt": 3,
+        "validFrom": 3,
+        "validTo": null,
+        "modality": "asserted",
+        "replaces": null,
+        "origin": null,
+        "status": "accepted",
+        "admittedAt": 3,
+        "admission": "e18"
+      }
+    ],
+    "sha256": "4a68a205dc895b1c39544fb132ab274a076e5dbf19d8744e2f9b9319e07cdd61"
+  },
+  "source_map": {
+    "m_rules": "e2",
+    "m_taint": "e11",
+    "m_audit": "e16",
+    "current": "e19"
+  },
+  "actual": {
+    "conflicts": [
+      "neg(ready(vega))",
+      "ready(vega)"
+    ],
+    "plans": [
+      {
+        "missing": [],
+        "rule_ids": []
+      }
+    ],
+    "query": "release(vega)",
+    "raw": [
+      {
+        "children": [],
+        "item_id": "f_taint_yes",
+        "literal": "ready(vega)",
+        "source": "e11"
+      },
+      {
+        "children": [],
+        "item_id": "f_taint_no",
+        "literal": "neg(ready(vega))",
+        "source": "e11"
+      },
+      {
+        "children": [],
+        "item_id": "f_audit",
+        "literal": "audited(vega)",
+        "source": "e16"
+      },
+      {
+        "children": [
+          "ready(vega)"
+        ],
+        "item_id": "r_stage",
+        "literal": "staged(vega)",
+        "source": "e2"
+      },
+      {
+        "children": [
+          "audited(vega)"
+        ],
+        "item_id": "r_audit",
+        "literal": "release(vega)",
+        "source": "e2"
+      }
+    ],
+    "raw_status": "entailed",
+    "raw_support_sets": [
+      {
+        "item_ids": [
+          "f_audit"
+        ],
+        "literal": "audited(vega)"
+      },
+      {
+        "item_ids": [
+          "f_taint_no"
+        ],
+        "literal": "neg(ready(vega))"
+      },
+      {
+        "item_ids": [
+          "f_taint_yes"
+        ],
+        "literal": "ready(vega)"
+      },
+      {
+        "item_ids": [
+          "f_audit",
+          "r_audit"
+        ],
+        "literal": "release(vega)"
+      },
+      {
+        "item_ids": [
+          "f_taint_yes",
+          "r_ready",
+          "r_stage"
+        ],
+        "literal": "release(vega)"
+      },
+      {
+        "item_ids": [
+          "f_taint_yes",
+          "r_stage"
+        ],
+        "literal": "staged(vega)"
+      }
+    ],
+    "safe": [
+      {
+        "children": [],
+        "item_id": "f_audit",
+        "literal": "audited(vega)",
+        "source": "e16"
+      },
+      {
+        "children": [
+          "audited(vega)"
+        ],
+        "item_id": "r_audit",
+        "literal": "release(vega)",
+        "source": "e2"
+      }
+    ],
+    "safe_status": "entailed",
+    "safe_support_sets": [
+      {
+        "item_ids": [
+          "f_audit"
+        ],
+        "literal": "audited(vega)"
+      },
+      {
+        "item_ids": [
+          "f_audit",
+          "r_audit"
+        ],
+        "literal": "release(vega)"
+      }
+    ],
+    "status": "ok",
+    "evidence": {
+      "runtime": "swi-signed-horn-v0",
+      "interpreter_sha256": "be3959eb9b55194e866c459f42fac359d82c4dc7373906146bbcdc0be67c88ea",
+      "input_sha256": "ff2effc9739e5c9a44a6d092204b910e94cdd77795a2a2b83da8b1b47243128c",
+      "timeoutMs": 2000,
+      "inferences": 1000000,
+      "maxFacts": 2048,
+      "maxProofSupportSets": 16384,
+      "maxOutputBytes": 2097152
+    }
+  },
+  "proof": [
+    {
+      "children": [],
+      "item_id": "f_audit",
+      "literal": "audited(vega)",
+      "source": "e16"
+    },
+    {
+      "children": [
+        "audited(vega)"
+      ],
+      "item_id": "r_audit",
+      "literal": "release(vega)",
+      "source": "e2"
+    }
+  ],
+  "decision": {
+    "kind": "act",
+    "action": "release(vega)",
+    "goalId": "fixture_goal",
+    "snapshot": "4a68a205dc895b1c39544fb132ab274a076e5dbf19d8744e2f9b9319e07cdd61",
+    "proof": [
+      {
+        "children": [],
+        "item_id": "f_audit",
+        "literal": "audited(vega)",
+        "source": "e16"
+      },
+      {
+        "children": [
+          "audited(vega)"
+        ],
+        "item_id": "r_audit",
+        "literal": "release(vega)",
+        "source": "e2"
+      }
+    ],
+    "mode": "simulated_action_request",
+    "eventId": "e23"
+  },
+  "journal_sha256": "4dd6faa862ed449c3c0a2e04281307e7610ba5ccd402418d6ace26f7d7311e78"
+}

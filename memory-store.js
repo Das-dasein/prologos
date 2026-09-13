@@ -10,9 +10,11 @@ const { consult, query } = engine;
 const {
   ACTIVE_ONTOLOGY,
   MEMORY_PREDICATES,
+  canonicalJson,
   validateOntologyCandidateName,
   validateRegistryIdentity,
 } = require("./ontology-registry");
+const { ACTIVE_GROUNDING_POLICY } = require("./predicate-grounding-policy");
 
 const RELATION_SIGNATURES = MEMORY_PREDICATES;
 const RELATIONS = new Set(Object.keys(RELATION_SIGNATURES));
@@ -27,8 +29,8 @@ function exactObject(value, keys, label) {
     throw new Error(`${label} has unknown or missing keys`);
 }
 
-function validateProposal(proposal) {
-  exactObject(proposal, ["polarity", "relation", "arguments", "valid_from", "valid_to", "confidence"], "assertion candidate");
+function validateProposal(proposal, { evidenceRequired = false } = {}) {
+  exactObject(proposal, ["polarity", "relation", "arguments", "valid_from", "valid_to", "confidence", ...(evidenceRequired ? ["evidence_span"] : [])], "assertion candidate");
   const signature = RELATION_SIGNATURES[proposal.relation];
   if (!signature) throw new Error(`Relation not allowed: ${proposal.relation}`);
   if (!Array.isArray(proposal.arguments) || proposal.arguments.length !== signature.arity)
@@ -44,6 +46,8 @@ function validateProposal(proposal) {
   }
   if (typeof proposal.confidence !== "number" || proposal.confidence < 0 || proposal.confidence > 1)
     throw new Error("Confidence must be between 0 and 1");
+  if (evidenceRequired && (typeof proposal.evidence_span !== "string" || !proposal.evidence_span.trim() || proposal.evidence_span.length > 2000))
+    throw new Error("Assertion evidence span is required");
   return proposal;
 }
 
@@ -66,17 +70,39 @@ function validateOntologyCandidate(candidate, registry = ACTIVE_ONTOLOGY) {
 }
 
 function validateExtraction(extraction) {
-  exactObject(extraction, ["schema_version", "registry_identity", "assertions", "ontology_candidates"], "memory extraction");
-  if (extraction.schema_version !== "memory-extraction-v2")
+  const isDecision = extraction && ["memory-extraction-v4", "memory-extraction-v5"].includes(extraction.schema_version);
+  const isV5 = extraction && extraction.schema_version === "memory-extraction-v5";
+  exactObject(extraction, ["schema_version", "registry_identity", ...(isV5 ? ["policy_identity"] : []), "assertions", "ontology_candidates", ...(isDecision ? ["decision", "clarification"] : [])], "memory extraction");
+  if (!["memory-extraction-v2", "memory-extraction-v3", "memory-extraction-v4", "memory-extraction-v5"].includes(extraction.schema_version))
     throw new Error(`Unsupported memory extraction schema: ${extraction.schema_version}`);
   exactObject(extraction.registry_identity, ["name", "version", "sha256"], "registry identity");
   validateRegistryIdentity(extraction.registry_identity);
+  if (isV5) {
+    exactObject(extraction.policy_identity, ["name", "version", "sha256"], "grounding policy identity");
+    if (canonicalJson(extraction.policy_identity) !== canonicalJson(ACTIVE_GROUNDING_POLICY.identity)) throw new Error("Grounding policy identity mismatch");
+  }
   if (!Array.isArray(extraction.assertions) || !Array.isArray(extraction.ontology_candidates))
     throw new Error("Memory extraction collections must be arrays");
   if (extraction.assertions.length > 100 || extraction.ontology_candidates.length > 50)
     throw new Error("Memory extraction exceeds collection limits");
-  extraction.assertions.forEach(validateProposal);
+  extraction.assertions.forEach(proposal => validateProposal(proposal, { evidenceRequired: extraction.schema_version !== "memory-extraction-v2" }));
   extraction.ontology_candidates.forEach(candidate => validateOntologyCandidate(candidate));
+  if (isDecision) {
+    if (!["write", "ignore", "clarify", "ontology_candidate"].includes(extraction.decision))
+      throw new Error("Bad extraction decision");
+    const clarification = extraction.clarification;
+    if (clarification !== null) {
+      exactObject(clarification, ["question", "evidence_span"], "clarification");
+      if (typeof clarification.question !== "string" || !clarification.question.trim() || clarification.question.length > 500)
+        throw new Error("Clarification question is required");
+      if (typeof clarification.evidence_span !== "string" || !clarification.evidence_span.trim() || clarification.evidence_span.length > 2000)
+        throw new Error("Clarification evidence span is required");
+    }
+    if (extraction.decision === "write" && (!extraction.assertions.length || clarification !== null)) throw new Error("Invalid write decision payload");
+    if (extraction.decision === "ignore" && (extraction.assertions.length || extraction.ontology_candidates.length || clarification !== null)) throw new Error("Invalid ignore decision payload");
+    if (extraction.decision === "clarify" && (extraction.assertions.length || extraction.ontology_candidates.length || clarification === null)) throw new Error("Invalid clarify decision payload");
+    if (extraction.decision === "ontology_candidate" && (extraction.assertions.length || !extraction.ontology_candidates.length || clarification !== null)) throw new Error("Invalid ontology_candidate decision payload");
+  }
   return extraction;
 }
 
@@ -117,7 +143,10 @@ class MemoryStore {
 
   async add(extraction, messageId) {
     const checked = validateExtraction(extraction);
-    const facts = checked.assertions.map(proposal => toFact(proposal, messageId));
+    const facts = checked.assertions.map(candidate => {
+      const { evidence_span: _evidenceSpan, ...proposal } = candidate;
+      return toFact(proposal, messageId);
+    });
     if (!facts.length) return { facts: [], conflicts: [], ontology_candidates: checked.ontology_candidates };
     const rules = fs.readFileSync("memory.pl", "utf8");
     const domainRules = fs.readFileSync("domain-rules.pl", "utf8");

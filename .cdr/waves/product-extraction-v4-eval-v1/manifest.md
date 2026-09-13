@@ -1,0 +1,21 @@
+# Product extraction v4 evaluation v1
+
+All listed inputs and executable dependencies were frozen before any live output existed. The 16 cases are balanced across write, ignore, clarify, and ontology_candidate. Outputs remain unadmitted.
+
+fixture.jsonl: e671d31b605da93d482c0e9018bacc0bf66328e14ba2ce1e0f64a20d4715a59e
+gold.jsonl: 07cda2c300ee65b3bcfca8d609f46c989a68195a90de14c7cc0ca4e994f94a07
+collector-v1.source.cjs: e2b8ae1162b9e5fc8e34d0f60127d2c939ae785f34c9c6877e119a5ff4c0e4c8
+verifier-v1.source.cjs: 6a335698e717e907bc8841c9f4860c1361472ae390e2cb45f3a7d25f44e531a7
+llm-schema.source.js: 0e136b1af73a74ff2fed62da652324396cfb292c5925bdd577417b8520a03fb0
+extraction-admission-v2.source.js: c1081d93e918ed2597390ca6146b8d9f3319282747e06187d2166e4006a4483c
+provider-codex.source.js: c9c2fc6d7a6c22b04ddefcb17e98c1ad4bcf556e2ad76f568518faae754e2c8e
+ontology-registry.source.js: 465acb06454dd6d6625cd3e296da1aad4a21411fdfdfb39d7232bb00555a6937
+memory-extraction-v4.schema.json: a4984b4cb7ffe20e3fc2878ed1a3ce8f917e6c5d7ece0662b1853fa21c62b116
+active-profile-v1.json: 5945d526a641b487b7ada667a54bd95476408d87b9f3d670c4f18eaa83d40fbb
+universal-core-v1.json: 2fd5bbc833d84e3b4dafe92f19e1b4b8611a6c29e92e1961f5e13db222c6d881
+conversation-profile-v1.json: e6255a2329b457d905f5f6790da1b4818d8ab8b690def04449d44fcddc393801
+
+Planned provider: codex
+Planned model argument: gpt-5.6-luna
+Planned provider calls: 16
+Planned admission writes: 0
