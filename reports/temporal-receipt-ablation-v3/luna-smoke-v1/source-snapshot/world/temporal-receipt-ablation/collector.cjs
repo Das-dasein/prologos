@@ -70,7 +70,7 @@ function runtimeConfig(model) {
   const probe = spawnSync(H.PYTHON, [info], { encoding: "utf8", timeout: 20000, cwd: path.dirname(info) });
   if (probe.status !== 0) throw new Error(`cannot pin runtime: ${probe.stderr}`);
   const runtime = JSON.parse(probe.stdout);
-  return { runtime, config: { runtime_fingerprint: runtime.fingerprint, model, provider: "openai-codex", reasoning_effort: "low", max_tokens: 4096, max_iterations: 1, timeout_ms: 240000, retries: 0, fallback: null, tools: [] } };
+  return { runtime, config: { runtime_fingerprint: runtime.fingerprint, model, provider: "openai-codex", reasoning_effort: "low", max_tokens: 1024, max_iterations: 1, timeout_ms: 120000, retries: 0, fallback: null, tools: [] } };
 }
 
 function snapshotSources(out) {

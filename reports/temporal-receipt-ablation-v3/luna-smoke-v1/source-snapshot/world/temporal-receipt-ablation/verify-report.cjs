@@ -23,7 +23,7 @@ async function verify(directory) {
     const expected = plan[index], record = report.records[index]; assert.equal(record.sequence, expected.sequence); assert.equal(record.case_id, expected.case.case_id); assert.equal(record.condition, expected.condition); assert.equal(record.order, expected.order);
     const evidenceBytes = fs.readFileSync(path.join(root, record.evidence)); assert.equal(H.sha(evidenceBytes), record.evidence_sha256);
     const evidence = JSON.parse(evidenceBytes); assert.deepEqual(evidence.prompt, { system: SYSTEM, user: expected.case.prompts[record.condition.toLowerCase()] }); assert.deepEqual(evidence.model_messages, [{ role: "system", content: SYSTEM }, { role: "user", content: expected.case.prompts[record.condition.toLowerCase()] }]);
-    assert.equal(evidence.wire_model, report.model); if (record.score.runtime_valid) assert.equal(evidence.reported_response_model, report.model);
+    assert.equal(evidence.wire_model, report.model); assert.equal(evidence.reported_response_model, report.model);
     const rescored = score(evidence, expected.case.oracle); assert.deepEqual(rescored, record.score); replayed.push({ ...record, score: rescored });
   }
   for (const source of report.sources) { const bytes = fs.readFileSync(path.join(root, source.snapshot)); assert.equal(H.sha(bytes), source.sha256, source.file); }
