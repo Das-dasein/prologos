@@ -223,6 +223,21 @@ node world/datacite-lineage-cli.cjs \
 The returned metadata can be attached only through the host-side `observe`
 boundary. Proposals and admission remain separate.
 
+`osv-advisory.js` is a bounded adapter for retained OSV records and npm SemVer
+ranges. It treats aliases as vulnerability identity while preserving a separate
+lineage for each OSV entry. Its record-level negative literal means only that a
+particular record does not claim the target version is affected. The frozen
+two-record pilot reaches the real journal, checker and decision path and pauses
+on a direct disagreement:
+
+```sh
+npm run test:osv-advisory
+```
+
+See the [pilot result](../reports/osv-advisory-conflict-pilot-v1/RESULTS.md).
+The broader old-revision→copy→replacement→restart→stale-redelivery experiment
+is frozen as a protocol but has not yet been run.
+
 `compareSupportSets(result, literal, scope)` возвращает попарное пересечение
 альтернатив по item, событиям и группам происхождения, отдельно для всех
 источников, фактов и правил. Флаги `*_disjoint` описывают только эти множества; они не

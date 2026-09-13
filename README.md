@@ -396,6 +396,15 @@ the distinct roots. The Prolog carrier fact was deliberately synthetic, so this
 is external-metadata plumbing evidence rather than semantic or utility evidence.
 See the [intake result](reports/datacite-lineage-intake-v1/RESULTS.md).
 
+The first OSV adapter pilot retains two real advisory records for
+`npm:lodash@4.17.21`, evaluates their SemVer ranges, and keeps vulnerability
+identity separate from entry lineage. The records disagree, so the real
+journal→checker→decision path returns `pause / goal_conflicted`; exact replay
+uses the retained response bytes. This is one exploratorily selected metadata
+conflict, not a package-safety verdict or an accuracy estimate. See the
+[pilot result](reports/osv-advisory-conflict-pilot-v1/RESULTS.md) and the
+[preregistered revision experiment](.cdr/waves/osv-revision-dependency-v1/protocol.md).
+
 The separate bounded extraction-repair wave gives deterministic signed-Horn
 validation errors back to Luna once. Seven of eight failed first-pass cases
 became exact, moving the assisted result from 16/24 to 23/24 and reducing
