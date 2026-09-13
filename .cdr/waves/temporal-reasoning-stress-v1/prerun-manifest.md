@@ -12,6 +12,10 @@ Base revision before this wave: `bdda53e`.
 | `world/temporal-reasoning-stress/generator.cjs` | `ab840561dd6447c1b9beb047391b095b11495f14275d01543810d38442ca4d67` |
 | `world/temporal-reasoning-stress/test.cjs` | `00fc4f9b7241d5fe1ce4245555c4b7cd6a6c151d020d281054a878ffd3739d5a` |
 | `world/temporal-reasoning-stress/verify-fixture.cjs` | `262dc38ce21b762d50e100e95dd78ba7ebd1c847653780274bffca3c669e7794` |
+| `world/temporal-reasoning-stress/collector.cjs` | `055874479e47bbc4957d181e97deea83d38dc27058413673952f32094b3ab8b3` |
+| `world/temporal-reasoning-stress/collector.test.cjs` | `8bfff08f59df75139d515ae9c623d4f1d853d492afac367ac02f87d9bd88a37c` |
+| `world/temporal-reasoning-stress/verify-report.cjs` | `2622d0fc5ee5879b9e00ecc0ec04190b58a2c4c69c62901c0764078a773eac79` |
+| `world/temporal-reasoning-stress/analyze-report.cjs` | `a08adb1d4f261ee65890792f0f1aea703215a37eee787f797a13e218c781d750` |
 | `.cdr/waves/temporal-reasoning-stress-v1/protocol.md` | `de43ca871125a76f7dd8fb1060793b065c58f12651a30f2b3cfc26ef21b0e364` |
 | `.cdr/waves/temporal-reasoning-stress-v1/fixture.json` | `6a8cca67e2cf38fc612ad071ed29dc392b67d35fdb3c33d958f5f49620e63ba3` |
 

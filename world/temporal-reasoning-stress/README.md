@@ -17,8 +17,28 @@ Generate to a new path and verify byte-for-byte regeneration:
 ```sh
 npm run generate:temporal-reasoning-stress
 npm run test:temporal-reasoning-stress
+npm run preflight:temporal-reasoning-stress
 ```
 
 The protocol is frozen in
 [`protocol.md`](../../.cdr/waves/temporal-reasoning-stress-v1/protocol.md).
 No model result exists until a separate frozen P0/P1/P2 collection is run.
+
+Run a new smoke or full collection through the pinned Hermes transport:
+
+```sh
+npm run eval:temporal-reasoning-stress -- live \
+  --model gpt-5.6-luna \
+  --cases trs-d3-chain-seed_fact-positive_to_negative,trs-d8-join-bridge_rule-withdrawal \
+  --conditions P0,P1,P2 \
+  --out reports/temporal-reasoning-stress-v1/luna-smoke-v1
+
+npm run eval:temporal-reasoning-stress -- live \
+  --model gpt-5.6-luna --cases all --conditions P0,P1,P2 \
+  --out reports/temporal-reasoning-stress-v1/luna-full-v1
+```
+
+Each attempt uses one physical dispatch, no retry, no fallback and no tools.
+The report stores the exact prompt, raw adapter evidence, runtime fingerprint,
+source snapshot and token usage. `resume` continues only records already absent
+from a matching running report and never redispatches an existing attempt path.
