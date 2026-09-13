@@ -77,9 +77,11 @@ canonicalization on this set. It does not demonstrate autonomous checker use,
 natural-language formalization, clinical reasoning, broad logical intelligence
 or a production benefit.
 
-The next hard wave should preserve temporal revision while adding interacting
+The next hard wave preserves temporal revision while adding interacting
 entities, alternative proof paths, explicit conflicts and queries whose answer
-cannot be found by following one visually isolated route.
+cannot be found by following one visually isolated route. Its design is frozen
+in
+[`temporal-relational-stress-v2`](../../.cdr/waves/temporal-relational-stress-v2/protocol.md).
 
 ## Evidence
 
