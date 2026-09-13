@@ -1,0 +1,20 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const H = require("../paired-biographies/harness.cjs");
+const { CONDITIONS } = require("./generator.cjs");
+const { SYSTEM, collect, loadFrozenFixture, makePlan, options } = require("./collector.cjs");
+const { verify } = require("./verify-report.cjs");
+const valid = answer => ({ status: "ok", final_response: answer, inference_calls: 1, physical_dispatches: 1, denied_physical_attempts: 0, physical_attempts: [{ status: "completed" }], provider_terminal_status: "completed", tools: [], usage: { input_tokens: 10, output_tokens: 5 } });
+(async () => {
+  const frozen = await loadFrozenFixture(), cases = [frozen.fixture.cases[0], frozen.fixture.cases.at(-1)];
+  assert.deepEqual(makePlan(cases).map(x => x.condition), ["L", "V", "S", "F", "V", "S", "F", "L"]); assert.throws(() => options(["offline", "--conditions", "L,L"]), /unique/);
+  const prompts = new Map(); for (const item of cases) for (const condition of CONDITIONS) prompts.set(item.prompts[condition.toLowerCase()], item.oracle);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pam-rav3-")), out = path.join(root, "run");
+  const invokeFn = async (request, directory) => { const oracle = prompts.get(request.user); assert(oracle); fs.mkdirSync(directory, { recursive: true }); const answer = JSON.stringify({ status: oracle.status, positive_support_sets: oracle.positive_support_sets, negative_support_sets: oracle.negative_support_sets }); const run = { ...valid(answer), prompt: { system: request.system, user: request.user }, model_messages: [{ role: "system", content: request.system }, { role: "user", content: request.user }], wire_model: "fake", reported_response_model: "fake" }; const bytes = `${JSON.stringify(run, null, 2)}\n`; fs.writeFileSync(path.join(directory, "adapter.json"), bytes); return { ...run, evidence_sha256: H.sha(bytes) }; };
+  const report = await collect({ mode: "live", frozen, model: "fake", out, selectedCases: cases, conditions: CONDITIONS, invokeFn, runtimeDescriptor: { runtime: { fingerprint: "fake" }, config: { model: "fake", retries: 0, tools: [] } } });
+  assert.equal(report.status, "completed"); assert.equal(report.records.length, 8); for (const condition of CONDITIONS) assert.equal(report.summary.per_condition[condition].exact, 2); assert.equal((await verify(out)).records, 8);
+  fs.rmSync(root, { recursive: true, force: true }); console.log("temporal receipt ablation collector ok");
+})().catch(error => { console.error(error.stack || error); process.exitCode = 1; });
