@@ -12,6 +12,10 @@ missing-premise control and continuation after restart. `npm run test:world`
 checks its lifecycle and reasoning boundaries. See [world/README.md](world/README.md)
 for the CLI, model interpretation, explicit admission and full-Prolog thought.
 This is a synthetic engineering PoC; it does not establish a benefit of dreaming.
+The [working domain decision](.cdd/proposals/domain-selection-v0.md) keeps the
+core neutral, uses DataCite as the current lineage control, selects OSV advisory
+reconciliation for the next applied experiment, and retains synthetic FHIR
+patient records as a later review-only transfer test.
 
 The development Hermes installation can use this world as the active external
 memory provider through `integrations/hermes/prolog_world`. Completed turns are
