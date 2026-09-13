@@ -23,8 +23,9 @@ npm run preflight:temporal-reasoning-stress
 The protocol is frozen in
 [`protocol.md`](../../.cdr/waves/temporal-reasoning-stress-v1/protocol.md).
 A completed two-case transport smoke is documented in
-[`SMOKE.md`](../../reports/temporal-reasoning-stress-v1/SMOKE.md). It is not an
-accuracy estimate; no full model result exists yet.
+[`SMOKE.md`](../../reports/temporal-reasoning-stress-v1/SMOKE.md). The verified
+108-call result is in
+[`RESULTS.md`](../../reports/temporal-reasoning-stress-v1/RESULTS.md).
 
 Run a new smoke or full collection through the pinned Hermes transport:
 

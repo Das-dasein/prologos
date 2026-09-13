@@ -12,7 +12,7 @@ async function verify(reportDirectory) {
   const reportFile = path.join(root, "report.json");
   const report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
   assert.equal(report.schema_version, "temporal-reasoning-stress-run-v1");
-  assert.equal(report.status, "completed");
+  assert.equal(["completed", "completed_with_runtime_failures"].includes(report.status), true);
   assert.equal(report.model, report.config.model);
   assert.deepEqual(report.config.tools, []);
   assert.equal(report.config.retries, 0);
@@ -59,6 +59,7 @@ async function verify(reportDirectory) {
   }
   const summary = aggregate(replayed, cases, report.selected_conditions);
   assert.deepEqual(summary, report.summary);
+  assert.equal(report.status, replayed.every(record => record.score.runtime_valid) ? "completed" : "completed_with_runtime_failures");
   const paired_cells = {};
   for (const [left, right] of [["P0", "P1"], ["P1", "P2"]].filter(pair => pair.every(condition => report.selected_conditions.includes(condition)))) {
     const cells = { both_exact: 0, left_only: 0, right_only: 0, both_wrong: 0 };

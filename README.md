@@ -314,10 +314,11 @@ The next frozen wave combines the two previously separated difficulties:
 [`temporal-reasoning-stress-v1`](world/temporal-reasoning-stress/README.md)
 contains 36 journal-backed cases with 3, 5 or 8 inference steps, chain or join
 topology, fact or rule revision, dependent copies, withdrawal/replacement and a
-real process restart. Its deterministic fixture and checker oracles exist; a
-two-case transport smoke passed, but no full model result is claimed yet. P0
-asks from equivalent natural history, P1 from formal events, and P2 adds the
-trusted checker receipt.
+real process restart. In the verified 108-call Luna run, canonical exact scores
+were P0 33/36, P1 34/36 and P2 36/36. Both P1 errors had the correct status and
+support set in the wrong order, so semantic status-plus-support accuracy was
+36/36 in both P1 and P2: this wave does not show a solver reasoning increment.
+See the [full result](reports/temporal-reasoning-stress-v1/RESULTS.md).
 
 `reasoning-stress-v1` freezes 32 generated signed-Horn worlds across depth,
 conjunction and four epistemic statuses. A verified 96-call Luna run scored
