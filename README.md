@@ -342,9 +342,10 @@ declared `fact_source_group_ids`; otherwise the host pauses with
 `insufficient_independent_fact_support`. Rule-source groups and distinct item
 IDs cannot satisfy the threshold. The default remains the earlier safe-proof
 policy unless a goal explicitly selects this stronger threshold. A deterministic
-replay matches all 24 frozen decision-stress oracles; this is an implementation
-equivalence check, not new evidence about model quality or real source
-independence.
+support-selector replay matches all 24 frozen decision-stress oracles under that
+benchmark's `ask` mapping. `WorldAgent` instead pauses when the provenance
+threshold is unmet, so this is not a full agent-equivalence check or new evidence
+about model quality or real source independence.
 
 The stricter `independent-host-attested-fact-support-v2` policy closes the
 obvious self-splitting path. A source event now owns both its group and its
@@ -365,18 +366,27 @@ causes a pause. This enforces known lineage metadata only. It does not discover
 hidden copying, collusion, source quality, or truth. See the
 [v3 design](.cdd/designs/source-lineage-policy-v3.md).
 
-The frozen deterministic
-[`provenance-policy-ablation-v1`](reports/provenance-policy-ablation-v1/RESULTS.md)
+Assertion-level dependency is now explicit and separate from source lineage. An
+accepted item can name previously admitted items in `dependsOn`; snapshot
+projection removes it transitively when a named premise is replaced, expired or
+otherwise inactive. A shared lineage alone does not create that edge. See the
+[dependency invalidation contract](.cdd/designs/assertion-dependency-invalidation-v1.md).
+
+The corrected frozen deterministic
+[`provenance-policy-ablation-v2`](reports/provenance-policy-ablation-v2/RESULTS.md)
 exercises 11 authored scenarios across the default safe-proof decision and
 policies v1/v2/v3. All 44 expected cells replay exactly. The transitions isolate
 the recorded condition each layer adds: group duplication is blocked by v1,
 unattested self-splitting by v2, and a known common origin or missing lineage by
-v3. These are synthetic contract tests, not estimates of model accuracy or
-real-world attack prevalence.
+v3. V2 corrects a v1 conflict receipt whose safe status could not be produced by
+the real checker and tests the corrected raw-conflict ordering against that
+checker. These remain synthetic contract tests, not estimates of model accuracy
+or real-world attack prevalence.
 
 The first metadata-backed intake is now implemented for DataCite. The bounded
 connector follows explicit DOI `IsVersionOf`, `IsNewVersionOf`, `IsDerivedFrom`,
-`IsVariantFormOf`, and `IsTranslationOf` relations, stores each exact API record
+`IsVariantFormOf`, `IsTranslationOf`, and `IsIdenticalTo` relations, stores each
+exact API record
 under its SHA-256, and supplies the resulting group, lineage and receipt hash to
 the existing journal. A frozen live intake followed 13 DataCite schema-document
 versions to one recorded root and retained one unrelated Dryad DOI as a distinct

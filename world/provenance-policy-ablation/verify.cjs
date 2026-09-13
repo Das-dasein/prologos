@@ -11,7 +11,8 @@ function verify(fixturePath, reportPath) {
   const report = JSON.parse(fs.readFileSync(reportPath));
   const frozenImplementationPath = path.join(path.dirname(fixturePath), "provenance-policy.source.js");
   assert.equal(fs.existsSync(frozenImplementationPath), true, "frozen policy source is missing");
-  assert.equal(report.schema_version, "provenance-policy-ablation-report-v1");
+  const version = fixture.schema_version === "provenance-policy-ablation-fixture-v1" ? 1 : 2;
+  assert.equal(report.schema_version, `provenance-policy-ablation-report-v${version}`);
   assert.equal(report.fixture_sha256, sha256(fixtureBytes));
   assert.equal(report.policy_implementation_sha256, sha256(fs.readFileSync(frozenImplementationPath)));
   const replay = runFixture(fixture, {
@@ -21,7 +22,7 @@ function verify(fixturePath, reportPath) {
   assert.deepEqual(report, replay);
   assert.equal(report.records.length, fixture.cases.length * fixture.policies.length);
   assert.equal(report.records.every(record => record.exact), true);
-  process.stdout.write(`${JSON.stringify({ status: "verified-provenance-policy-ablation-v1", fixture_sha256: report.fixture_sha256, records: report.records.length, summary: report.summary }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ status: `verified-provenance-policy-ablation-v${version}`, fixture_sha256: report.fixture_sha256, records: report.records.length, summary: report.summary }, null, 2)}\n`);
 }
 
 if (require.main === module) {

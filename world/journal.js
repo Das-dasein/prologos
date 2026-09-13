@@ -102,7 +102,16 @@ function projectSnapshot(state, at) {
   tick(at);
   const observed = state.items.filter(x => x.admittedAt <= at && x.observedAt <= at);
   const replaced = new Set(observed.filter(x => x.validFrom <= at).map(x => x.replaces).filter(Boolean));
-  const items = observed.filter(x => x.modality === "asserted" && x.validFrom <= at && (x.validTo === null || x.validTo >= at) && !replaced.has(x.id));
+  const eligible = observed.filter(x => x.modality === "asserted" && x.validFrom <= at && (x.validTo === null || x.validTo >= at) && !replaced.has(x.id));
+  const activeIds = new Set(eligible.map(x => x.id));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const item of eligible) if (activeIds.has(item.id) && (item.dependsOn ?? []).some(dependency => !activeIds.has(dependency))) {
+      activeIds.delete(item.id); changed = true;
+    }
+  }
+  const items = eligible.filter(x => activeIds.has(x.id));
   const body = { profile: "signed-horn-v0", ideas: clone(state.ideas), at, items: clone(items) };
   return { ...body, sha256: hash(body) };
 }
@@ -121,13 +130,15 @@ function prepareItems(input, source, state) {
     const validFrom = tick(x.validFrom ?? state.sources[source].at), validTo = x.validTo ?? null;
     if (validTo !== null && tick(validTo) < validFrom) throw new Error("invalid validity interval");
     if (x.replaces && !state.items.some(i => i.id === x.replaces)) throw new Error("revision target must already be admitted");
+    const dependsOn = x.dependsOn ?? [];
+    if (!Array.isArray(dependsOn) || dependsOn.length > 16 || new Set(dependsOn).size !== dependsOn.length || dependsOn.some(id => !/^[a-z][a-z0-9_]*$/.test(id) || !state.items.some(item => item.id === id))) throw new Error("item dependencies must name up to 16 distinct previously admitted items");
     const modality = x.modality ?? "asserted";
     if (!["asserted", "reported", "uncertain"].includes(modality)) throw new Error("invalid modality");
     if (x.replaces && modality !== "asserted") throw new Error("an uncertain or reported item cannot supersede asserted knowledge");
     if (x.source_group !== undefined && sourceGroup(x.source_group) !== effectiveSourceGroup) throw new Error("item source group must match its recorded source event");
     if (x.source_group_assurance !== undefined && sourceGroupAssurance(x.source_group_assurance) !== assurance) throw new Error("item source group assurance must match its recorded source event");
     if (x.source_group_attestation !== undefined) throw new Error("item source group attestation is inherited from its recorded source event");
-    return { id, program: program(x.program), source, source_group: effectiveSourceGroup, source_group_assurance: assurance, source_group_attestation: attestation ? clone(attestation) : null, observedAt: sourceEvent.at, validFrom, validTo, modality, replaces: x.replaces ?? null, origin: x.origin ? clone(x.origin) : null };
+    return { id, program: program(x.program), source, source_group: effectiveSourceGroup, source_group_assurance: assurance, source_group_attestation: attestation ? clone(attestation) : null, observedAt: sourceEvent.at, validFrom, validTo, modality, replaces: x.replaces ?? null, ...(dependsOn.length ? { dependsOn: [...dependsOn] } : {}), origin: x.origin ? clone(x.origin) : null };
   });
 }
 module.exports = { Journal, projectSnapshot, prepareItems, nonempty, sourceGroup, sourceGroupAssurance, sourceGroupAttestation, tick };

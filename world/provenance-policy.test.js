@@ -151,6 +151,50 @@ test("lineage policy rejects copied origins and accepts distinct origins", async
   assert.deepEqual(allowed.provenance_policy.selected_support_paths.map(path => path.fact_source_lineage_ids), [["origin_a"], ["origin_b"]]);
 });
 
+test("explicit assertion dependency invalidates a stale copy after replacement and reload", async t => {
+  const directory = temp(t);
+  const agent = new WorldAgent(directory, { agent_id: "dependent-copy", ideas: IDEAS, startTime: 0 });
+  const sourceFor = (text, group, lineage, at = agent.state().now) => agent.observe(text, { at, sourceGroup: group, sourceGroupAttestation: { by: "test_host", reason: "explicit synthetic dependency fixture", lineage_id: lineage } });
+
+  const originSource = sourceFor("origin", "publisher_a", "origin_a");
+  const originProposal = agent.propose(originSource, [{ id: "origin_assertion", program: "ready(orion)." }]);
+  await agent.admit(originProposal, { admit: true, by: "test_operator", reason: "dependency fixture origin" });
+  const copySource = sourceFor("copied assertion", "mirror_a", "origin_a");
+  const copyProposal = agent.propose(copySource, [{ id: "dependent_copy", program: "ready(orion).", dependsOn: ["origin_assertion"] }]);
+  await agent.admit(copyProposal, { admit: true, by: "test_operator", reason: "dependency fixture copy" });
+  const independentSource = sourceFor("independent assertion", "publisher_b", "origin_b");
+  const independentProposal = agent.propose(independentSource, [{ id: "independent_assertion", program: "ready(orion)." }]);
+  await agent.admit(independentProposal, { admit: true, by: "test_operator", reason: "dependency fixture independent source" });
+
+  assert.deepEqual(agent.snapshot().items.map(item => item.id), ["origin_assertion", "dependent_copy", "independent_assertion"]);
+  const correctionSource = sourceFor("origin withdrawn", "publisher_a", "origin_a", 1);
+  const correctionProposal = agent.propose(correctionSource, [{ id: "origin_withdrawal", program: "p(orion).", replaces: "origin_assertion" }]);
+  await agent.admit(correctionProposal, { admit: true, by: "test_operator", reason: "dependency fixture withdrawal" });
+
+  const restored = new WorldAgent(directory);
+  assert.deepEqual(restored.snapshot().items.map(item => item.id), ["independent_assertion", "origin_withdrawal"]);
+  await goal(restored, { minIndependentFactSupportPaths: 2, requireDistinctSourceLineages: true });
+  const decision = await restored.step();
+  assert.equal(decision.kind, "pause");
+  assert.equal(decision.reason, "insufficient_independent_fact_support");
+  assert.equal(decision.provenance_policy.eligible_support_path_count, 1);
+});
+
+test("lineage alone does not invent an assertion dependency", async t => {
+  const agent = new WorldAgent(temp(t), { agent_id: "lineage-not-dependency", ideas: IDEAS, startTime: 0 });
+  const first = agent.observe("origin", { sourceGroup: "publisher", sourceGroupAttestation: { by: "test_host", reason: "fixture", lineage_id: "shared" } });
+  const firstProposal = agent.propose(first, [{ id: "origin_item", program: "ready(orion)." }]);
+  await agent.admit(firstProposal, { admit: true, by: "test_operator", reason: "fixture" });
+  const second = agent.observe("same lineage but no declared dependency", { sourceGroup: "mirror", sourceGroupAttestation: { by: "test_host", reason: "fixture", lineage_id: "shared" } });
+  const secondProposal = agent.propose(second, [{ id: "unbound_item", program: "ready(orion)." }]);
+  await agent.admit(secondProposal, { admit: true, by: "test_operator", reason: "fixture" });
+  const correction = agent.observe("replace origin", { at: 1, sourceGroup: "publisher", sourceGroupAttestation: { by: "test_host", reason: "fixture", lineage_id: "shared" } });
+  const correctionProposal = agent.propose(correction, [{ id: "replacement_item", program: "p(orion).", replaces: "origin_item" }]);
+  await agent.admit(correctionProposal, { admit: true, by: "test_operator", reason: "fixture" });
+  assert.equal(agent.snapshot().items.some(item => item.id === "unbound_item"), true);
+  assert.throws(() => agent.propose(correction, [{ program: "ready(orion).", dependsOn: ["missing_item"] }]), /dependencies/);
+});
+
 test("lineage policy rejects attested receipts that do not classify lineage", async t => {
   const agent = new WorldAgent(temp(t), { agent_id: "missing-lineage", ideas: IDEAS, startTime: 0 });
   for (const group of ["publisher_a", "publisher_b"]) {
@@ -180,7 +224,7 @@ test("different items or rule groups do not manufacture fact-source independence
   assert.equal(decision.provenance_policy.eligible_support_path_count, 2);
 });
 
-test("host policy reproduces every frozen provenance-stress oracle", () => {
+test("support selector reproduces the frozen stress oracle under its benchmark decision mapping", () => {
   const fixture = require("../.cdr/waves/provenance-decision-stress-v2/fixture.json");
   for (const item of fixture.cases) {
     const receipt = item.checker_receipt;
@@ -189,6 +233,9 @@ test("host policy reproduces every frozen provenance-stress oracle", () => {
       safe_support_sets: receipt.positive_support_sets.map(value => ({ ...value, literal: receipt.query })),
     };
     const evaluation = evaluateActionProvenance(result, receipt.query, { minIndependentFactSupportPaths: 2 });
+    // This benchmark maps an unmet threshold to ask. WorldAgent maps the same
+    // state to pause/insufficient_independent_fact_support; this is deliberately
+    // a support-selection replay rather than an end-to-end agent equivalence test.
     const decision = receipt.raw_status === "conflict" || receipt.raw_status === "contradicted" ? "pause" : evaluation.satisfied ? "act" : "ask";
     const support = evaluation.satisfied ? evaluation.selected_support_paths.map(value => value.fact_source_group_ids.join(",")).join("|") : "none";
     assert.deepEqual({ decision, support }, { decision: item.oracle.decision, support: item.oracle.support }, item.case_id);

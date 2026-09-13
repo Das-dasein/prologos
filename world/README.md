@@ -196,10 +196,19 @@ lineage не образуют независимую пару; отсутств�
 скрытого копирования или оценка истинности. Подробный контракт описан в
 [`source-lineage-policy-v3.md`](../.cdd/designs/source-lineage-policy-v3.md).
 
+Для зависимости конкретных утверждений используется отдельное поле item
+`dependsOn`. Если исходный item заменён, истёк или ещё не активен в выбранном
+снимке, его явно объявленные производные также исключаются транзитивно. Один
+`lineage_id` сам по себе такую зависимость не создаёт: иначе отзыв одного
+утверждения удалял бы все утверждения того же источника. Контракт и границы
+описаны в
+[`assertion-dependency-invalidation-v1.md`](../.cdd/designs/assertion-dependency-invalidation-v1.md).
+
 `datacite-lineage.js` is the first host-side lineage adapter. It parses a
-DataCite singleton DOI response, follows only an allowlist of explicit ancestor
-relations, rejects multiple parents, cycles and overlong chains, and stores raw
-responses content-addressed. `datacite-lineage-cli.cjs` performs the bounded
+DataCite singleton DOI response, follows an allowlist of explicit ancestor and
+`IsIdenticalTo` relations, collapses known identity components, rejects multiple
+parents, cycles and oversized graphs, and stores raw responses content-addressed.
+`datacite-lineage-cli.cjs` performs the bounded
 HTTPS traversal and writes a portable descriptor; it does not create memory
 items or admit claims. Example:
 

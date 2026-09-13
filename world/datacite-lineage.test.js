@@ -28,11 +28,33 @@ test("bundle resolves an explicit version chain to one recorded root", () => {
   assert.equal(prepared.find(value => value.doi === "10.1234/v3").source_group_attestation.external_receipt_sha256, sha256(records[0]));
 });
 
+test("explicit IsIdenticalTo records collapse to one lineage and cannot satisfy v3 twice", async t => {
+  const records = [raw("10.1234/a", "10.1234/b", "IsIdenticalTo"), raw("10.1234/b")];
+  const prepared = prepareBundle(records);
+  assert.deepEqual(prepared.map(value => value.source_group_attestation.lineage_id), ["datacite:doi:10.1234/a", "datacite:doi:10.1234/a"]);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pam-datacite-identical-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const ideas = { version: "datacite-identity-test-v1", predicates: [{ name: "ready", arity: 1 }] };
+  const agent = new WorldAgent(dir, { agent_id: "datacite-identical", ideas, startTime: 0 });
+  for (const item of prepared) {
+    const source = agent.observe(item.doi, { sourceGroup: item.source_group, sourceGroupAttestation: item.source_group_attestation });
+    const proposal = agent.propose(source, [{ program: "ready(orion)." }]);
+    await agent.admit(proposal, { admit: true, by: "test_operator", reason: "identity regression fixture" });
+  }
+  await agent.startGoal({ id: "g", text: "release", query: "ready(orion)", action: "release", actionPolicy: { minIndependentFactSupportPaths: 2, requireDistinctSourceLineages: true } });
+  const decision = await agent.step();
+  assert.equal(decision.kind, "pause");
+  assert.equal(decision.reason, "insufficient_independent_fact_support");
+});
+
 test("unknown roots remain explicit while ambiguity and cycles fail closed", () => {
   assert.equal(prepareBundle([raw("10.1234/v2", "10.1234/v1")])[0].source_group_attestation.lineage_id, "datacite:doi:10.1234/v1");
   const ambiguous = Buffer.from(JSON.stringify({ data: { id: "10.1234/x", type: "dois", attributes: { doi: "10.1234/x", relatedIdentifiers: ["a", "b"].map(x => ({ relationType: "IsDerivedFrom", relatedIdentifier: `10.1234/${x}`, relatedIdentifierType: "DOI" })) } } }));
   assert.throws(() => prepareBundle([ambiguous]), /multiple direct ancestors/);
   assert.throws(() => prepareBundle([raw("10.1234/a", "10.1234/b"), raw("10.1234/b", "10.1234/a")]), /cycle/);
+  const oversizedIdentity = Buffer.from(JSON.stringify({ data: { id: "10.1234/root", type: "dois", attributes: { doi: "10.1234/root", relatedIdentifiers: Array.from({ length: 17 }, (_, index) => ({ relationType: "IsIdenticalTo", relatedIdentifier: `10.1234/peer-${index}`, relatedIdentifierType: "DOI" })) } } }));
+  assert.throws(() => parseRecord(oversizedIdentity), /exceeds 17 related records/);
 });
 
 test("raw receipts are content-addressed and feed an end-to-end v3 decision", async t => {
@@ -60,6 +82,17 @@ test("network traversal is bounded and follows only explicit ancestor relations"
     return { ok: true, status: 200, arrayBuffer: async () => responses.get(doi) };
   }});
   assert.deepEqual(calls, ["10.1234/v2", "10.1234/v1"]);
+  assert.equal(fetched.length, 2);
+});
+
+test("network traversal retains explicit identity peers", async () => {
+  const responses = new Map([["10.1234/a", raw("10.1234/a", "10.1234/b", "IsIdenticalTo")], ["10.1234/b", raw("10.1234/b")]]);
+  const calls = [];
+  const fetched = await fetchBundle("10.1234/a", { fetchImpl: async url => {
+    const doi = decodeURIComponent(url.split("/").at(-1)); calls.push(doi);
+    return { ok: true, status: 200, arrayBuffer: async () => responses.get(doi) };
+  }});
+  assert.deepEqual(calls, ["10.1234/a", "10.1234/b"]);
   assert.equal(fetched.length, 2);
 });
 

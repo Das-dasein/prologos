@@ -16,7 +16,8 @@ function sha256(buffer) { return crypto.createHash("sha256").update(buffer).dige
 
 function decide(result, policy) {
   if (result.status !== "ok") return { decision: "pause", reason: "checker_failure" };
-  if (result.safe_status === "conflict" || result.safe_status === "contradicted") return { decision: "pause", reason: result.safe_status };
+  if (result.raw_status === "conflict") return { decision: "pause", reason: "conflict" };
+  if (result.safe_status === "contradicted") return { decision: "pause", reason: "contradicted" };
   if (result.safe_status === "unknown") return { decision: "ask", reason: "missing_support" };
   if (result.safe_status !== "entailed") return { decision: "pause", reason: "unsupported_status" };
   if (!policy) return { decision: "act", reason: "safe_entailment" };
@@ -28,11 +29,24 @@ function decide(result, policy) {
   };
 }
 
+function decideV1(result, policy) {
+  if (result.status !== "ok") return { decision: "pause", reason: "checker_failure" };
+  if (result.safe_status === "conflict" || result.safe_status === "contradicted") return { decision: "pause", reason: result.safe_status };
+  if (result.safe_status === "unknown") return { decision: "ask", reason: "missing_support" };
+  if (result.safe_status !== "entailed") return { decision: "pause", reason: "unsupported_status" };
+  if (!policy) return { decision: "act", reason: "safe_entailment" };
+  const evaluation = evaluateActionProvenance(result, result.query, policy);
+  return { decision: evaluation.satisfied ? "act" : "pause", reason: evaluation.satisfied ? "provenance_threshold_satisfied" : "insufficient_independent_fact_support", evaluation };
+}
+
 function runFixture(fixture, metadata) {
+  const version = fixture.schema_version === "provenance-policy-ablation-fixture-v1" ? 1 : 2;
+  if (!["provenance-policy-ablation-fixture-v1", "provenance-policy-ablation-fixture-v2"].includes(fixture.schema_version)) throw new Error("unsupported provenance ablation fixture schema");
+  const decisionFunction = version === 1 ? decideV1 : decide;
   const records = [];
   for (const testCase of fixture.cases) {
     for (const policyId of fixture.policies) {
-      const outcome = decide(testCase.checker_result, POLICY_CONFIGS[policyId]);
+      const outcome = decisionFunction(testCase.checker_result, POLICY_CONFIGS[policyId]);
       records.push({
         case_id: testCase.case_id,
         attack_class: testCase.attack_class,
@@ -57,7 +71,7 @@ function runFixture(fixture, metadata) {
     };
   }
   return {
-    schema_version: "provenance-policy-ablation-report-v1",
+    schema_version: `provenance-policy-ablation-report-v${version}`,
     experiment_kind: "deterministic_synthetic_policy_ablation",
     claim_boundary: "Shows policy behavior on authored recorded-provenance attacks; does not measure LLM quality, source truth, hidden copying detection, or real-world independence.",
     ...metadata,
@@ -82,4 +96,4 @@ function main(argv = process.argv.slice(2)) {
 }
 
 if (require.main === module) main();
-module.exports = { POLICY_CONFIGS, decide, runFixture, sha256 };
+module.exports = { POLICY_CONFIGS, decide, decideV1, runFixture, sha256 };

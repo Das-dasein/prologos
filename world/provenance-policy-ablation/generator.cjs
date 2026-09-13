@@ -17,11 +17,11 @@ function support(id, group, assurance, lineage) {
   };
 }
 
-function result(safeStatus, supports = []) {
+function result(rawStatus, supports = [], safeStatus = rawStatus) {
   return {
     status: "ok",
     query: "ready(orion)",
-    raw_status: safeStatus,
+    raw_status: rawStatus,
     safe_status: safeStatus,
     safe_support_sets: supports,
   };
@@ -30,8 +30,8 @@ function result(safeStatus, supports = []) {
 function buildFixture() {
   const attested = (id, group, lineage) => support(id, group, "host_attested", lineage);
   return {
-    schema_version: "provenance-policy-ablation-fixture-v1",
-    purpose: "Deterministic adversarial policy-layer ablation; no LLM calls and no real-world source-independence claim.",
+    schema_version: "provenance-policy-ablation-fixture-v2",
+    purpose: "Deterministic checker-shaped policy-layer ablation; no LLM calls and no real-world source-independence claim.",
     query: "ready(orion)",
     policies: ["safe", "group_v1", "attested_v2", "lineage_v3"],
     cases: [
@@ -92,7 +92,7 @@ function buildFixture() {
       {
         case_id: "conflict_control",
         attack_class: "epistemic_conflict",
-        checker_result: result("conflict", [attested("i1", "publisher_a", "origin_a"), attested("i2", "publisher_b", "origin_b")]),
+        checker_result: result("conflict", [attested("i1", "publisher_a", "origin_a"), attested("i2", "publisher_b", "origin_b")], "unknown"),
         expected: { safe: "pause", group_v1: "pause", attested_v2: "pause", lineage_v3: "pause" },
       },
       {
