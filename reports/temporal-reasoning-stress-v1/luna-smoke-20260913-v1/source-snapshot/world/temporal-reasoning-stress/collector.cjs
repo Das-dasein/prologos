@@ -23,10 +23,9 @@ function exactWrite(file, value) {
 
 function parseAnswer(value) {
   if (typeof value !== "string") return Object.freeze({ format_valid: false, status: null, support: null });
-  const match = value.match(/^STATUS: (entailed|contradicted|unknown|conflict)\nSUPPORT: (none|[a-z][a-z0-9_]*(?:, ?[a-z][a-z0-9_]*)*)\n?$/);
+  const match = value.match(/^STATUS: (entailed|contradicted|unknown|conflict)\nSUPPORT: (none|[a-z][a-z0-9_]*(?:,[a-z][a-z0-9_]*)*)\n?$/);
   if (!match) return Object.freeze({ format_valid: false, status: null, support: null });
-  const [, status, rawSupport] = match;
-  const support = rawSupport === "none" ? rawSupport : rawSupport.split(",").map(id => id.trim()).join(",");
+  const [, status, support] = match;
   if ((status === "unknown") !== (support === "none")) return Object.freeze({ format_valid: false, status: null, support: null });
   if (support !== "none" && support !== [...support.split(",")].sort().join(",")) return Object.freeze({ format_valid: false, status: null, support: null });
   return Object.freeze({ format_valid: true, status, support });

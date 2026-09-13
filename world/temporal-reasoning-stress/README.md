@@ -22,7 +22,9 @@ npm run preflight:temporal-reasoning-stress
 
 The protocol is frozen in
 [`protocol.md`](../../.cdr/waves/temporal-reasoning-stress-v1/protocol.md).
-No model result exists until a separate frozen P0/P1/P2 collection is run.
+A completed two-case transport smoke is documented in
+[`SMOKE.md`](../../reports/temporal-reasoning-stress-v1/SMOKE.md). It is not an
+accuracy estimate; no full model result exists yet.
 
 Run a new smoke or full collection through the pinned Hermes transport:
 

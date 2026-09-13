@@ -31,3 +31,20 @@ Frozen fixture properties:
   `entailed` after withdrawal, as preregistered.
 
 No model calls or model outputs existed when these hashes were recorded.
+
+## Full-run scoring freeze
+
+The first two-case smoke exposed one parser-only mismatch: P0 and P1 returned
+the correct sorted support IDs with a space after each comma. The prompt said
+`comma-separated` and did not prohibit that whitespace. The original derived
+report is retained as `report-strict-parser.json`; the raw adapter evidence was
+not changed. Before any full run, the parser was corrected to normalize one
+optional space after a comma. This changes neither prompts nor oracle sets.
+
+| Artifact | SHA-256 after scoring correction |
+| --- | --- |
+| `world/temporal-reasoning-stress/collector.cjs` | `23e35cb0ff1fa5d5e35c856c1a8b665909233ed90281684864f894c9aff6a545` |
+| `world/temporal-reasoning-stress/collector.test.cjs` | `403c50f13ac20114f9a6f161c1a6ab1f7a53c816e7b6fcf9859a6858263766e5` |
+
+The full 36-case run must use these corrected scorer bytes. No full-run model
+call existed when the corrected hashes were recorded.

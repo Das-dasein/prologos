@@ -22,6 +22,7 @@ const answerFor = oracle => `STATUS: ${oracle.status}\nSUPPORT: ${oracle.support
   assert.deepEqual(plan.slice(3).map(entry => entry.condition), ["P1", "P2", "P0"]);
 
   assert.deepEqual(parseAnswer("STATUS: unknown\nSUPPORT: none"), { format_valid: true, status: "unknown", support: "none" });
+  assert.deepEqual(parseAnswer("STATUS: entailed\nSUPPORT: a, b"), { format_valid: true, status: "entailed", support: "a,b" });
   assert.equal(parseAnswer("STATUS: entailed\nSUPPORT: z,a").format_valid, false);
   assert.equal(parseAnswer("STATUS: entailed\nSUPPORT: none").format_valid, false);
   assert.equal(parseAnswer("STATUS: ENTAILED\nSUPPORT: a").format_valid, false);
