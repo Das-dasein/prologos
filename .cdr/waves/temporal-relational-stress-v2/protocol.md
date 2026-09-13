@@ -1,6 +1,6 @@
 # Temporal relational stress v2
 
-Date: 2026-09-13. Status: deterministic fixture frozen; model collector and
+Date: 2026-09-13. Status: deterministic fixture and model collector frozen;
 model results do not yet exist.
 
 ## Motivation
