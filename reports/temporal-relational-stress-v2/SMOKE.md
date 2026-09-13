@@ -22,3 +22,21 @@ effect.
 The smoke also showed the intended secondary difficulty: P0/P1/P1F did not
 reproduce the complete exact proof support even on the shallow case, while P2
 did. Support accuracy remains secondary to the independently scored status.
+
+## Corrected-contract smoke
+
+A second two-case, eight-call smoke used the corrected full-run fixture,
+SHA-256
+`d65c9825312799a608dc1f22b0829efec294d01953030cccb9affac22ce84cc2`.
+Its report SHA-256 is
+`190a18badf19bfb9da0724098acebe819468b92c7ae503fa2a0afe6ea80c6afe`.
+All eight calls were runtime-valid and all eight statuses were correct. This
+includes the depth-7 relational-diamond conflict in P0, P1, P1F and P2, so the
+corrected label contract removed the ambiguity observed in the first smoke.
+
+P0, P1 and P1F each reproduced the complete support sets in one of two cases;
+P2 did so in both. In the depth-7 conflict, the three conditions without a
+trusted receipt correctly found both polarities but included inactive or
+irrelevant clauses in their reported supports. P2 returned the checker-supplied
+supports exactly. This second smoke is also excluded from benchmark estimates;
+it validates only the prompt contract, collector and expected difficulty.
