@@ -1,7 +1,7 @@
 # Temporal relational stress v2
 
-Date: 2026-09-13. Status: preregistered design; generator, fixture and model
-results do not yet exist.
+Date: 2026-09-13. Status: deterministic fixture frozen; model collector and
+model results do not yet exist.
 
 ## Motivation
 
