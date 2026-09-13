@@ -35,3 +35,10 @@ Before any full-run call, only the runtime envelope was widened from 1,024 to
 prompts, condition semantics, model, effort, no-tool rule, scorer, one physical
 dispatch rule, no-retry rule and no-fallback rule are unchanged. The corrected
 collector and verifier hashes are recorded below after final source freeze.
+
+The one-call recovery at
+`reports/temporal-receipt-ablation-v3/luna-smoke-recovery-v1/` completed under
+the corrected envelope and independently replay-verified. Its report SHA-256
+is `7bc7e522b5f2c8c7cea3dc8242df3756c72d5f0959c5cb578ff51b86f04f224d`.
+The recovered `L` result had correct status and inexact support provenance.
+No full-run call existed when this note was frozen.
