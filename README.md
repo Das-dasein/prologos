@@ -30,6 +30,15 @@ The stronger [open-choice run](reports/hermes-memory-open-v1/README.md) removes
 the action vocabulary and tool name from the prompt; Hermes independently
 formulates the Prolog query and chooses to seek evidence or proceed.
 
+The newer [autonomous Prolog tool evaluation](reports/autonomous-prolog-tool-v5/luna-full-v1/RESULTS.md)
+tests that behavior across 16 frozen signed-Horn snapshots. With only the tool
+available, Luna selected it in 9/16 cases; all nine calls used the correct
+primary query and all nine final answers were exact. In the seven skipped cases,
+exact provenance was 0/7. Requiring one call removed all status errors, but six
+of 25 correct primary receipts across optional and guided use were corrupted
+while the model extracted or copied long support lists. This is a bounded
+system/tool-interface result, not evidence of general Prolog advantage.
+
 ## Run
 
 ```bash
