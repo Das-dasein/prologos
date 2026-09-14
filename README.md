@@ -39,6 +39,14 @@ of 25 correct primary receipts across optional and guided use were corrupted
 while the model extracted or copied long support lists. This is a bounded
 system/tool-interface result, not evidence of general Prolog advantage.
 
+The follow-up [receipt transport ablation](reports/prolog-receipt-transport-v6/luna-full-v1/RESULTS.md)
+kept the prompt, query, solver, tool schema, model and call count fixed. Returning
+the existing raw checker result gave 11/16 exact provenance answers; a local
+target-only projection gave 15/16, while status remained 16/16 in both. The
+compact receipt averaged 512.75 bytes instead of 64,019 and used about 80.9%
+fewer recorded total tokens. The paired exact difference had `p = 0.125`, so it
+is an engineering direction rather than a general statistical claim.
+
 ## Run
 
 ```bash

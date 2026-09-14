@@ -28,3 +28,10 @@ terminal report with:
 node world/prolog-receipt-transport-v6/verify-report.cjs \
   reports/prolog-receipt-transport-v6/luna-smoke-v1
 ```
+
+Derive paired transport statistics from a verified terminal report with:
+
+```sh
+npm run analyze:prolog-receipt-transport-v6 -- \
+  reports/prolog-receipt-transport-v6/luna-full-v1
+```
