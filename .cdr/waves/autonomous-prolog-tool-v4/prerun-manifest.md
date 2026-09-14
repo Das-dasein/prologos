@@ -6,7 +6,7 @@ Frozen on 2026-09-14 before any v4 model call. Base revision: `d317a47`.
 | --- | --- |
 | `world/autonomous-prolog-tool/generator.cjs` | `96de0628c485be4f69fe93038141ed21d7552b72da1c62ba5c0e92d883b15235` |
 | `world/autonomous-prolog-tool/collector.cjs` | `08b6b46de1fc63a1aca306f4ec6eed991d744c829f74652b2298c990d0d2e69c` |
-| `world/autonomous-prolog-tool/adapter.py` | `ba97be871b637e3680866fa6e10c88cf6e54b3e65358707a0cf2c06c4695c70f` |
+| `world/autonomous-prolog-tool/adapter.py` | `ccaef3dde662d74edd4d86c8ac1d35d6d83dbb66c09197844f9d790f9116f5c4` |
 | `world/autonomous-prolog-tool/tool_transport_guard.py` | `9131b01cab8b8082424d3183e8166a8aa5ba344a26a7d220764c60d2bb99dc3f` |
 | `world/autonomous-prolog-tool/verify-fixture.cjs` | `4ce3c63aa2e7b081b839435f81ad0b0b41996571f33a2bdf70cb639eaaea5afb` |
 | `world/autonomous-prolog-tool/collector.test.cjs` | `152d8f1d9259ae0fe8a17706cc074c910b7029cfaf20b46929f925b748a7378f` |
@@ -20,3 +20,17 @@ byte-for-byte fixture regeneration, and real checker replay after fresh journal
 seeding for every case. The planned full wave is 48 cells.
 
 No v4 live model call existed when these hashes were recorded.
+
+## Pre-dispatch bootstrap correction
+
+The first attempted smoke is retained under
+`reports/autonomous-prolog-tool-v4/luna-smoke-v1/` with report SHA-256
+`e86cf2744be236ff20b80d81944817b2272355eb4829d3a758e6df5f0ea4ac8e`.
+All six cells failed locally with `KeyError: ideas_path` before agent creation:
+zero inference calls, zero physical dispatches and zero tool calls. It contains
+no model result and is excluded from evaluation.
+
+The adapter was corrected to read the already-recorded nested
+`world.ideas_path`. No fixture, prompt, condition, scorer, tool schema or
+runtime policy changed. The corrected adapter hash is the one in the table
+above. No v4 model dispatch existed when this correction was frozen.

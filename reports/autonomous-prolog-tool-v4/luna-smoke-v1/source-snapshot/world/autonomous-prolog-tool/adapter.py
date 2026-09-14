@@ -55,7 +55,7 @@ def main():
                 os.symlink(req["plugin_path"], home / "plugins" / "prolog_world")
                 os.environ["HERMES_HOME"] = str(home); os.environ["TERMINAL_CWD"] = str(work); os.environ["HERMES_SESSION_ID"] = evidence["session_id"]; os.chdir(work)
                 (home / "config.yaml").write_text("memory:\n  memory_enabled: false\n  user_profile_enabled: false\n  provider: prolog_world\nagent:\n  max_retries: 0\n  tool_use_enforcement: false\ncompression:\n  enabled: false\nplugins:\n  enabled: []\n")
-                (home / "prolog-world.json").write_text(json.dumps({"project_root": req["project_root"], "ideas_path": req["world"]["ideas_path"], "world_dir": req["world"]["directory"], "auto_reflect": False}))
+                (home / "prolog-world.json").write_text(json.dumps({"project_root": req["project_root"], "ideas_path": req["ideas_path"], "world_dir": req["world"]["directory"], "auto_reflect": False}))
                 from run_agent import AIAgent
                 budget = AttemptBudget(evidence, save, max_dispatches=2 if enabled else 1, tools_enabled=enabled)
                 class ControlledAgent(AIAgent):
