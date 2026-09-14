@@ -19,7 +19,6 @@ from runtime_info import runtime_info
 
 def jsonable(value):
     if hasattr(value, "model_dump"): return jsonable(value.model_dump())
-    if hasattr(value, "__dict__"): return {str(k): jsonable(v) for k, v in vars(value).items() if not str(k).startswith("_")}
     if isinstance(value, dict): return {str(k): jsonable(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)): return [jsonable(v) for v in value]
     if value is None or isinstance(value, (str, int, float, bool)): return value
@@ -94,53 +93,10 @@ def main():
                     result = original_stream(api_kwargs, *args, **kwargs); value = jsonable(result); evidence["api_responses"].append(value); evidence["reported_response_model"] = value.get("model"); evidence["provider_terminal_status"] = value.get("status"); save(); return result
                 agent._run_codex_stream = stream
                 agent._run_codex_create_stream_fallback = lambda *args, **kwargs: (_ for _ in ()).throw(PhysicalAttemptLimit("stream fallback disabled"))
-
-                # The production conversation loop owns retries, persistence, UI,
-                # and dozens of unrelated tools.  This experiment needs a much
-                # smaller causal surface: one model dispatch, optionally one
-                # locally executed query, then one continuation.  We still use
-                # Hermes's real request builder, Codex stream consumer, response
-                # normalizer, tool schema, and memory-provider dispatcher.
-                messages = [
-                    {"role": "system", "content": req["system"]},
-                    {"role": "user", "content": req["user"]},
-                ]
-                transport = agent._get_transport()
-                final_response = ""
-                normalized_turns = []
-                for turn_index in range(2 if enabled else 1):
-                    response = agent._run_codex_stream(agent._build_api_kwargs(messages))
-                    validation = {
-                        "turn": turn_index + 1,
-                        "response_type": type(response).__name__,
-                        "output_type": type(getattr(response, "output", None)).__name__,
-                        "output_count": len(getattr(response, "output", []) or []),
-                        "valid": bool(transport.validate_response(response)),
-                    }
-                    evidence.setdefault("response_validation", []).append(validation); save()
-                    if not validation["valid"]:
-                        raise RuntimeError("Hermes transport rejected the completed provider response")
-                    normalized = transport.normalize_response(response)
-                    normalized_turns.append(jsonable(normalized)); evidence["normalized_turns"] = normalized_turns; save()
-                    calls = list(normalized.tool_calls or [])
-                    if calls:
-                        if not enabled: raise RuntimeError("no-tool condition returned a tool call")
-                        if turn_index != 0 or len(calls) != 1: raise RuntimeError("only one first-turn tool call is allowed")
-                        call = calls[0]
-                        if call.name != ALLOWED_TOOL: raise RuntimeError(f"unexpected tool call: {call.name}")
-                        args = json.loads(call.arguments or "{}") if isinstance(call.arguments, str) else call.arguments
-                        result_text = manager.handle_tool_call(call.name, args)
-                        assistant_msg = agent._build_assistant_message(normalized, normalized.finish_reason)
-                        messages.append(assistant_msg)
-                        messages.append({"role": "tool", "name": call.name, "tool_call_id": call.id, "content": result_text})
-                        continue
-                    final_response = (normalized.content or "").strip()
-                    break
-                evidence["result"] = {"completed": bool(final_response), "messages": jsonable(messages)}
-                evidence["final_response"] = final_response
-                evidence["usage"] = {"responses": [entry.get("usage") for entry in evidence["api_responses"] if isinstance(entry, dict)]}
-                terminal = bool(final_response) and evidence.get("provider_terminal_status") == "completed" and evidence["denied_physical_attempts"] == 0 and evidence["physical_dispatches"] == evidence["inference_calls"] and all(x["status"] in ("completed", "closed") for x in evidence["physical_attempts"])
-                evidence["status"] = "ok" if terminal else "failed"
+                result = agent.run_conversation(req["user"], system_message=req["system"], conversation_history=[])
+                evidence["result"] = jsonable(result); evidence["final_response"] = result.get("final_response", ""); evidence["usage"] = {k: v for k, v in evidence["result"].items() if "token" in k or "usage" in k or "cost" in k}
+                terminal = evidence.get("provider_terminal_status") == "completed" and evidence["denied_physical_attempts"] == 0 and evidence["physical_dispatches"] == evidence["inference_calls"] and all(x["status"] in ("completed", "closed") for x in evidence["physical_attempts"])
+                evidence["status"] = "failed" if result.get("failed") or not terminal else "ok"
     except BaseException as exc:
         message = str(exc); secret = runtime.get("api_key") if "runtime" in locals() else None
         if secret: message = message.replace(secret, "[REDACTED]")

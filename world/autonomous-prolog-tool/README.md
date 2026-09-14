@@ -15,7 +15,7 @@ npm run eval:autonomous-prolog-tool -- live \
   --model gpt-5.6-luna \
   --cases apt4-d7-chain_of_joins-r4-entailed,apt4-d8-diamond-r4-conflict \
   --conditions N,A,G \
-  --out reports/autonomous-prolog-tool-v4/luna-smoke-v1
+  --out reports/autonomous-prolog-tool-v4/luna-smoke-v3
 ```
 
 Use `resume` with the identical model and path after interruption. Verify a
@@ -23,5 +23,9 @@ terminal report with:
 
 ```sh
 node world/autonomous-prolog-tool/verify-report.cjs \
-  reports/autonomous-prolog-tool-v4/luna-smoke-v1
+  reports/autonomous-prolog-tool-v4/luna-smoke-v3
 ```
+
+`luna-smoke-v1` and `luna-smoke-v2` are retained, excluded infrastructure
+attempts. Their failure modes and immutable report hashes are recorded in the
+pre-run manifest.
